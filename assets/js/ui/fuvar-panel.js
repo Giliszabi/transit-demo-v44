@@ -1,20 +1,10 @@
 import { FUVAROK } from "../data/fuvarok.js";
+import { formatDate } from "../utils.js";
 
-/**
- * Fuvar kártyák kirenderelése egy adott konténerbe.
- * FUVAROK struktúra = meeting / Claude alapján.
- */
 export function renderFuvarCards(containerId) {
   const container = document.getElementById(containerId);
-  if (!container) {
-    console.error("Fuvar container nem található:", containerId);
-    return;
-  }
-
   if (!FUVAROK || FUVAROK.length === 0) {
-    container.innerHTML = `
-      <p style="opacity:0.6;">Nincs betöltött fuvar adat.</p>
-    `;
+    container.innerHTML = `<p style="opacity:0.6;">Nincs betöltött fuvar adat.</p>`;
     return;
   }
 
@@ -34,13 +24,23 @@ export function renderFuvarCards(containerId) {
       : "";
 
     card.innerHTML = `
-      <h3 style="margin:0; font-size:16px;">${fuvar.megnevezes} ${adrBadge} ${urgent}</h3>
-      <p style="opacity:0.7; margin-top:6px;">
+      <h3 style="margin:0; font-size:16px;">
+        ${fuvar.megnevezes} ${adrBadge} ${urgent}
+      </h3>
+
+      <p style="margin-top:6px;opacity:0.7;">
         📍 ${fuvar.felrakas.cim.split(",")[0]} → ${fuvar.lerakas.cim.split(",")[0]}
       </p>
-      <p style="opacity:0.5; margin-top:4px;">
-        🚚 ${fuvar.tavolsag_km} km &nbsp;&nbsp; | &nbsp;&nbsp;
-        🕒 Indulás: ${new Date(fuvar.felrakas.ido).toLocaleString("hu-HU")}
+
+      <p style="margin-top:6px;opacity:0.8;">
+        📦 Felrakás: <strong>${formatDate(fuvar.felrakas.ido)}</strong>
+      </p>
+      <p style="opacity:0.8;">
+        📦 Lerakás: <strong>${formatDate(fuvar.lerakas.ido)}</strong>
+      </p>
+
+      <p style="margin-top:4px;opacity:0.5;">
+        🚚 ${fuvar.tavolsag_km} km
       </p>
     `;
 
