@@ -13,6 +13,13 @@ export function distanceKm(a, b) {
   return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
 }
 
-export function formatDate(d) {
-  return new Date(d).toLocaleString("hu-HU");
+export function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleString("hu-HU", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
