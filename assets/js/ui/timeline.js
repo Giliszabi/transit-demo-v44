@@ -1,26 +1,29 @@
-// ============================================
+// ============================================================
 // TransIT v4.4 – ADVANCED TIMELINE ENGINE
-// (C‑típusú időskálázással + collision detection)
-// ============================================
+// - C‑típusú TMS időskála (4 órás blokkok)
+// - Fuvar blokkok pozícionálása
+// - Ütközésvizsgálat
+// - Matching Engine szerinti highlight (ok/bad/warn)
+// ============================================================
 
 import { formatDate } from "../utils.js";
 
-const HOUR_WIDTH = 40;            
-const TIMELINE_HOURS = 72;        
+const HOUR_WIDTH = 40;               // 1 óra = 40px
+const TIMELINE_HOURS = 72;           // 3 nap
 const TIMELINE_WIDTH = HOUR_WIDTH * TIMELINE_HOURS;
 
-// -------------------------------------
-// Alap dátum (ma 00:00)
-// -------------------------------------
+// ============================================================
+// Alap dátum – ma 00:00
+// ============================================================
 function getBaseDate() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-// -------------------------------------
-// Dátum → pixel pozíció
-// -------------------------------------
+// ============================================================
+// Dátum → Pixel pozíció
+// ============================================================
 function dateToPosition(dateStr) {
   const base = getBaseDate();
   const t = new Date(dateStr);
@@ -28,9 +31,9 @@ function dateToPosition(dateStr) {
   return diffHours * HOUR_WIDTH;
 }
 
-// -------------------------------------
+// ============================================================
 // Blokk szélesség
-// -------------------------------------
+// ============================================================
 function blockWidth(start, end) {
   const s = new Date(start);
   const e = new Date(end);
@@ -38,10 +41,10 @@ function blockWidth(start, end) {
   return Math.max(20, diff * HOUR_WIDTH);
 }
 
-// -------------------------------------
-// ÜTKÖZÉSVIZSGÁLAT
-// -------------------------------------
-function hasCollision(timeline, start, end) {
+// ============================================================
+// Ütközésvizsgálat (collision detection)
+// ============================================================
+export function hasCollision(timeline, start, end) {
   const s = new Date(start);
   const e = new Date(end);
 
@@ -52,9 +55,9 @@ function hasCollision(timeline, start, end) {
   });
 }
 
-// -------------------------------------
-// Időskála rajzolás (C‑típusú TMS nézet)
-// -------------------------------------
+// ============================================================
+// Időskála (header) kirajzolása (4 órás bontás)
+// ============================================================
 function renderTimeScale(container) {
 
   const header = document.createElement("div");
@@ -76,7 +79,7 @@ function renderTimeScale(container) {
     line.style.background = (h % 4 === 0) ? "#777" : "#444";
     header.appendChild(line);
 
-    // 4 óránként címke
+    // 4 óránként label
     if (h % 4 === 0) {
       const label = document.createElement("div");
       label.style.position = "absolute";
@@ -99,14 +102,26 @@ function renderTimeScale(container) {
   container.appendChild(header);
 }
 
-// -------------------------------------
-// Egy erőforrás sor
-// -------------------------------------
+// ============================================================
+// Egyetlen erőforrás timeline sor (sofor / vontato / potkocsi)
+// ============================================================
 function renderResourceRow(parent, r, type) {
 
   const row = document.createElement("div");
   row.className = "timeline-resource";
 
+  // MATCHING HIGHLIGHT (ok/bad/warn)
+  if (r.matchGrade === "ok") {
+    row.style.border = "1px solid #4cd964";       // Zöld
+  } else if (r.matchGrade === "bad") {
+    row.style.border = "1px solid #ff3b30";       // Piros
+  } else if (r.matchGrade === "warn") {
+    row.style.border = "1px solid #ffcc00";       // Sárga
+  } else {
+    row.style.border = "1px solid #333";          // Default
+  }
+
+  // Erőforrás név része
   const name = document.createElement("div");
   name.className = "timeline-resource-name";
 
@@ -123,13 +138,14 @@ function renderResourceRow(parent, r, type) {
     </div>
   `;
 
+  // Timeline sáv
   const bar = document.createElement("div");
   bar.className = "timeline-bar";
   bar.style.width = TIMELINE_WIDTH + "px";
   bar.style.height = "60px";
   bar.style.position = "relative";
 
-  // blokkok
+  // Timeline blokkok kirajzolása
   if (r.timeline) {
     r.timeline.forEach(block => {
       const div = document.createElement("div");
@@ -158,17 +174,18 @@ function renderResourceRow(parent, r, type) {
   parent.appendChild(row);
 }
 
-// -------------------------------------
-// TELJES TIMELINE RENDERELÉS
-// -------------------------------------
-export function renderTimeline(containerId, grouped) {
+// ============================================================
+// TELJES TIMELINE RENDER
+// ============================================================
+export function renderTimeline(containerId, groups) {
   const container = document.getElementById(containerId);
   container.innerHTML = "";
 
-  // időskála
+  // TimeScale felül
   renderTimeScale(container);
 
-  grouped.forEach(g => {
+  // Csoportok (sofőr / vontató / pótkocsi)
+  groups.forEach(g => {
     const h = document.createElement("h3");
     h.style.margin = "20px 0 10px 0";
     h.textContent = `${g.icon} ${g.name}`;
@@ -184,26 +201,25 @@ export function renderTimeline(containerId, grouped) {
   });
 }
 
-// -------------------------------------
-// FUVAR BLOKK HOZZÁADÁSA (B‑modell)
-// -------------------------------------
+// ============================================================
+// Fuvar blokk hozzáadása (B-modell – csak hozzárendeléskor)
+// ============================================================
 export function addFuvarBlockToTimeline(resource, fuvar) {
 
   if (!resource.timeline) resource.timeline = [];
 
-  // ütközésvizsgálat
+  // Ütközés ellenőrzése
   if (hasCollision(resource.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido)) {
     alert("⚠️ Ez az erőforrás foglalt ebben az időszakban!");
     return false;
   }
 
-  const block = {
+  resource.timeline.push({
     start: fuvar.felrakas.ido,
     end: fuvar.lerakas.ido,
     type: "fuvar",
     label: fuvar.megnevezes
-  };
+  });
 
-  resource.timeline.push(block);
   return true;
 }
