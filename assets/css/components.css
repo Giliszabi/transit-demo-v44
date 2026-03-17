@@ -47,3 +47,49 @@
   opacity: 0.5;
   transform: scale(0.95);
 }
+.resource-columns {
+  display: flex;
+  gap: 20px;
+}
+
+.resource-column {
+  flex: 1;
+  background: #1e1f23;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 10px 15px;
+  max-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.resource-list {
+  overflow-y: auto;
+  margin-top: 10px;
+  padding-right: 6px;
+}
+
+.resource-card {
+  background: #2a2b31;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.resource-card:hover {
+  background: #34353c;
+  border-color: #5599ff;
+}
+
+.res-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.res-pos {
+  font-size: 12px;
+  opacity: 0.7;
+}
