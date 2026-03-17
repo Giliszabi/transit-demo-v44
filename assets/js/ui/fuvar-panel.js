@@ -1,8 +1,13 @@
+// ==============================================
+// TransIT v4.4 - Fuvar kártyák render modul
+// ==============================================
+
 import { FUVAROK } from "../data/fuvarok.js";
 import { formatDate } from "../utils.js";
 
 export function renderFuvarCards(containerId) {
   const container = document.getElementById(containerId);
+
   if (!FUVAROK || FUVAROK.length === 0) {
     container.innerHTML = `<p style="opacity:0.6;">Nincs betöltött fuvar adat.</p>`;
     return;
@@ -14,6 +19,7 @@ export function renderFuvarCards(containerId) {
     const card = document.createElement("div");
     card.className = "menu-card";
     card.style.marginBottom = "12px";
+    card.dataset.id = fuvar.id; // DRAG&DROP engine számára KÖTELEZŐ
 
     const adrBadge = fuvar.adr
       ? `<span style="background:#c62828;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:6px;">ADR</span>`
@@ -35,6 +41,7 @@ export function renderFuvarCards(containerId) {
       <p style="margin-top:6px;opacity:0.8;">
         📦 Felrakás: <strong>${formatDate(fuvar.felrakas.ido)}</strong>
       </p>
+
       <p style="opacity:0.8;">
         📦 Lerakás: <strong>${formatDate(fuvar.lerakas.ido)}</strong>
       </p>
