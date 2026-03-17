@@ -10,6 +10,24 @@
   <link rel="stylesheet" href="./assets/css/layout.css">
   <link rel="stylesheet" href="./assets/css/components.css">
   <link rel="stylesheet" href="./assets/css/timeline.css">
+
+  <style>
+    .drop-ok {
+      background: rgba(52,199,89,0.25) !important;
+      border: 1px solid #4cd964 !important;
+    }
+    .drop-bad {
+      background: rgba(255,59,48,0.25) !important;
+      border: 1px solid #ff3b30 !important;
+    }
+    .menu-card.dragging {
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+    .active-fuvar {
+      box-shadow: 0 0 0 2px #4fc3f7;
+    }
+  </style>
 </head>
 
 <body>
@@ -23,13 +41,19 @@
 
 <div class="container">
 
-  <!-- FUVAR KÁRTYÁK -->
+  <!-- ===== FUVAR LISTA SZŰRŐK ===== -->
+  <div class="panel">
+    <div class="panel-title">🔍 Gyorsszűrők</div>
+    <div id="filter-container"></div>
+  </div>
+
+  <!-- ===== FUVAR KÁRTYÁK ===== -->
   <div class="panel">
     <div class="panel-title">📋 Fuvarfeladatok</div>
     <div id="fuvar-list">Betöltés...</div>
   </div>
 
-  <!-- TIMELINE -->
+  <!-- ===== TIMELINE ===== -->
   <div class="panel">
     <div class="panel-title">⏱️ Erőforrás Timeline</div>
     <div id="timeline-container">Betöltés...</div>
@@ -37,11 +61,13 @@
 
 </div>
 
+<!-- ====================================== -->
 <!-- JAVASCRIPT MODULOK -->
+<!-- ====================================== -->
 <script type="module">
 
 /* ------------------------
-   ADATOK IMPORTÁLÁSA
+   ADAT IMPORTOK
 ------------------------- */
 import { FUVAROK } from "./assets/js/data/fuvarok.js";
 import { SOFOROK } from "./assets/js/data/soforok.js";
@@ -49,33 +75,71 @@ import { VONTATOK } from "./assets/js/data/vontatok.js";
 import { POTKOCSIK } from "./assets/js/data/potkocsik.js";
 
 /* ------------------------
-   UI MODULOK
+   UI/MATCHING MODULOK
 ------------------------- */
 import { renderTimeline } from "./assets/js/ui/timeline.js";
-import { renderFuvarCards } from "./assets/js/ui/fuvar-panel.js";
+import { renderFuvarFilters, renderFuvarCards } from "./assets/js/ui/fuvar-panel.js";
 import { enableFuvarDrag, enableTimelineDrop } from "./assets/js/ui/dragdrop.js";
+import { evaluateAllResources } from "./assets/js/ui/matching.js";
 
 /* ------------------------
-   OLDAL BETÖLTÉS
+   OLDAL BETÖLTÉSE
 ------------------------- */
 window.addEventListener("DOMContentLoaded", () => {
 
-  // Fuvarok kirenderelése
-  renderFuvarCards("fuvar-list");
+  // FUVAR SZŰRŐK
+  renderFuvarFilters("filter-container", (filter) => {
+    renderFuvarCards("fuvar-list", filter, onSelectFuvar);
+    enableFuvarDrag();
+  });
+
+  // ALAPÉRTELMEZETT FUVARLISTA
+  renderFuvarCards("fuvar-list", "all", onSelectFuvar);
   enableFuvarDrag();
 
-  // Timeline kirenderelése
+  // TIMELINE RENDER
   renderTimeline("timeline-container", [
-    { icon: "👤", name: "Sofőrök", list: SOFOROK },
-    { icon: "🚛", name: "Vontatók", list: VONTATOK },
-    { icon: "🚚", name: "Pótkocsik", list: POTKOCSIK }
+    { icon: "👤", name: "Sofőrök",    list: SOFOROK },
+    { icon: "🚛", name: "Vontatók",   list: VONTATOK },
+    { icon: "🚚", name: "Pótkocsik",  list: POTKOCSIK }
   ]);
   enableTimelineDrop();
 
-  console.log("Fuvarszervezés v4.4 (Advanced) betöltve:", {
-    FUVAROK, SOFOROK, VONTATOK, POTKOCSIK
-  });
+  console.log("Fuvarszervezés v4.4 (Advanced) betöltve.");
 });
+
+/* ==========================================================
+   FUVAR KIJELÖLÉS → MATCHING ENGINE FUTTATÁSA
+========================================================== */
+function onSelectFuvar(results) {
+
+  console.log("Matching eredmények:", results);
+
+  // Minden erőforrásra rögzítjük a matchGrade értéket (timeline highlight miatt)
+  SOFOROK.forEach((s) => {
+    const r = results.soforok.find(x => x.id === s.id);
+    s.matchGrade = r.result.grade;
+  });
+
+  VONTATOK.forEach((v) => {
+    const r = results.vontatok.find(x => x.id === v.id);
+    v.matchGrade = r.result.grade;
+  });
+
+  POTKOCSIK.forEach((p) => {
+    const r = results.potkocsik.find(x => x.id === p.id);
+    p.matchGrade = r.result.grade;
+  });
+
+  // TIMELINE újrarender matching highlight-tal
+  renderTimeline("timeline-container", [
+    { icon: "👤", name: "Sofőrök",    list: SOFOROK },
+    { icon: "🚛", name: "Vontatók",   list: VONTATOK },
+    { icon: "🚚", name: "Pótkocsik",  list: POTKOCSIK }
+  ]);
+
+  enableTimelineDrop();
+}
 
 </script>
 
