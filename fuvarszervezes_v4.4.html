@@ -3,29 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TransIT v4.4 – Fuvarszervezés Modul</title>
+  <title>TransIT v4.4 – Fuvarszervezés</title>
 
-  <!-- CSS-ek (moduláris) -->
-<link rel="stylesheet" href="assets/css/base.css" />
-<link rel="stylesheet" href="assets/css/layout.css" />
-<link rel="stylesheet" href="assets/css/components.css" />
-<link rel="stylesheet" href="assets/css/timeline.css" />
+  <!-- CSS -->
+  <link rel="stylesheet" href="./assets/css/base.css">
+  <link rel="stylesheet" href="./assets/css/layout.css">
+  <link rel="stylesheet" href="./assets/css/components.css">
+  <link rel="stylesheet" href="./assets/css/timeline.css">
 </head>
 
 <body>
 
 <header class="panel">
-  <div class="panel-title">
-    🚛 Fuvarszervezés v4.4 (Moduláris)
-  </div>
+  <div class="panel-title">🚛 Fuvarszervezés v4.4 (Moduláris)</div>
   <p style="opacity:0.7;">
-    Sofőr • Vontató • Pótkocsi idő + hely + státusz + követelmény illesztés
+    Sofőr • Vontató • Pótkocsi – idő + hely + követelmény illesztés
   </p>
 </header>
 
 <div class="container">
 
-  <!-- FUVAROK LISTA -->
+  <!-- FUVAR KÁRTYÁK -->
   <div class="panel">
     <div class="panel-title">📋 Fuvarfeladatok</div>
     <div id="fuvar-list">Betöltés...</div>
@@ -39,7 +37,7 @@
 
 </div>
 
-<!-- JS modulok -->
+<!-- JAVASCRIPT -->
 <script type="module">
 import { FUVAROK } from "./assets/js/data/fuvarok.js";
 import { SOFOROK } from "./assets/js/data/soforok.js";
@@ -49,9 +47,10 @@ import { POTKOCSIK } from "./assets/js/data/potkocsik.js";
 import { renderTimeline } from "./assets/js/ui/timeline.js";
 import { renderFuvarCards } from "./assets/js/ui/fuvar-panel.js";
 
-// Oldal betöltése
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("Fuvarszervezés modul betöltve:", { FUVAROK, SOFOROK, VONTATOK, POTKOCSIK });
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("Fuvarszervezés modul betöltve:", {
+    FUVAROK, SOFOROK, VONTATOK, POTKOCSIK
+  });
 
   renderFuvarCards("fuvar-list");
 
@@ -61,15 +60,6 @@ document.addEventListener("DOMContentLoaded", () => {
     { icon: "🚚", name: "Pótkocsik", list: POTKOCSIK }
   ]);
 });
-</script>
-
-renderTimeline("timeline-container", [
-  { icon: "👤", name: "Sofőrök", list: SOFOROK },
-  { icon: "🚛", name: "Vontatók", list: VONTATOK },
-  { icon: "🚚", name: "Pótkocsik", list: POTKOCSIK }
-]);
-
-console.log("Fuvarszervezés modul betöltve:", { FUVAROK, SOFOROK, VONTATOK, POTKOCSIK });
 </script>
 
 </body>
