@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TransIT v4.4 – Fuvarszervezés</title>
+  <title>TransIT v4.4 – Fuvarszervezés (Moduláris)</title>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="./assets/css/base.css">
-  <link rel="stylesheet" href="./assets/css/layout.css">
-  <link rel="stylesheet" href="./assets/css/components.css">
-  <link rel="stylesheet" href="./assets/css/timeline.css">
+  <!-- CSS importok -->
+  <link rel="stylesheet" href="./assets/css/base.css" />
+  <link rel="stylesheet" href="./assets/css/layout.css" />
+  <link rel="stylesheet" href="./assets/css/components.css" />
+  <link rel="stylesheet" href="./assets/css/timeline.css" />
 </head>
 
 <body>
@@ -37,29 +37,39 @@
 
 </div>
 
-<!-- JAVASCRIPT -->
+<!-- JAVASCRIPT MODULOK -->
 <script type="module">
+
+// ADATOK
 import { FUVAROK } from "./assets/js/data/fuvarok.js";
 import { SOFOROK } from "./assets/js/data/soforok.js";
 import { VONTATOK } from "./assets/js/data/vontatok.js";
 import { POTKOCSIK } from "./assets/js/data/potkocsik.js";
 
+// UI modulok
 import { renderTimeline } from "./assets/js/ui/timeline.js";
 import { renderFuvarCards } from "./assets/js/ui/fuvar-panel.js";
+import { enableFuvarDrag, enableTimelineDrop } from "./assets/js/ui/dragdrop.js";
 
 window.addEventListener("DOMContentLoaded", () => {
-  console.log("Fuvarszervezés modul betöltve:", {
-    FUVAROK, SOFOROK, VONTATOK, POTKOCSIK
-  });
-
+  
+  // FUVAR KÁRTYÁK
   renderFuvarCards("fuvar-list");
+  enableFuvarDrag();
 
+  // TIMELINE
   renderTimeline("timeline-container", [
     { icon: "👤", name: "Sofőrök", list: SOFOROK },
     { icon: "🚛", name: "Vontatók", list: VONTATOK },
     { icon: "🚚", name: "Pótkocsik", list: POTKOCSIK }
   ]);
+  enableTimelineDrop();
+
+  console.log("Fuvarszervezés modul betöltve:", {
+    FUVAROK, SOFOROK, VONTATOK, POTKOCSIK
+  });
 });
+
 </script>
 
 </body>
