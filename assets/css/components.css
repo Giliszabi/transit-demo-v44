@@ -31,3 +31,19 @@
   transform: translateY(-4px);
   border-color: #4fc3f7;
 }
+
+/* drag&drop vizuális stílusok */
+.drop-ok {
+  background: rgba(52, 199, 89, 0.25) !important; /* zöldes */
+  border: 1px solid #4cd964 !important;
+}
+
+.drop-bad {
+  background: rgba(255, 59, 48, 0.25) !important; /* pirosas */
+  border: 1px solid #ff3b30 !important;
+}
+
+.menu-card.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
