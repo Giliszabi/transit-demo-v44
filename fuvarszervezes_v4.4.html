@@ -47,9 +47,29 @@ import { VONTATOK } from "./assets/js/data/vontatok.js";
 import { POTKOCSIK } from "./assets/js/data/potkocsik.js";
 import { renderTimeline } from "./assets/js/ui/timeline.js";
 
-document.getElementById("fuvar-list").innerHTML = `
-  <p style="opacity:0.6;">Még nincsenek betöltve a fuvar adatok.</p>
-`;
+<script type="module">
+import { FUVAROK } from "./assets/js/data/fuvarok.js";
+import { SOFOROK } from "./assets/js/data/soforok.js";
+import { VONTATOK } from "./assets/js/data/vontatok.js";
+import { POTKOCSIK } from "./assets/js/data/potkocsik.js";
+
+import { renderTimeline } from "./assets/js/ui/timeline.js";
+import { renderFuvarCards } from "./assets/js/ui/fuvar-panel.js";
+
+window.addEventListener("DOMContentLoaded", () => {
+
+  // FUVAR KÁRTYÁK BETÖLTÉSE
+  renderFuvarCards("fuvar-list");
+
+  // TIMEINE BETÖLTÉSE (később bővítjük)
+  renderTimeline("timeline-container", [
+    { icon: "👤", name: "Sofőrök", list: SOFOROK },
+    { icon: "🚛", name: "Vontatók", list: VONTATOK },
+    { icon: "🚚", name: "Pótkocsik", list: POTKOCSIK }
+  ]);
+
+});
+</script>
 
 renderTimeline("timeline-container", [
   { icon: "👤", name: "Sofőrök", list: SOFOROK },
