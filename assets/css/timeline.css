@@ -1,0 +1,53 @@
+/* Timeline komponensek külön */
+
+/* Erőforrás sor */
+.timeline-resource {
+  background: #1b1c20;
+  border: 1px solid #333;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+/* Fejlécek */
+.timeline-resource-name {
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.timeline-resource-name:hover {
+  background: #2c2e33;
+}
+
+/* Timeline sáv */
+.timeline-bar {
+  padding: 10px;
+  height: 60px;
+  position: relative;
+  background: #121316;
+}
+
+/* Blokkok */
+.timeline-block {
+  position: absolute;
+  top: 10px;
+  height: 40px;
+  background: #3498db;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+  color: #fff;
+  user-select: none;
+}
+
+/* Típusok */
+.timeline-block.fuvar { background: #2196f3; }
+.timeline-block.szerviz { background: #e53935; }
+.timeline-block.szabadsag { background: #9c27b0; }
+.timeline-block.beteg { background: #d81b60; }
+.timeline-block.piheno { background: #ff9800; }
+.timeline-block.szabad { background: #43a047; opacity: 0.5; }
