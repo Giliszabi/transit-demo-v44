@@ -1,18 +1,7 @@
-// ==========================================
-// TransIT v4.4 – DRAG & DROP ENGINE
-// ==========================================
-//
-// Ez a modul felelős:
-//  ✔ Fuvar kártyák draggable állapotáért
-//  ✔ Timeline sorok droppable állapotáért
-//  ✔ Hozzárendelési esemény hívásáért
-//  ✔ Timeline újrarendereléséért (B Modell)
-//
-// Használja:
-//  - addFuvarBlockToTimeline()
-//  - renderTimeline()
-//  - assignFuvarToResource()
-// ==========================================
+// =====================================================
+// TransIT v4.4 – ADVANCED DRAG & DROP ENGINE
+// (C‑típusú timeline + B-modell + relevancia highlight)
+// =====================================================
 
 import { FUVAROK } from "../data/fuvarok.js";
 import { SOFOROK } from "../data/soforok.js";
@@ -21,21 +10,19 @@ import { POTKOCSIK } from "../data/potkocsik.js";
 
 import { addFuvarBlockToTimeline, renderTimeline } from "./timeline.js";
 
-// ==========================================
-// Drag state
-// ==========================================
+// Globális state: melyik fuvar van éppen húzva
 let draggedFuvarId = null;
 
-// ==========================================
-// Fuvar kártyák draggable aktiválása
-// ==========================================
+// ======================================
+// FUVAR KÁRTYÁK DRAGGABLE AKTIVÁLÁSA
+// ======================================
 export function enableFuvarDrag() {
   const cards = document.querySelectorAll(".menu-card");
 
-  cards.forEach((card) => {
+  cards.forEach(card => {
     card.setAttribute("draggable", "true");
 
-    card.addEventListener("dragstart", (e) => {
+    card.addEventListener("dragstart", () => {
       draggedFuvarId = card.dataset.id;
       card.classList.add("dragging");
     });
@@ -43,81 +30,113 @@ export function enableFuvarDrag() {
     card.addEventListener("dragend", () => {
       draggedFuvarId = null;
       card.classList.remove("dragging");
-
-      // Minden drop highlight törlése
-      document.querySelectorAll(".timeline-resource-name").forEach((el) => {
-        el.classList.remove("drop-target");
-      });
+      clearResourceHighlights();
     });
   });
 }
 
-// ==========================================
-// Erőforrás timeline sorok droppable aktiválása
-// ==========================================
+// ======================================
+// TIMELINE DROPPABLE AKTIVÁLÁSA
+// ======================================
 export function enableTimelineDrop() {
   const rows = document.querySelectorAll(".timeline-resource-name");
 
-  rows.forEach((row) => {
-    row.addEventListener("dragover", (e) => {
+  rows.forEach(row => {
+
+    row.addEventListener("dragover", e => {
       e.preventDefault();
-      row.classList.add("drop-target");
-    });
-
-    row.addEventListener("dragleave", () => {
-      row.classList.remove("drop-target");
-    });
-
-    row.addEventListener("drop", (e) => {
-      e.preventDefault();
-      row.classList.remove("drop-target");
-
-      const resourceType = row.dataset.resourceType;
-      const resourceId = row.dataset.resourceId;
 
       if (!draggedFuvarId) return;
 
-      assignFuvarToResource(draggedFuvarId, resourceType, resourceId);
+      const fuvar = FUVAROK.find(f => f.id === draggedFuvarId);
+
+      const type = row.dataset.resourceType;
+      const resourceId = row.dataset.resourceId;
+
+      const r = getResource(type, resourceId);
+
+      // Relevancia vizsgálat (még kezdeti)
+      if (isResourceSuitable(r, fuvar)) {
+        row.classList.add("drop-ok");
+        row.classList.remove("drop-bad");
+      } else {
+        row.classList.add("drop-bad");
+        row.classList.remove("drop-ok");
+      }
+    });
+
+    row.addEventListener("dragleave", () => {
+      row.classList.remove("drop-ok", "drop-bad");
+    });
+
+    row.addEventListener("drop", e => {
+      e.preventDefault();
+
+      const type = row.dataset.resourceType;
+      const resourceId = row.dataset.resourceId;
+
+      row.classList.remove("drop-ok", "drop-bad");
+
+      if (!draggedFuvarId) return;
+
+      const fuvar = FUVAROK.find(f => f.id === draggedFuvarId);
+      const resource = getResource(type, resourceId);
+
+      // recheck suitability
+      if (!isResourceSuitable(resource, fuvar)) {
+        alert("❌ Ez az erőforrás nem alkalmas ehhez a fuvarhoz!");
+        return;
+      }
+
+      // Hozzárendelés a timeline-hoz
+      const ok = addFuvarBlockToTimeline(resource, fuvar);
+
+      if (!ok) return; // ütközés esetén false-t kapunk
+
+      // Új timeline render
+      renderTimeline("timeline-container", [
+        { icon: "👤", name: "Sofőrök", list: SOFOROK },
+        { icon: "🚛", name: "Vontatók", list: VONTATOK },
+        { icon: "🚚", name: "Pótkocsik", list: POTKOCSIK }
+      ]);
+
+      // Újranyitás után ismét engedélyezni kell a dropot
+      enableTimelineDrop();
     });
   });
 }
 
-// ==========================================
-// Hozzárendelés logika
-// ==========================================
-export function assignFuvarToResource(fuvarId, resourceType, resourceId) {
-  const fuvar = FUVAROK.find(f => f.id === fuvarId);
-  if (!fuvar) {
-    console.error("Fuvar nem található:", fuvarId);
-    return;
-  }
+// ======================================
+// RESOURCE KÉRÉSE TIPUS + ID ALAPJÁN
+// ======================================
+function getResource(type, id) {
+  if (type === "sofor") return SOFOROK.find(s => s.id === id);
+  if (type === "vontato") return VONTATOK.find(v => v.id === id);
+  if (type === "potkocsi") return POTKOCSIK.find(p => p.id === id);
+  return null;
+}
 
-  let resource = null;
+// ======================================
+// EGYSZERŰ RELEVANCIA LOGIKA (bővíthető)
+// ======================================
+function isResourceSuitable(resource, fuvar) {
 
-  if (resourceType === "sofor") {
-    resource = SOFOROK.find(s => s.id === resourceId);
-  }
-  if (resourceType === "vontato") {
-    resource = VONTATOK.find(v => v.id === resourceId);
-  }
-  if (resourceType === "potkocsi") {
-    resource = POTKOCSIK.find(p => p.id === resourceId);
-  }
+  // később ide jöhet:
+  // - ADR ellenőrzés
+  // - járműtípus ellenőrzés
+  // - földrajzi távolság ellenőrzés
+  // - szabad időszak ellenőrzés
+  // - vezetési idő ellenőrzés
+  // - stb.
 
-  if (!resource) {
-    console.error("Erőforrás nem található:", resourceType, resourceId);
-    return;
-  }
+  return true; // jelenleg minden erőforrást alkalmasnak jelölünk
+}
 
-  // B MODELL → timeline blokk HOZZÁADÁSA
-  addFuvarBlockToTimeline(resource, fuvar);
-
-  // Timeline újrarenderelése
-  renderTimeline("timeline-container", [
-    { icon: "👤", name: "Sofőrök", list: SOFOROK },
-    { icon: "🚛", name: "Vontatók", list: VONTATOK },
-    { icon: "🚚", name: "Pótkocsik", list: POTKOCSIK }
-  ]);
-
-  console.log(`Fuvar (${fuvar.megnevezes}) hozzárendelve: ${resourceType} → ${resourceId}`);
+// ======================================
+// DROP HIGHLIGHT TÖRLÉSE
+// ======================================
+function clearResourceHighlights() {
+  document.querySelectorAll(".timeline-resource-name").forEach(r => {
+    r.classList.remove("drop-ok", "drop-bad");
+  });
 }
