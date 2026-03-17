@@ -1,90 +1,140 @@
-// ===============================
-// TransIT v4.4 – TIMELINE ENGINE
-// ===============================
-//
-// - 72 órás idősáv
-// - dátum + óra formátumok
-// - blokkok: fuvar, pihenő, szerviz stb.
-// - B MODELL: Fuvar blokk csak hozzárendelés után kerül fel
-// - Sofőr / Vontató / Pótkocsi timeline-ok támogatása
-//
+// ============================================
+// TransIT v4.4 – ADVANCED TIMELINE ENGINE
+// (C‑típusú időskálázással + collision detection)
+// ============================================
 
 import { formatDate } from "../utils.js";
 
-//
-// KONSTANSOK
-//
-const HOUR_WIDTH = 40;         // 1 óra = 40px
-const TIMELINE_HOURS = 72;     // 72 órás nézet
+const HOUR_WIDTH = 40;            
+const TIMELINE_HOURS = 72;        
 const TIMELINE_WIDTH = HOUR_WIDTH * TIMELINE_HOURS;
 
-//
-// ALAP DÁTUM (mai nap 00:00)
-//
+// -------------------------------------
+// Alap dátum (ma 00:00)
+// -------------------------------------
 function getBaseDate() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-//
-// DÁTUM → PIXEL POZÍCIÓ
-//
+// -------------------------------------
+// Dátum → pixel pozíció
+// -------------------------------------
 function dateToPosition(dateStr) {
   const base = getBaseDate();
   const t = new Date(dateStr);
   const diffHours = (t - base) / (1000 * 60 * 60);
-  const px = diffHours * HOUR_WIDTH;
-  return Math.max(0, px);
+  return diffHours * HOUR_WIDTH;
 }
 
-//
-// BLOKK SZÉLESSÉG
-//
+// -------------------------------------
+// Blokk szélesség
+// -------------------------------------
 function blockWidth(start, end) {
   const s = new Date(start);
   const e = new Date(end);
-  const diffHours = (e - s) / (1000 * 60 * 60);
-  return Math.max(20, diffHours * HOUR_WIDTH);
+  const diff = (e - s) / (1000 * 60 * 60);
+  return Math.max(20, diff * HOUR_WIDTH);
 }
 
-//
-// EGYES ERŐFORRÁS SOR GENERÁLÁSA
-//
-function renderResourceRow(parent, eroforras, type) {
+// -------------------------------------
+// ÜTKÖZÉSVIZSGÁLAT
+// -------------------------------------
+function hasCollision(timeline, start, end) {
+  const s = new Date(start);
+  const e = new Date(end);
+
+  return timeline.some(b => {
+    const bs = new Date(b.start);
+    const be = new Date(b.end);
+    return (s < be && e > bs); 
+  });
+}
+
+// -------------------------------------
+// Időskála rajzolás (C‑típusú TMS nézet)
+// -------------------------------------
+function renderTimeScale(container) {
+
+  const header = document.createElement("div");
+  header.style.position = "relative";
+  header.style.height = "40px";
+  header.style.width = TIMELINE_WIDTH + "px";
+  header.style.borderBottom = "1px solid #555";
+
+  const base = getBaseDate();
+
+  for (let h = 0; h <= TIMELINE_HOURS; h++) {
+
+    const line = document.createElement("div");
+    line.style.position = "absolute";
+    line.style.left = (h * HOUR_WIDTH) + "px";
+    line.style.top = "0px";
+    line.style.width = "1px";
+    line.style.height = "40px";
+    line.style.background = (h % 4 === 0) ? "#777" : "#444";
+    header.appendChild(line);
+
+    // 4 óránként címke
+    if (h % 4 === 0) {
+      const label = document.createElement("div");
+      label.style.position = "absolute";
+      label.style.left = (h * HOUR_WIDTH + 4) + "px";
+      label.style.top = "2px";
+      label.style.fontSize = "11px";
+      label.style.color = "#bbb";
+
+      const d = new Date(base.getTime() + h * 3600 * 1000);
+      label.textContent = d.toLocaleString("hu-HU", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit"
+      });
+
+      header.appendChild(label);
+    }
+  }
+
+  container.appendChild(header);
+}
+
+// -------------------------------------
+// Egy erőforrás sor
+// -------------------------------------
+function renderResourceRow(parent, r, type) {
+
   const row = document.createElement("div");
   row.className = "timeline-resource";
 
-  // Fejléc rész (Név + Hely)
-  const nameDiv = document.createElement("div");
-  nameDiv.className = "timeline-resource-name";
+  const name = document.createElement("div");
+  name.className = "timeline-resource-name";
 
-  nameDiv.innerHTML = `
+  name.dataset.resourceType = type;
+  name.dataset.resourceId = r.id;
+
+  name.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;">
-      ${type === "sofor" ? "👤" : type === "vontato" ? "🚛" : "🚚"} 
-      <strong>${eroforras.rendszam || eroforras.nev}</strong>
+      ${type === "sofor" ? "👤" : type === "vontato" ? "🚛" : "🚚"}
+      <strong>${r.rendszam || r.nev}</strong>
     </div>
-    <div style="font-size:11px;opacity:0.7;">
-      📍 ${eroforras.jelenlegi_pozicio?.hely || "-"}
+    <div style="font-size:11px;opacity:0.6;">
+      📍 ${r.jelenlegi_pozicio?.hely || "-"}
     </div>
   `;
 
-  // Timeline sáv
   const bar = document.createElement("div");
   bar.className = "timeline-bar";
-  bar.style.position = "relative";
   bar.style.width = TIMELINE_WIDTH + "px";
   bar.style.height = "60px";
+  bar.style.position = "relative";
 
-  //
-  // BLOKKOK (pihenő, fuvar, szerviz stb.)
-  //
-  if (eroforras.timeline && eroforras.timeline.length > 0) {
-    eroforras.timeline.forEach((block) => {
+  // blokkok
+  if (r.timeline) {
+    r.timeline.forEach(block => {
       const div = document.createElement("div");
       div.className = "timeline-block";
-
-      div.classList.add(block.type); // szín hozzárendelése
+      div.classList.add(block.type);
 
       const left = dateToPosition(block.start);
       const width = blockWidth(block.start, block.end);
@@ -92,13 +142,10 @@ function renderResourceRow(parent, eroforras, type) {
       div.style.left = left + "px";
       div.style.width = width + "px";
 
-      const startLabel = formatDate(block.start);
-      const endLabel = formatDate(block.end);
-
       div.innerHTML = `
-        <div><strong>${block.label || block.type.toUpperCase()}</strong></div>
+        <div><strong>${block.label}</strong></div>
         <div style="font-size:11px;opacity:0.8;">
-          ${startLabel} → ${endLabel}
+          ${formatDate(block.start)} → ${formatDate(block.end)}
         </div>
       `;
 
@@ -106,42 +153,50 @@ function renderResourceRow(parent, eroforras, type) {
     });
   }
 
-  row.appendChild(nameDiv);
+  row.appendChild(name);
   row.appendChild(bar);
   parent.appendChild(row);
 }
 
-//
-// TELJES TIMELINE GENERÁLÁSA (SOFŐR/VONTATÓ/PÓTKOCSI CSOPORTOK)
-//
-export function renderTimeline(containerId, groupedResources) {
+// -------------------------------------
+// TELJES TIMELINE RENDERELÉS
+// -------------------------------------
+export function renderTimeline(containerId, grouped) {
   const container = document.getElementById(containerId);
-  if (!container) return;
-
   container.innerHTML = "";
 
-  groupedResources.forEach((group) => {
+  // időskála
+  renderTimeScale(container);
 
-    const header = document.createElement("h3");
-    header.style.margin = "20px 0 10px 0";
-    header.textContent = `${group.icon} ${group.name}`;
-    container.appendChild(header);
+  grouped.forEach(g => {
+    const h = document.createElement("h3");
+    h.style.margin = "20px 0 10px 0";
+    h.textContent = `${g.icon} ${g.name}`;
+    container.appendChild(h);
 
-    group.list.forEach((eroforras) => {
+    g.list.forEach(r => {
       const type =
-        group.name.includes("Sofőr") ? "sofor" :
-        group.name.includes("Vontató") ? "vontato" :
-        "potkocsi";
+        g.name.includes("Sofőr") ? "sofor" :
+        g.name.includes("Vontató") ? "vontato" : "potkocsi";
 
-      renderResourceRow(container, eroforras, type);
+      renderResourceRow(container, r, type);
     });
   });
 }
 
-//
-// ====== B MODELL: FUVAR HOZZÁRENDELÉS → TIMELINE BLOKK ======
-//
+// -------------------------------------
+// FUVAR BLOKK HOZZÁADÁSA (B‑modell)
+// -------------------------------------
 export function addFuvarBlockToTimeline(resource, fuvar) {
+
+  if (!resource.timeline) resource.timeline = [];
+
+  // ütközésvizsgálat
+  if (hasCollision(resource.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido)) {
+    alert("⚠️ Ez az erőforrás foglalt ebben az időszakban!");
+    return false;
+  }
+
   const block = {
     start: fuvar.felrakas.ido,
     end: fuvar.lerakas.ido,
@@ -149,6 +204,6 @@ export function addFuvarBlockToTimeline(resource, fuvar) {
     label: fuvar.megnevezes
   };
 
-  if (!resource.timeline) resource.timeline = [];
   resource.timeline.push(block);
+  return true;
 }
