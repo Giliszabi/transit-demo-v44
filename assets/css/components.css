@@ -1,0 +1,33 @@
+/* Kisebb komponensek, gombok, kártyák */
+
+.btn {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: #3498db;
+  cursor: pointer;
+  text-decoration: none;
+  color: #fff;
+  transition: 0.2s;
+}
+
+.btn:hover {
+  background: #4db0ff;
+}
+
+.menu-card {
+  background: #1c1d22;
+  border-radius: 12px;
+  border: 1px solid #2e2f33;
+  padding: 25px;
+  transition: 0.2s;
+  cursor: pointer;
+  display: block;
+  text-decoration: none;
+  color: #fff;
+}
+
+.menu-card:hover {
+  transform: translateY(-4px);
+  border-color: #4fc3f7;
+}
