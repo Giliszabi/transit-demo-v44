@@ -1,25 +1,20 @@
-// =====================================================
-// TransIT v4.4 – ADVANCED DRAG & DROP ENGINE
-// (C‑típusú timeline + B-modell + relevancia highlight)
-// =====================================================
+// ===================================================================
+// DRAG & DROP ENGINE + MATCHING ENGINE
+// ===================================================================
 
 import { FUVAROK } from "../data/fuvarok.js";
 import { SOFOROK } from "../data/soforok.js";
 import { VONTATOK } from "../data/vontatok.js";
 import { POTKOCSIK } from "../data/potkocsik.js";
 
+import { evaluateSoforForFuvar, evaluateVontatoForFuvar, evaluatePotkocsiForFuvar } from "./matching.js";
 import { addFuvarBlockToTimeline, renderTimeline } from "./timeline.js";
 
-// Globális state: melyik fuvar van éppen húzva
 let draggedFuvarId = null;
 
-// ======================================
-// FUVAR KÁRTYÁK DRAGGABLE AKTIVÁLÁSA
-// ======================================
+// DRAG START
 export function enableFuvarDrag() {
-  const cards = document.querySelectorAll(".menu-card");
-
-  cards.forEach(card => {
+  document.querySelectorAll(".menu-card").forEach(card => {
     card.setAttribute("draggable", "true");
 
     card.addEventListener("dragstart", () => {
@@ -30,33 +25,41 @@ export function enableFuvarDrag() {
     card.addEventListener("dragend", () => {
       draggedFuvarId = null;
       card.classList.remove("dragging");
-      clearResourceHighlights();
+      clearHighlights();
     });
   });
 }
 
-// ======================================
-// TIMELINE DROPPABLE AKTIVÁLÁSA
-// ======================================
+function clearHighlights() {
+  document.querySelectorAll(".timeline-resource-name")
+    .forEach(el => el.classList.remove("drop-ok", "drop-bad"));
+}
+
+// DROP TARGET
 export function enableTimelineDrop() {
-  const rows = document.querySelectorAll(".timeline-resource-name");
-
-  rows.forEach(row => {
-
-    row.addEventListener("dragover", e => {
+  document.querySelectorAll(".timeline-resource-name").forEach(row => {
+    row.addEventListener("dragover", (e) => {
       e.preventDefault();
 
-      if (!draggedFuvarId) return;
-
       const fuvar = FUVAROK.find(f => f.id === draggedFuvarId);
-
       const type = row.dataset.resourceType;
-      const resourceId = row.dataset.resourceId;
+      const id = row.dataset.resourceId;
 
-      const r = getResource(type, resourceId);
+      let resource = null;
+      let result = null;
 
-      // Relevancia vizsgálat (még kezdeti)
-      if (isResourceSuitable(r, fuvar)) {
+      if (type === "sofor") {
+        resource = SOFOROK.find(s => s.id === id);
+        result = evaluateSoforForFuvar(resource, fuvar);
+      } else if (type === "vontato") {
+        resource = VONTATOK.find(v => v.id === id);
+        result = evaluateVontatoForFuvar(resource, fuvar);
+      } else if (type === "potkocsi") {
+        resource = POTKOCSIK.find(p => p.id === id);
+        result = evaluatePotkocsiForFuvar(resource, fuvar);
+      }
+
+      if (result.suitable) {
         row.classList.add("drop-ok");
         row.classList.remove("drop-bad");
       } else {
@@ -69,74 +72,41 @@ export function enableTimelineDrop() {
       row.classList.remove("drop-ok", "drop-bad");
     });
 
-    row.addEventListener("drop", e => {
+    row.addEventListener("drop", (e) => {
       e.preventDefault();
 
       const type = row.dataset.resourceType;
-      const resourceId = row.dataset.resourceId;
-
-      row.classList.remove("drop-ok", "drop-bad");
-
-      if (!draggedFuvarId) return;
-
+      const id = row.dataset.resourceId;
       const fuvar = FUVAROK.find(f => f.id === draggedFuvarId);
-      const resource = getResource(type, resourceId);
 
-      // recheck suitability
-      if (!isResourceSuitable(resource, fuvar)) {
-        alert("❌ Ez az erőforrás nem alkalmas ehhez a fuvarhoz!");
+      let resource = null;
+      let result = null;
+
+      if (type === "sofor") {
+        resource = SOFOROK.find(s => s.id === id);
+        result = evaluateSoforForFuvar(resource, fuvar);
+      } else if (type === "vontato") {
+        resource = VONTATOK.find(v => v.id === id);
+        result = evaluateVontatoForFuvar(resource, fuvar);
+      } else if (type === "potkocsi") {
+        resource = POTKOCSIK.find(p => p.id === id);
+        result = evaluatePotkocsiForFuvar(resource, fuvar);
+      }
+
+      if (!result.suitable) {
+        alert("Ez az erőforrás NEM alkalmas ehhez a fuvarhoz:\n- " + result.reasons.join("\n- "));
         return;
       }
 
-      // Hozzárendelés a timeline-hoz
-      const ok = addFuvarBlockToTimeline(resource, fuvar);
+      addFuvarBlockToTimeline(resource, fuvar);
 
-      if (!ok) return; // ütközés esetén false-t kapunk
-
-      // Új timeline render
       renderTimeline("timeline-container", [
         { icon: "👤", name: "Sofőrök", list: SOFOROK },
         { icon: "🚛", name: "Vontatók", list: VONTATOK },
         { icon: "🚚", name: "Pótkocsik", list: POTKOCSIK }
       ]);
 
-      // Újranyitás után ismét engedélyezni kell a dropot
       enableTimelineDrop();
     });
-  });
-}
-
-// ======================================
-// RESOURCE KÉRÉSE TIPUS + ID ALAPJÁN
-// ======================================
-function getResource(type, id) {
-  if (type === "sofor") return SOFOROK.find(s => s.id === id);
-  if (type === "vontato") return VONTATOK.find(v => v.id === id);
-  if (type === "potkocsi") return POTKOCSIK.find(p => p.id === id);
-  return null;
-}
-
-// ======================================
-// EGYSZERŰ RELEVANCIA LOGIKA (bővíthető)
-// ======================================
-function isResourceSuitable(resource, fuvar) {
-
-  // később ide jöhet:
-  // - ADR ellenőrzés
-  // - járműtípus ellenőrzés
-  // - földrajzi távolság ellenőrzés
-  // - szabad időszak ellenőrzés
-  // - vezetési idő ellenőrzés
-  // - stb.
-
-  return true; // jelenleg minden erőforrást alkalmasnak jelölünk
-}
-
-// ======================================
-// DROP HIGHLIGHT TÖRLÉSE
-// ======================================
-function clearResourceHighlights() {
-  document.querySelectorAll(".timeline-resource-name").forEach(r => {
-    r.classList.remove("drop-ok", "drop-bad");
   });
 }
