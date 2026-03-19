@@ -1,0 +1,250 @@
+diff --git a/assets/css/components.css b/assets/css/components.css
+--- a/assets/css/components.css
++++ b/assets/css/components.css
+@@ -1,3 +1,25 @@
++/* === PATCH: resource panel + timeline highlight tuning === */
++
++/* kb. 4 elem látszódjon, a többi görgethető */
++.resource-column {
++  max-height: none;
++}
++
++.resource-list {
++  max-height: 220px;
++}
++
++/* kijelölt erőforrás a panelben */
++.resource-card.selected {
++  outline: 2px solid #4fc3f7;
++  border-color: #4fc3f7;
++}
++
++/* Timeline sor ideiglenes highlight (resource panel kattintáskor) */
++.timeline-resource.selected {
++  box-shadow: 0 0 0 2px #4fc3f7;
++}
++
+diff --git a/assets/js/ui/timeline-generator.js b/assets/js/ui/timeline-generator.js
+new file mode 100644
+--- /dev/null
++++ b/assets/js/ui/timeline-generator.js
+@@ -0,0 +1,224 @@
++// ============================================================
++// TransIT v4.4 – Continuous Timeline Generator (72h)
++// - Minden erőforrásnak folyamatos timeline-t generál (ha üres)
++// - Sofőr: fuvar | piheno | szabadsag | beteg  (beteg >= 24h)
++// - Vontató: fuvar | szerviz | allas
++// - Pótkocsi: fuvar | szerviz | standby
++// ============================================================
++
++const TIMELINE_HOURS = 72;
++
++function getBaseDate() {
++  const d = new Date();
++  d.setHours(0, 0, 0, 0);
++  return d;
++}
++
++function addHours(date, h) {
++  return new Date(date.getTime() + h * 3600 * 1000);
++}
++
++function randInt(min, max) {
++  return Math.floor(Math.random() * (max - min + 1)) + min;
++}
++
++function pickWeighted(items) {
++  const sum = items.reduce((a, b) => a + b.w, 0);
++  let r = Math.random() * sum;
++  for (const it of items) {
++    r -= it.w;
++    if (r <= 0) return it.value;
++  }
++  return items[items.length - 1].value;
++}
++
++function toISO(d) {
++  return d.toISOString();
++}
++
++function clampEnd(end, maxEnd) {
++  return end > maxEnd ? maxEnd : end;
++}
++
++function genContinuousTimeline(kind) {
++  const base = getBaseDate();
++  const endMax = addHours(base, TIMELINE_HOURS);
++
++  const blocks = [];
++  let cursor = new Date(base);
++
++  while (cursor < endMax) {
++    let type;
++    let durationH;
++    let label;
++
++    if (kind === "sofor") {
++      type = pickWeighted([
++        { value: "fuvar", w: 55 },
++        { value: "piheno", w: 25 },
++        { value: "szabadsag", w: 10 },
++        { value: "beteg", w: 10 }
++      ]);
++
++      if (type === "fuvar") {
++        durationH = randInt(4, 14);
++        label = "Fuvar";
++      } else if (type === "piheno") {
++        durationH = randInt(6, 12);
++        label = "Pihenő";
++      } else if (type === "szabadsag") {
++        durationH = randInt(12, 36);
++        label = "Szabadság";
++      } else {
++        durationH = randInt(24, 48); // beteg min 24h
++        label = "Betegszab.";
++      }
++    } else if (kind === "vontato") {
++      type = pickWeighted([
++        { value: "fuvar", w: 65 },
++        { value: "szerviz", w: 20 },
++        { value: "allas", w: 15 }
++      ]);
++
++      if (type === "fuvar") {
++        durationH = randInt(6, 16);
++        label = "Fuvar";
++      } else if (type === "szerviz") {
++        durationH = randInt(6, 24);
++        label = "Szerviz";
++      } else {
++        durationH = randInt(4, 18);
++        label = "Állás";
++      }
++    } else {
++      // potkocsi
++      type = pickWeighted([
++        { value: "fuvar", w: 60 },
++        { value: "szerviz", w: 20 },
++        { value: "standby", w: 20 }
++      ]);
++
++      if (type === "fuvar") {
++        durationH = randInt(6, 16);
++        label = "Fuvar";
++      } else if (type === "szerviz") {
++        durationH = randInt(6, 24);
++        label = "Szerviz";
++      } else {
++        durationH = randInt(4, 24);
++        label = "Standby";
++      }
++    }
++
++    const start = new Date(cursor);
++    const end = clampEnd(addHours(start, durationH), endMax);
++
++    blocks.push({
++      start: toISO(start),
++      end: toISO(end),
++      type,
++      label
++    });
++
++    cursor = new Date(end);
++  }
++
++  if (blocks.length === 0) {
++    blocks.push({
++      start: toISO(base),
++      end: toISO(endMax),
++      type: kind === "sofor" ? "piheno" : "standby",
++      label: "N/A"
++    });
++  }
++
++  return blocks;
++}
++
++function ensureForList(list, kind) {
++  list.forEach((r) => {
++    if (!r.timeline) r.timeline = [];
++    if (r.timeline.length === 0) {
++      r.timeline = genContinuousTimeline(kind);
++    }
++  });
++}
++
++export function ensureContinuousTimelines(SOFOROK, VONTATOK, POTKOCSIK) {
++  ensureForList(SOFOROK, "sofor");
++  ensureForList(VONTATOK, "vontato");
++  ensureForList(POTKOCSIK, "potkocsi");
++}
+diff --git a/fuvarszervezes_v4.4.html b/fuvarszervezes_v4.4.html
+--- a/fuvarszervezes_v4.4.html
++++ b/fuvarszervezes_v4.4.html
+@@ -55,10 +55,14 @@
+   <!-- ===== TIMELINE ===== -->
+   <div class="panel">
+     <div class="panel-title">⏱️ Erőforrás Timeline</div>
++    <!-- ÚJ: külön scrollos resource panel a timeline fölött -->
++    <div id="resource-panel-container"></div>
+     <div id="timeline-container">Betöltés...</div>
+   </div>
+@@ -77,10 +81,12 @@
+ import { POTKOCSIK } from "./assets/js/data/potkocsik.js";
+ 
+ /* ------------------------
+    UI/MATCHING MODULOK
+ ------------------------- */
+ import { renderTimeline } from "./assets/js/ui/timeline.js";
++import { renderResourcePanel } from "./assets/js/ui/resource-panel.js";
++import { ensureContinuousTimelines } from "./assets/js/ui/timeline-generator.js";
+ import { renderFuvarFilters, renderFuvarCards } from "./assets/js/ui/fuvar-panel.js";
+ import { enableFuvarDrag, enableTimelineDrop } from "./assets/js/ui/dragdrop.js";
+ import { evaluateAllResources } from "./assets/js/ui/matching.js";
+@@ -96,6 +102,14 @@
+   renderFuvarCards("fuvar-list", "all", onSelectFuvar);
+   enableFuvarDrag();
+ 
++  // Folyamatos (random) timeline kitöltés, ha üres
++  ensureContinuousTimelines(SOFOROK, VONTATOK, POTKOCSIK);
++
++  // Resource panel render (3 oszlop, külön scroll)
++  renderResourcePanel("resource-panel-container", FUVAROK, onSelectResource);
++
+   // TIMELINE RENDER
+   renderTimeline("timeline-container", [
+     { icon: "👤", name: "Sofőrök",    list: SOFOROK },
+@@ -108,6 +122,35 @@
+   console.log("Fuvarszervezés v4.4 (Advanced) betöltve.");
+ });
+ 
++/* ==========================================================
++   ERŐFORRÁS KIJELÖLÉS (panel) → timeline sorhoz görgetés
++   (B modell: a timeline továbbra is mindenkit mutat)
++========================================================== */
++function onSelectResource(type, resource) {
++  // panel kijelölés
++  document.querySelectorAll(".resource-card.selected").forEach(n => n.classList.remove("selected"));
++  const card = document.querySelector(`.resource-card[data-type="${type}"][data-id="${resource.id}"]`);
++  if (card) card.classList.add("selected");
++
++  // timeline sorhoz görgetés + ideiglenes highlight
++  const nameEl = document.querySelector(
++    `.timeline-resource-name[data-resource-type="${type}"][data-resource-id="${resource.id}"]`
++  );
++  if (!nameEl) return;
++
++  const timelineRow = nameEl.closest(".timeline-resource");
++  if (!timelineRow) return;
++
++  timelineRow.classList.add("selected");
++  timelineRow.scrollIntoView({ behavior: "smooth", block: "center" });
++  setTimeout(() => timelineRow.classList.remove("selected"), 1200);
++}
++
+ /* ==========================================================
+    FUVAR KIJELÖLÉS → MATCHING ENGINE FUTTATÁSA
+ ========================================================== */
+ function onSelectFuvar(results) {
