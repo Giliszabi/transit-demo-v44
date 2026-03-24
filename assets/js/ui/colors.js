@@ -19,6 +19,79 @@ const COLOR_POOL = [
   "#FF8A65", // lazac
   "#90A4AE"  // szürkés-kék
 ];
+const FIXED_CATEGORY_COLORS = {
+  belfold: "#66BB6A",
+  export: "#42A5F5",
+  import: "#FFB74D",
+  spediccio: "#AB47BC"
+};
+
+const FUVAR_TAG_META = {
+  all: {
+    label: "Összes",
+    color: "#78909C",
+    textColor: "#F5F7FA"
+  },
+  adr: {
+    label: "ADR",
+    color: "#E53935",
+    textColor: "#FFF4F4"
+  },
+  surgos: {
+    label: "Sürgős",
+    color: "#FB8C00",
+    textColor: "#FFF8F1"
+  },
+  belfold: {
+    label: "Belföld",
+    color: FIXED_CATEGORY_COLORS.belfold,
+    textColor: "#F3FFF6"
+  },
+  export: {
+    label: "Export",
+    color: FIXED_CATEGORY_COLORS.export,
+    textColor: "#F3FAFF"
+  },
+  import: {
+    label: "Import",
+    color: FIXED_CATEGORY_COLORS.import,
+    textColor: "#FFF8EF"
+  },
+  spediccio: {
+    label: "Spedicció",
+    color: FIXED_CATEGORY_COLORS.spediccio,
+    textColor: "#FCF5FF"
+  }
+};
+
+function hexToRgb(hex) {
+  const normalized = String(hex || "").replace("#", "").trim();
+  if (normalized.length !== 6) {
+    return { r: 79, g: 195, b: 247 };
+  }
+
+  const value = Number.parseInt(normalized, 16);
+  if (Number.isNaN(value)) {
+    return { r: 79, g: 195, b: 247 };
+  }
+
+  return {
+    r: (value >> 16) & 255,
+    g: (value >> 8) & 255,
+    b: value & 255
+  };
+}
+
+function rgbaFromHex(hex, alpha) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getReadableTextColor(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.63 ? "#10202a" : "#f6fbff";
+}
 
 // Lokális tár kategóriák és színek tárolására
 const CATEGORY_COLORS = {};
@@ -41,7 +114,34 @@ function getOrAssignRandomColor(key) {
 // =============================================================
 export function getCategoryColor(category) {
   if (!category) return "#ccc";
+  if (FIXED_CATEGORY_COLORS[category]) {
+    return FIXED_CATEGORY_COLORS[category];
+  }
   return getOrAssignRandomColor(category);
+}
+
+export function getFuvarTagMeta(tag) {
+  return FUVAR_TAG_META[tag] || {
+    label: tag,
+    color: getCategoryColor(tag),
+    textColor: "#ffffff"
+  };
+}
+
+export function getCategoryPalette(category) {
+  const meta = getFuvarTagMeta(category);
+  const accent = meta.color;
+
+  return {
+    accent,
+    text: meta.textColor || getReadableTextColor(accent),
+    badgeText: getReadableTextColor(accent),
+    softBg: rgbaFromHex(accent, 0.12),
+    softBgStrong: rgbaFromHex(accent, 0.18),
+    border: rgbaFromHex(accent, 0.42),
+    borderStrong: rgbaFromHex(accent, 0.62),
+    glow: rgbaFromHex(accent, 0.22)
+  };
 }
 
 // =============================================================

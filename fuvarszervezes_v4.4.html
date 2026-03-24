@@ -3,13 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TransIT v4.4 – Fuvarszervezés (Advanced)</title>
+  <title>TransIT v4.4 – Fuvarszervezés (Basic)</title>
 
   <!-- CSS – HELYES FORMÁTUMBAN -->
   <link rel="stylesheet" href="./assets/css/base.css" />
   <link rel="stylesheet" href="./assets/css/layout.css" />
   <link rel="stylesheet" href="./assets/css/components.css" />
   <link rel="stylesheet" href="./assets/css/timeline.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
 
   <style>
     .drop-ok {
@@ -27,6 +33,159 @@
     .active-fuvar {
       box-shadow: 0 0 0 2px #4fc3f7;
     }
+
+    .dock-layout {
+      display: grid;
+      grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .dock-column {
+      min-width: 0;
+    }
+
+    .dock-panel {
+      margin-bottom: 0;
+    }
+
+    .dock-panel.hidden-by-layout {
+      display: none;
+    }
+
+    .panel-dock-toolbar {
+      display: inline-flex;
+      gap: 6px;
+      margin-left: auto;
+    }
+
+    .panel-dock-btn {
+      border: 1px solid rgba(79, 195, 247, 0.4);
+      background: rgba(79, 195, 247, 0.1);
+      color: #cceeff;
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .panel-dock-btn.active-zone {
+      background: rgba(76, 217, 100, 0.16);
+      border-color: rgba(76, 217, 100, 0.5);
+      color: #d8ffe0;
+    }
+
+    .panel-dock-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .panel-header-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 8px;
+    }
+
+    .panel-header-row .panel-title {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .detached-window-title {
+      display: none;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(79, 195, 247, 0.45);
+      background: rgba(79, 195, 247, 0.12);
+      color: #dff4ff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    body.popup-panel-mode.detached-window .detached-window-title {
+      display: block;
+    }
+
+    .timeline-focus-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(125, 141, 157, 0.48);
+      background: rgba(125, 141, 157, 0.12);
+      color: #c9d5e2;
+      max-width: min(48vw, 520px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .timeline-focus-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .timeline-focus-clear-btn {
+      border: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 1;
+      background: rgba(10, 15, 22, 0.42);
+      color: #d6e5f2;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .timeline-focus-indicator.active .timeline-focus-clear-btn {
+      display: inline-flex;
+    }
+
+    .timeline-focus-clear-btn:hover {
+      background: rgba(10, 15, 22, 0.65);
+      color: #ffffff;
+    }
+
+    .timeline-focus-indicator.active {
+      border-color: rgba(79, 195, 247, 0.55);
+      background: rgba(79, 195, 247, 0.18);
+      color: #e8f7ff;
+    }
+
+    body.popup-panel-mode header {
+      display: none;
+    }
+
+    body.popup-panel-mode .dock-layout {
+      grid-template-columns: minmax(320px, 1fr);
+    }
+
+    .dock-column[data-zone="full"] {
+      grid-column: 1 / -1;
+      order: -1;
+    }
+
+    @media (max-width: 1100px) {
+      .dock-layout {
+        grid-template-columns: minmax(320px, 1fr);
+      }
+    }
   </style>
 </head>
 
@@ -37,33 +196,134 @@
   <p style="opacity:0.7;">
     Sofőr • Vontató • Pótkocsi – idő + hely + relevancia illesztés
   </p>
+  <div id="layout-profile-bar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
+    <label style="display:inline-flex;align-items:center;gap:6px;">
+      <span style="font-size:12px;opacity:0.8;">Felhasználó</span>
+      <select id="layout-user-select" class="btn" style="height:32px;"></select>
+    </label>
+    <button id="layout-user-add" type="button" class="btn" style="height:32px;">+ Felhasználó</button>
+    <label style="display:inline-flex;align-items:center;gap:6px;">
+      <span style="font-size:12px;opacity:0.8;">Nézet</span>
+      <select id="layout-view-select" class="btn" style="height:32px;"></select>
+    </label>
+    <button id="layout-view-new" type="button" class="btn" style="height:32px;">Nézet mentése újként</button>
+    <button id="layout-view-save" type="button" class="btn" style="height:32px;">Aktuális mentése</button>
+    <button id="layout-view-rename" type="button" class="btn" style="height:32px;">Átnevezés</button>
+    <button id="layout-view-delete" type="button" class="btn" style="height:32px;">Törlés</button>
+    <button id="layout-view-reset" type="button" class="btn" style="height:32px;border-color:rgba(255,183,77,0.5);background:rgba(255,183,77,0.1);color:#ffe0a0;">Alapértelmezett nézet</button>
+    <details id="layout-columns-details" style="position:relative;">
+      <summary class="btn" style="height:32px;display:inline-flex;align-items:center;list-style:none;cursor:pointer;">Kártya oszlopok</summary>
+      <div style="position:absolute;z-index:30;min-width:240px;max-width:320px;max-height:320px;overflow:auto;padding:10px;border:1px solid #2e2f33;border-radius:10px;background:#17181c;box-shadow:0 8px 24px rgba(0,0,0,0.35);">
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <button id="layout-columns-all" type="button" class="btn" style="height:28px;font-size:12px;">Összes</button>
+          <button id="layout-columns-default" type="button" class="btn" style="height:28px;font-size:12px;">Alap</button>
+        </div>
+        <div id="layout-columns-list" style="display:grid;gap:6px;"></div>
+      </div>
+    </details>
+  </div>
 </header>
 
 <div class="container">
-
-  <!-- ===== FUVAR LISTA SZŰRŐK ===== -->
-  <div class="panel">
-    <div class="panel-title">🔍 Gyorsszűrők</div>
-    <div id="filter-container"></div>
+  <div id="detached-window-title" class="detached-window-title">Detached ablak</div>
+  <div id="dock-layout" class="dock-layout">
+    <section class="dock-column" data-zone="full"></section>
+    <section class="dock-column" data-zone="left"></section>
+    <section class="dock-column" data-zone="right"></section>
   </div>
 
-  <!-- ===== FUVAR KÁRTYÁK ===== -->
-  <div class="panel">
-    <div class="panel-title">📋 Fuvarfeladatok</div>
-    <div id="fuvar-list">Betöltés...</div>
-  </div>
+  <section class="panel dock-panel" id="panel-fuvar" data-panel-id="fuvar" data-panel-title="Fuvarfeladatok">
+    <div class="panel-header-row">
+      <div class="panel-title">📋 Fuvarfeladatok</div>
+      <div class="panel-dock-toolbar">
+        <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
+        <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
+        <button type="button" class="panel-dock-btn" data-action="toggle-fullwidth">Teljes szélesség</button>
+        <button type="button" class="panel-dock-btn" data-action="undock">Külön ablak</button>
+        <button type="button" class="panel-dock-btn" data-action="redock">Visszadokkolás</button>
+      </div>
+    </div>
 
-  <!-- ===== TIMELINE ===== -->
-  <div class="panel">
-    <div class="panel-title">⏱️ Erőforrás Timeline</div>
+    <div style="margin-bottom:10px;">
+      <div class="subpanel-title" style="margin-bottom:6px;">🔍 Gyorsszűrők</div>
+      <div id="filter-container"></div>
+    </div>
+
+    <details class="panel-collapsible" open>
+      <summary class="panel-summary">
+        <span class="panel-title">📋 Fuvarfeladat lista</span>
+        <span class="panel-toggle-icon" aria-hidden="true">▾</span>
+      </summary>
+      <div class="panel-content">
+        <div id="fuvar-list">Betöltés...</div>
+      </div>
+    </details>
+  </section>
+
+  <section class="panel dock-panel" id="panel-resource" data-panel-id="resource" data-panel-title="Erőforrás kártyák">
+    <div class="panel-header-row">
+      <div class="panel-title">🧩 Erőforrás kártyák</div>
+      <div class="panel-dock-toolbar">
+        <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
+        <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
+        <button type="button" class="panel-dock-btn" data-action="toggle-fullwidth">Teljes szélesség</button>
+        <button type="button" class="panel-dock-btn" data-action="undock">Külön ablak</button>
+        <button type="button" class="panel-dock-btn" data-action="redock">Visszadokkolás</button>
+      </div>
+    </div>
+    <div id="resource-panel-container">Betöltés...</div>
+  </section>
+
+  <section class="panel dock-panel" id="panel-timeline" data-panel-id="timeline" data-panel-title="Erőforrás idővonal">
+    <div class="panel-header-row">
+      <div class="panel-title">⏱️ Erőforrás idővonal</div>
+      <div id="timeline-focus-indicator" class="timeline-focus-indicator">
+        <span id="timeline-focus-text" class="timeline-focus-text">Matching: nincs kijelölt fuvar</span>
+        <button id="timeline-focus-clear" type="button" class="timeline-focus-clear-btn" title="Kijelölés törlése" aria-label="Kijelölés törlése">x</button>
+      </div>
+      <div class="panel-dock-toolbar">
+        <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
+        <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
+        <button type="button" class="panel-dock-btn" data-action="toggle-fullwidth">Teljes szélesség</button>
+        <button type="button" class="panel-dock-btn" data-action="undock">Külön ablak</button>
+        <button type="button" class="panel-dock-btn" data-action="redock">Visszadokkolás</button>
+      </div>
+    </div>
+
     <div id="timeline-container">Betöltés...</div>
-  </div>
+
+    <div class="subpanel-title" style="margin:14px 0 8px;">Szerelvény Timeline</div>
+    <div id="assembly-timeline-container">Betöltés...</div>
+
+    <div class="subpanel-title" style="margin:14px 0 8px;">Szerelvény műveleti napló</div>
+    <div id="assembly-operation-log" class="assembly-operation-log"></div>
+  </section>
+
+  <section class="panel dock-panel" id="panel-map" data-panel-id="map" data-panel-title="Szerelvény térkép">
+    <div class="panel-header-row">
+      <div class="panel-title">🗺️ Szerelvény térkép</div>
+      <div class="panel-dock-toolbar">
+        <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
+        <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
+        <button type="button" class="panel-dock-btn" data-action="toggle-fullwidth">Teljes szélesség</button>
+        <button type="button" class="panel-dock-btn" data-action="undock">Külön ablak</button>
+        <button type="button" class="panel-dock-btn" data-action="redock">Visszadokkolás</button>
+      </div>
+    </div>
+
+    <div id="assembly-map-container"></div>
+  </section>
 
 </div>
 
 <!-- ====================================== -->
 <!-- JAVASCRIPT MODULOK -->
 <!-- ====================================== -->
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
 <script type="module">
 
 /* ------------------------
@@ -77,41 +337,1186 @@ import { POTKOCSIK } from "./assets/js/data/potkocsik.js";
 /* ------------------------
    UI/MATCHING MODULOK
 ------------------------- */
-import { renderTimeline } from "./assets/js/ui/timeline.js";
-import { renderFuvarFilters, renderFuvarCards } from "./assets/js/ui/fuvar-panel.js";
-import { enableFuvarDrag, enableTimelineDrop } from "./assets/js/ui/dragdrop.js";
+import { renderTimeline, getTimelineFilterReferenceDate } from "./assets/js/ui/timeline.js";
+import { getAssemblyOperationLogEntries, renderSzerelvenyTimeline } from "./assets/js/ui/szerelveny-timeline.js";
+import { renderSzerelvenyMap } from "./assets/js/ui/szerelveny-map.js";
+import { renderResourcePanel } from "./assets/js/ui/resource-panel.js";
+import { ensureContinuousTimelines } from "./assets/js/ui/timeline-generator.js";
+import {
+  renderFuvarFilters,
+  renderFuvarCards,
+  FUVAR_CARD_COLUMN_OPTIONS,
+  DEFAULT_FUVAR_CARD_COLUMNS,
+  createDefaultFuvarFilterState
+} from "./assets/js/ui/fuvar-panel.js";
 import { evaluateAllResources } from "./assets/js/ui/matching.js";
+import {
+  enableFuvarDrag,
+  enableTimelineDrop,
+  enableResourceCardDrop,
+  setDragDropRefreshHandler
+} from "./assets/js/ui/dragdrop.js";
+
+let currentFuvarFilter = createDefaultFuvarFilterState();
+let selectedFuvarId = null;
+
+const PANEL_IDS = ["fuvar", "resource", "timeline", "map"];
+const DOCK_LAYOUT_KEY = "transit.v44.dockLayout";
+const DOCK_PROFILES_KEY = "transit.v44.dockProfiles";
+const DOCK_CHANNEL_NAME = "transit.v44.dockLayout.channel";
+
+const queryParams = new URLSearchParams(window.location.search);
+const requestedPanelMode = queryParams.get("panel");
+const requestedWindowMode = queryParams.get("window");
+const panelMode = PANEL_IDS.includes(requestedPanelMode) ? requestedPanelMode : null;
+const detachedWindowMode = requestedWindowMode === "detached" && !panelMode;
+const canBroadcast = typeof BroadcastChannel !== "undefined";
+const dockChannel = canBroadcast ? new BroadcastChannel(DOCK_CHANNEL_NAME) : null;
+
+const defaultDockLayout = {
+  zones: {
+    left: ["fuvar", "resource"],
+    right: ["timeline", "map"],
+    full: []
+  },
+  detached: [],
+  homeZone: {
+    fuvar: "left",
+    resource: "left",
+    timeline: "right",
+    map: "right"
+  }
+};
+
+let dockLayoutState = null;
+let dockProfilesState = null;
+let activeUserId = null;
+let activeViewId = null;
+let isSyncingFuvarColumnsUi = false;
+
+function sanitizeFuvarColumns(raw) {
+  const allowed = new Set(FUVAR_CARD_COLUMN_OPTIONS.map((item) => item.id));
+  const incoming = Array.isArray(raw) ? raw : DEFAULT_FUVAR_CARD_COLUMNS;
+  const normalized = incoming.filter((id) => allowed.has(id));
+  return normalized.length > 0 ? normalized : [...DEFAULT_FUVAR_CARD_COLUMNS];
+}
+
+function createView(name, layout = defaultDockLayout) {
+  const id = `view-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return {
+    id,
+    name,
+    updatedAt: Date.now(),
+    layout: sanitizeLayout(layout),
+    fuvarColumns: [...DEFAULT_FUVAR_CARD_COLUMNS]
+  };
+}
+
+function createUserState(displayName = "Diszpécser") {
+  const defaultView = createView("Alapnézet", defaultDockLayout);
+  return {
+    displayName,
+    views: [defaultView],
+    lastUsedViewId: defaultView.id
+  };
+}
+
+function createDefaultProfiles(layoutFallback = null) {
+  const fallback = layoutFallback ? sanitizeLayout(layoutFallback) : defaultDockLayout;
+  const baseUser = createUserState("Diszpécser");
+  baseUser.views[0].layout = sanitizeLayout(fallback);
+
+  return {
+    activeUserId: "default-user",
+    users: {
+      "default-user": baseUser
+    }
+  };
+}
+
+function cloneLayout(layout) {
+  return JSON.parse(JSON.stringify(layout));
+}
+
+function sanitizeLayout(raw) {
+  const base = cloneLayout(defaultDockLayout);
+  if (!raw || typeof raw !== "object") {
+    return base;
+  }
+
+  const left = Array.isArray(raw.zones?.left) ? raw.zones.left.filter((id) => PANEL_IDS.includes(id)) : [];
+  const right = Array.isArray(raw.zones?.right) ? raw.zones.right.filter((id) => PANEL_IDS.includes(id)) : [];
+  const full = Array.isArray(raw.zones?.full) ? raw.zones.full.filter((id) => PANEL_IDS.includes(id)) : [];
+  const detached = Array.isArray(raw.detached) ? raw.detached.filter((id) => PANEL_IDS.includes(id)) : [];
+
+  const known = new Set([...left, ...right, ...full, ...detached]);
+  PANEL_IDS.forEach((id) => {
+    if (!known.has(id)) {
+      left.push(id);
+    }
+  });
+
+  base.zones.left = left;
+  base.zones.right = right.filter((id) => !left.includes(id));
+  base.zones.full = full.filter((id) => !left.includes(id) && !right.includes(id));
+  base.detached = detached.filter((id) => !left.includes(id) && !base.zones.right.includes(id) && !base.zones.full.includes(id));
+
+  const incomingHome = raw.homeZone && typeof raw.homeZone === "object" ? raw.homeZone : {};
+  PANEL_IDS.forEach((id) => {
+    const zone = incomingHome[id];
+    if (zone === "left" || zone === "right") {
+      base.homeZone[id] = zone;
+    }
+  });
+
+  return base;
+}
+
+function sanitizeProfiles(raw) {
+  if (!raw || typeof raw !== "object" || !raw.users || typeof raw.users !== "object") {
+    return createDefaultProfiles();
+  }
+
+  const users = {};
+  Object.entries(raw.users).forEach(([userId, userState]) => {
+    if (!userId || typeof userState !== "object") {
+      return;
+    }
+
+    const viewList = Array.isArray(userState.views) ? userState.views : [];
+    const sanitizedViews = viewList
+      .filter((view) => view && typeof view === "object")
+      .map((view, index) => {
+        const safeId = String(view.id || `view-${Date.now()}-${index}`);
+        return {
+          id: safeId,
+          name: String(view.name || `Nézet ${index + 1}`),
+          updatedAt: Number(view.updatedAt || Date.now()),
+          layout: sanitizeLayout(view.layout),
+          fuvarColumns: sanitizeFuvarColumns(view.fuvarColumns)
+        };
+      });
+
+    if (sanitizedViews.length === 0) {
+      sanitizedViews.push(createView("Alapnézet", defaultDockLayout));
+    }
+
+    const validViewIds = new Set(sanitizedViews.map((view) => view.id));
+    const preferredViewId = String(userState.lastUsedViewId || sanitizedViews[0].id);
+
+    users[userId] = {
+      displayName: String(userState.displayName || userId),
+      views: sanitizedViews,
+      lastUsedViewId: validViewIds.has(preferredViewId) ? preferredViewId : sanitizedViews[0].id
+    };
+  });
+
+  const userIds = Object.keys(users);
+  if (userIds.length === 0) {
+    return createDefaultProfiles();
+  }
+
+  const preferredUserId = String(raw.activeUserId || userIds[0]);
+  return {
+    activeUserId: userIds.includes(preferredUserId) ? preferredUserId : userIds[0],
+    users
+  };
+}
+
+function getActiveUserState() {
+  if (!dockProfilesState?.users?.[activeUserId]) {
+    return null;
+  }
+  return dockProfilesState.users[activeUserId];
+}
+
+function getActiveView() {
+  const userState = getActiveUserState();
+  if (!userState) {
+    return null;
+  }
+  return userState.views.find((view) => view.id === activeViewId) || null;
+}
+
+function getActiveFuvarColumns() {
+  const view = getActiveView();
+  if (!view) {
+    return [...DEFAULT_FUVAR_CARD_COLUMNS];
+  }
+
+  view.fuvarColumns = sanitizeFuvarColumns(view.fuvarColumns);
+  return view.fuvarColumns;
+}
+
+function setActiveFuvarColumns(nextColumns, options = { persist: true, broadcast: true, refresh: true }) {
+  const view = getActiveView();
+  if (!view) {
+    return;
+  }
+
+  view.fuvarColumns = sanitizeFuvarColumns(nextColumns);
+  view.updatedAt = Date.now();
+
+  if (options.persist) {
+    persistDockProfiles({ broadcast: options.broadcast });
+  }
+
+  renderFuvarColumnControlOptions();
+
+  if (options.refresh) {
+    refreshAllViews();
+  }
+}
+
+function renderFuvarColumnControlOptions() {
+  if (panelMode || detachedWindowMode) {
+    return;
+  }
+
+  const list = document.getElementById("layout-columns-list");
+  if (!list) {
+    return;
+  }
+
+  const selected = new Set(getActiveFuvarColumns());
+  isSyncingFuvarColumnsUi = true;
+  list.innerHTML = FUVAR_CARD_COLUMN_OPTIONS.map((item) => {
+    const checked = selected.has(item.id) ? "checked" : "";
+    return `
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+        <input type="checkbox" data-column-id="${item.id}" ${checked} />
+        <span>${item.label}</span>
+      </label>
+    `;
+  }).join("");
+  isSyncingFuvarColumnsUi = false;
+
+  list.querySelectorAll("input[type='checkbox'][data-column-id]").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+      if (isSyncingFuvarColumnsUi) {
+        return;
+      }
+
+      const checkedIds = Array.from(
+        list.querySelectorAll("input[type='checkbox'][data-column-id]:checked")
+      ).map((node) => node.dataset.columnId);
+
+      setActiveFuvarColumns(checkedIds, { persist: true, broadcast: true, refresh: true });
+    });
+  });
+}
+
+function loadDockLayout() {
+  const activeView = getActiveView();
+  if (!activeView) {
+    return cloneLayout(defaultDockLayout);
+  }
+  return sanitizeLayout(activeView.layout);
+}
+
+function loadDockProfiles() {
+  try {
+    const storedProfiles = localStorage.getItem(DOCK_PROFILES_KEY);
+    if (storedProfiles) {
+      return sanitizeProfiles(JSON.parse(storedProfiles));
+    }
+
+    const legacyLayout = localStorage.getItem(DOCK_LAYOUT_KEY);
+    if (legacyLayout) {
+      return createDefaultProfiles(sanitizeLayout(JSON.parse(legacyLayout)));
+    }
+  } catch (_error) {
+    // no-op
+  }
+
+  return createDefaultProfiles();
+}
+
+function persistDockProfiles(options = { broadcast: true }) {
+  localStorage.setItem(DOCK_PROFILES_KEY, JSON.stringify(dockProfilesState));
+  if (options.broadcast && dockChannel) {
+    dockChannel.postMessage({ type: "profiles:update", profiles: dockProfilesState });
+  }
+}
+
+function saveActiveLayoutToProfile(options = { broadcast: true }) {
+  const userState = getActiveUserState();
+  if (!userState) {
+    return;
+  }
+
+  const view = userState.views.find((item) => item.id === activeViewId);
+  if (!view) {
+    return;
+  }
+
+  view.layout = sanitizeLayout(dockLayoutState);
+  view.updatedAt = Date.now();
+  userState.lastUsedViewId = view.id;
+  dockProfilesState.activeUserId = activeUserId;
+  persistDockProfiles(options);
+}
+
+function broadcastDockLayout() {
+  if (dockChannel) {
+    dockChannel.postMessage({ type: "layout:update", layout: dockLayoutState });
+  }
+}
+
+function setDockLayout(nextLayout, options = { broadcast: true }) {
+  dockLayoutState = sanitizeLayout(nextLayout);
+  saveActiveLayoutToProfile({ broadcast: options.broadcast });
+  applyDockLayout();
+  if (options.broadcast) {
+    broadcastDockLayout();
+  }
+}
+
+function applyActiveViewLayout(options = { broadcast: false }) {
+  dockLayoutState = loadDockLayout();
+  applyDockLayout();
+  saveActiveLayoutToProfile({ broadcast: options.broadcast });
+}
+
+function refreshLayoutProfileControls() {
+  if (panelMode) {
+    return;
+  }
+
+  const userSelect = document.getElementById("layout-user-select");
+  const viewSelect = document.getElementById("layout-view-select");
+  const profileBar = document.getElementById("layout-profile-bar");
+  if (!userSelect || !viewSelect || !profileBar) {
+    return;
+  }
+
+  const userEntries = Object.entries(dockProfilesState.users);
+  userSelect.innerHTML = userEntries
+    .map(([userId, userState]) => `<option value="${userId}">${userState.displayName}</option>`)
+    .join("");
+  userSelect.value = activeUserId;
+
+  const userState = getActiveUserState();
+  const views = userState ? userState.views : [];
+  viewSelect.innerHTML = views
+    .map((view) => `<option value="${view.id}">${view.name}</option>`)
+    .join("");
+  viewSelect.value = activeViewId;
+
+  renderFuvarColumnControlOptions();
+}
+
+function setActiveUser(userId, options = { broadcast: true }) {
+  if (!dockProfilesState.users[userId]) {
+    return;
+  }
+
+  activeUserId = userId;
+  dockProfilesState.activeUserId = userId;
+  const userState = getActiveUserState();
+  activeViewId = userState.lastUsedViewId || userState.views[0].id;
+  userState.lastUsedViewId = activeViewId;
+  refreshLayoutProfileControls();
+  applyActiveViewLayout({ broadcast: options.broadcast });
+}
+
+function setActiveView(viewId, options = { broadcast: true }) {
+  const userState = getActiveUserState();
+  if (!userState) {
+    return;
+  }
+
+  const view = userState.views.find((item) => item.id === viewId);
+  if (!view) {
+    return;
+  }
+
+  activeViewId = view.id;
+  userState.lastUsedViewId = view.id;
+  refreshLayoutProfileControls();
+  applyActiveViewLayout({ broadcast: options.broadcast });
+}
+
+function addUserProfile() {
+  const name = prompt("Új felhasználó neve");
+  if (!name) {
+    return;
+  }
+
+  const userId = `user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  dockProfilesState.users[userId] = createUserState(name.trim());
+  setActiveUser(userId, { broadcast: true });
+}
+
+function saveCurrentViewAsNew() {
+  const userState = getActiveUserState();
+  if (!userState) {
+    return;
+  }
+
+  const name = prompt("Új nézet neve", "Új nézet");
+  if (!name) {
+    return;
+  }
+
+  const newView = createView(name.trim(), dockLayoutState);
+  newView.fuvarColumns = [...getActiveFuvarColumns()];
+  userState.views.push(newView);
+  activeViewId = newView.id;
+  userState.lastUsedViewId = newView.id;
+  refreshLayoutProfileControls();
+  persistDockProfiles({ broadcast: true });
+}
+
+function renameCurrentView() {
+  const view = getActiveView();
+  if (!view) {
+    return;
+  }
+
+  const nextName = prompt("Nézet új neve", view.name);
+  if (!nextName) {
+    return;
+  }
+
+  view.name = nextName.trim();
+  view.updatedAt = Date.now();
+  refreshLayoutProfileControls();
+  persistDockProfiles({ broadcast: true });
+}
+
+function deleteCurrentView() {
+  const userState = getActiveUserState();
+  if (!userState) {
+    return;
+  }
+
+  if (userState.views.length <= 1) {
+    alert("Legalább egy nézetnek maradnia kell.");
+    return;
+  }
+
+  const view = getActiveView();
+  if (!view) {
+    return;
+  }
+
+  const ok = confirm(`Biztosan törlöd ezt a nézetet?\n${view.name}`);
+  if (!ok) {
+    return;
+  }
+
+  userState.views = userState.views.filter((item) => item.id !== view.id);
+  activeViewId = userState.views[0].id;
+  userState.lastUsedViewId = activeViewId;
+  refreshLayoutProfileControls();
+  applyActiveViewLayout({ broadcast: true });
+}
+
+function getPanelElement(panelId) {
+  return document.getElementById(`panel-${panelId}`);
+}
+
+function openPanelPopup(panelId) {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("panel");
+  url.searchParams.delete("focus");
+  url.searchParams.set("window", "detached");
+  return window.open(url.toString(), "transit-detached-window");
+}
+
+function dockPanelToZone(panelId, zone, options = { broadcast: true }) {
+  if (!PANEL_IDS.includes(panelId) || !["left", "right"].includes(zone)) {
+    return;
+  }
+
+  const next = cloneLayout(dockLayoutState);
+  next.zones.left = next.zones.left.filter((id) => id !== panelId);
+  next.zones.right = next.zones.right.filter((id) => id !== panelId);
+  next.zones.full = (next.zones.full || []).filter((id) => id !== panelId);
+  next.detached = next.detached.filter((id) => id !== panelId);
+  next.zones[zone].push(panelId);
+  next.homeZone[panelId] = zone;
+  setDockLayout(next, options);
+}
+
+function toggleFullwidthPanel(panelId, options = { broadcast: true }) {
+  if (!PANEL_IDS.includes(panelId)) {
+    return;
+  }
+
+  const next = cloneLayout(dockLayoutState);
+  const isCurrentlyFull = (next.zones.full || []).includes(panelId);
+
+  if (isCurrentlyFull) {
+    next.zones.full = (next.zones.full || []).filter((id) => id !== panelId);
+    const zone = next.homeZone[panelId] || "left";
+    if (!next.zones[zone].includes(panelId)) {
+      next.zones[zone].push(panelId);
+    }
+  } else {
+    const currentZone = next.zones.left.includes(panelId) ? "left" : next.zones.right.includes(panelId) ? "right" : null;
+    if (currentZone) {
+      next.homeZone[panelId] = currentZone;
+    }
+    next.zones.left = next.zones.left.filter((id) => id !== panelId);
+    next.zones.right = next.zones.right.filter((id) => id !== panelId);
+    next.detached = next.detached.filter((id) => id !== panelId);
+    if (!next.zones.full) {
+      next.zones.full = [];
+    }
+    if (!next.zones.full.includes(panelId)) {
+      next.zones.full.push(panelId);
+    }
+  }
+
+  setDockLayout(next, options);
+}
+
+function resetViewToDefault(options = { broadcast: true }) {
+  setDockLayout(cloneLayout(defaultDockLayout), options);
+}
+
+function undockPanel(panelId) {
+  if (!PANEL_IDS.includes(panelId)) {
+    return;
+  }
+
+  if (!panelMode) {
+    const popup = openPanelPopup(panelId);
+    if (!popup) {
+      alert("A böngésző blokkolta az új ablak megnyitását. Engedélyezd a popupokat ehhez az oldalhoz.");
+      return;
+    }
+  }
+
+  const next = cloneLayout(dockLayoutState);
+  const currentZone = next.zones.left.includes(panelId) ? "left" : next.zones.right.includes(panelId) ? "right" : null;
+
+  if (currentZone) {
+    next.homeZone[panelId] = currentZone;
+  }
+
+  next.zones.left = next.zones.left.filter((id) => id !== panelId);
+  next.zones.right = next.zones.right.filter((id) => id !== panelId);
+  next.zones.full = (next.zones.full || []).filter((id) => id !== panelId);
+  if (!next.detached.includes(panelId)) {
+    next.detached.push(panelId);
+  }
+
+  setDockLayout(next, { broadcast: true });
+}
+
+function updatePanelButtons(panelId) {
+  const panel = getPanelElement(panelId);
+  if (!panel) {
+    return;
+  }
+
+  const leftBtn = panel.querySelector('[data-action="dock-left"]');
+  const rightBtn = panel.querySelector('[data-action="dock-right"]');
+  const undockBtn = panel.querySelector('[data-action="undock"]');
+  const redockBtn = panel.querySelector('[data-action="redock"]');
+
+  const zone = dockLayoutState.zones.left.includes(panelId)
+    ? "left"
+    : dockLayoutState.zones.right.includes(panelId)
+      ? "right"
+      : null;
+
+  const detached = dockLayoutState.detached.includes(panelId);
+  const isFull = (dockLayoutState.zones.full || []).includes(panelId);
+  const fullwidthBtn = panel.querySelector('[data-action="toggle-fullwidth"]');
+
+  leftBtn?.classList.toggle("active-zone", zone === "left");
+  rightBtn?.classList.toggle("active-zone", zone === "right");
+
+  if (panelMode || detachedWindowMode) {
+    if (leftBtn) leftBtn.style.display = "none";
+    if (rightBtn) rightBtn.style.display = "none";
+    if (fullwidthBtn) fullwidthBtn.style.display = "none";
+    if (undockBtn) undockBtn.style.display = "none";
+    if (redockBtn) redockBtn.style.display = "inline-flex";
+    if (redockBtn) redockBtn.textContent = "Eredeti ablak";
+  } else {
+    if (leftBtn) leftBtn.style.display = "inline-flex";
+    if (rightBtn) rightBtn.style.display = "inline-flex";
+    if (fullwidthBtn) {
+      fullwidthBtn.style.display = detached ? "none" : "inline-flex";
+      fullwidthBtn.textContent = isFull ? "Fél képernyő" : "Teljes szélesség";
+    }
+    if (undockBtn) undockBtn.style.display = "inline-flex";
+    if (redockBtn) redockBtn.style.display = detached ? "inline-flex" : "none";
+    if (redockBtn) redockBtn.textContent = "Visszadokkolás";
+  }
+}
+
+function applyDockLayout() {
+  const leftColumn = document.querySelector('.dock-column[data-zone="left"]');
+  const rightColumn = document.querySelector('.dock-column[data-zone="right"]');
+
+  PANEL_IDS.forEach((panelId) => {
+    const panel = getPanelElement(panelId);
+    if (!panel) {
+      return;
+    }
+
+    panel.classList.remove("hidden-by-layout");
+  });
+
+  if (panelMode) {
+    document.body.classList.add("popup-panel-mode");
+    document.body.classList.remove("detached-window");
+    PANEL_IDS.forEach((panelId) => {
+      const panel = getPanelElement(panelId);
+      if (!panel) {
+        return;
+      }
+
+      if (panelId !== panelMode) {
+        panel.classList.add("hidden-by-layout");
+      } else if (leftColumn) {
+        leftColumn.appendChild(panel);
+      }
+
+      updatePanelButtons(panelId);
+    });
+
+    if (rightColumn) {
+      rightColumn.innerHTML = "";
+    }
+
+    return;
+  }
+
+  if (detachedWindowMode) {
+    document.body.classList.add("detached-window");
+    if (!dockLayoutState.detached.length) {
+      window.close();
+      return;
+    }
+
+    document.body.classList.add("popup-panel-mode");
+
+    const appendPanel = (zoneColumn, panelId) => {
+      const panel = getPanelElement(panelId);
+      if (!zoneColumn || !panel) {
+        return;
+      }
+      zoneColumn.appendChild(panel);
+    };
+
+    PANEL_IDS.forEach((panelId) => {
+      const panel = getPanelElement(panelId);
+      if (!panel) {
+        return;
+      }
+
+      if (!dockLayoutState.detached.includes(panelId)) {
+        panel.classList.add("hidden-by-layout");
+      } else {
+        panel.classList.remove("hidden-by-layout");
+      }
+
+      updatePanelButtons(panelId);
+    });
+
+    dockLayoutState.detached.forEach((panelId) => appendPanel(leftColumn, panelId));
+
+    if (rightColumn) {
+      rightColumn.innerHTML = "";
+    }
+
+    return;
+  }
+
+  document.body.classList.remove("popup-panel-mode");
+  document.body.classList.remove("detached-window");
+
+  const appendPanel = (zoneColumn, panelId) => {
+    const panel = getPanelElement(panelId);
+    if (!zoneColumn || !panel) {
+      return;
+    }
+    zoneColumn.appendChild(panel);
+  };
+
+  const fullColumn = document.querySelector('.dock-column[data-zone="full"]');
+
+  dockLayoutState.zones.left.forEach((panelId) => appendPanel(leftColumn, panelId));
+  dockLayoutState.zones.right.forEach((panelId) => appendPanel(rightColumn, panelId));
+  (dockLayoutState.zones.full || []).forEach((panelId) => appendPanel(fullColumn, panelId));
+
+  dockLayoutState.detached.forEach((panelId) => {
+    const panel = getPanelElement(panelId);
+    if (panel) {
+      panel.classList.add("hidden-by-layout");
+    }
+  });
+
+  PANEL_IDS.forEach((panelId) => {
+    updatePanelButtons(panelId);
+  });
+}
+
+function bindDockToolbarActions() {
+  PANEL_IDS.forEach((panelId) => {
+    const panel = getPanelElement(panelId);
+    if (!panel) {
+      return;
+    }
+
+    panel.querySelector('[data-action="dock-left"]')?.addEventListener("click", () => {
+      dockPanelToZone(panelId, "left");
+    });
+
+    panel.querySelector('[data-action="dock-right"]')?.addEventListener("click", () => {
+      dockPanelToZone(panelId, "right");
+    });
+
+    panel.querySelector('[data-action="toggle-fullwidth"]')?.addEventListener("click", () => {
+      toggleFullwidthPanel(panelId);
+    });
+
+    panel.querySelector('[data-action="undock"]')?.addEventListener("click", () => {
+      undockPanel(panelId);
+    });
+
+    panel.querySelector('[data-action="redock"]')?.addEventListener("click", () => {
+      const zone = dockLayoutState.homeZone[panelId] || "left";
+      dockPanelToZone(panelId, zone, { broadcast: true });
+      if (panelMode) {
+        window.close();
+      }
+    });
+  });
+}
+
+function bindLayoutProfileControls() {
+  if (panelMode || detachedWindowMode) {
+    return;
+  }
+
+  document.getElementById("layout-user-select")?.addEventListener("change", (event) => {
+    setActiveUser(event.target.value, { broadcast: true });
+  });
+
+  document.getElementById("layout-view-select")?.addEventListener("change", (event) => {
+    setActiveView(event.target.value, { broadcast: true });
+  });
+
+  document.getElementById("layout-user-add")?.addEventListener("click", () => {
+    addUserProfile();
+  });
+
+  document.getElementById("layout-view-new")?.addEventListener("click", () => {
+    saveCurrentViewAsNew();
+  });
+
+  document.getElementById("layout-view-save")?.addEventListener("click", () => {
+    saveActiveLayoutToProfile({ broadcast: true });
+    refreshLayoutProfileControls();
+  });
+
+  document.getElementById("layout-view-rename")?.addEventListener("click", () => {
+    renameCurrentView();
+  });
+
+  document.getElementById("layout-view-delete")?.addEventListener("click", () => {
+    deleteCurrentView();
+  });
+
+  document.getElementById("layout-view-reset")?.addEventListener("click", () => {
+    resetViewToDefault({ broadcast: true });
+  });
+
+  document.getElementById("layout-columns-all")?.addEventListener("click", () => {
+    setActiveFuvarColumns(DEFAULT_FUVAR_CARD_COLUMNS, { persist: true, broadcast: true, refresh: true });
+  });
+
+  document.getElementById("layout-columns-default")?.addEventListener("click", () => {
+    setActiveFuvarColumns(["route", "pickup", "delivery", "distance", "status", "tractor"], {
+      persist: true,
+      broadcast: true,
+      refresh: true
+    });
+  });
+}
+
+function setupDockLayoutSync() {
+  if (dockChannel) {
+    dockChannel.onmessage = (event) => {
+      if (!event?.data?.type) {
+        return;
+      }
+
+      if (event.data.type === "layout:update") {
+        setDockLayout(event.data.layout, { broadcast: false });
+        return;
+      }
+
+      if (event.data.type === "profiles:update") {
+        dockProfilesState = sanitizeProfiles(event.data.profiles);
+        activeUserId = dockProfilesState.activeUserId;
+        const userState = getActiveUserState();
+        activeViewId = userState.lastUsedViewId || userState.views[0].id;
+        refreshLayoutProfileControls();
+        applyActiveViewLayout({ broadcast: false });
+        renderFuvarColumnControlOptions();
+        return;
+      }
+
+      if (event.data.type === "fuvar:focus:update") {
+        applyFuvarSelectionById(event.data.fuvarId || null, { broadcast: false });
+      }
+    };
+  }
+
+  window.addEventListener("storage", (event) => {
+    if (event.key !== DOCK_PROFILES_KEY || !event.newValue) {
+      return;
+    }
+
+    try {
+      dockProfilesState = sanitizeProfiles(JSON.parse(event.newValue));
+      activeUserId = dockProfilesState.activeUserId;
+      const userState = getActiveUserState();
+      activeViewId = userState.lastUsedViewId || userState.views[0].id;
+      refreshLayoutProfileControls();
+      applyActiveViewLayout({ broadcast: false });
+      renderFuvarColumnControlOptions();
+    } catch (_error) {
+      // no-op
+    }
+  });
+
+  window.addEventListener("beforeunload", () => {
+    if (detachedWindowMode && dockLayoutState?.detached?.length) {
+      const next = cloneLayout(dockLayoutState);
+
+      next.detached.forEach((detachedPanelId) => {
+        const zone = next.homeZone[detachedPanelId] || "left";
+        if (!next.zones[zone].includes(detachedPanelId)) {
+          next.zones[zone].push(detachedPanelId);
+        }
+      });
+      next.detached = [];
+
+      const userState = getActiveUserState();
+      const view = getActiveView();
+      if (userState && view) {
+        view.layout = sanitizeLayout(next);
+        userState.lastUsedViewId = view.id;
+        persistDockProfiles({ broadcast: true });
+      }
+      return;
+    }
+
+    if (panelMode && PANEL_IDS.includes(panelMode) && dockLayoutState.detached.includes(panelMode)) {
+      const next = cloneLayout(dockLayoutState);
+      next.detached = next.detached.filter((id) => id !== panelMode);
+      const zone = next.homeZone[panelMode] || "left";
+      next.zones[zone].push(panelMode);
+
+      const userState = getActiveUserState();
+      const view = getActiveView();
+      if (userState && view) {
+        view.layout = sanitizeLayout(next);
+        userState.lastUsedViewId = view.id;
+        persistDockProfiles({ broadcast: true });
+      }
+    }
+  });
+}
+
+window.addEventListener("fuvar:focus", (event) => {
+  selectedFuvarId = event?.detail?.fuvarId || null;
+});
+
+function restoreSelectedFuvarCard() {
+  document.querySelectorAll(".menu-card.active-fuvar").forEach((card) => {
+    card.classList.remove("active-fuvar");
+  });
+
+  if (!selectedFuvarId) {
+    return;
+  }
+
+  const selectedCard = document.querySelector(`.menu-card[data-id="${selectedFuvarId}"]`);
+  if (selectedCard) {
+    selectedCard.classList.add("active-fuvar");
+  }
+
+  updateTimelineFocusIndicator();
+}
+
+function updateTimelineFocusIndicator() {
+  const indicator = document.getElementById("timeline-focus-indicator");
+  const indicatorText = document.getElementById("timeline-focus-text");
+  if (!indicator) {
+    return;
+  }
+
+  if (!indicatorText) {
+    return;
+  }
+
+  if (!selectedFuvarId) {
+    indicatorText.textContent = "Matching: nincs kijelölt fuvar";
+    indicator.classList.remove("active");
+    return;
+  }
+
+  const selectedFuvar = FUVAROK.find((item) => item.id === selectedFuvarId);
+  if (!selectedFuvar) {
+    indicatorText.textContent = "Matching: nincs kijelölt fuvar";
+    indicator.classList.remove("active");
+    return;
+  }
+
+  indicatorText.textContent = `Matching: [${selectedFuvar.id}] ${selectedFuvar.megnevezes}`;
+  indicator.classList.add("active");
+}
+
+function broadcastFuvarSelection(fuvarId) {
+  if (!dockChannel) {
+    return;
+  }
+
+  dockChannel.postMessage({
+    type: "fuvar:focus:update",
+    fuvarId: fuvarId || null
+  });
+}
+
+function applyFuvarSelectionById(fuvarId, options = { broadcast: true }) {
+  selectedFuvarId = fuvarId || null;
+  updateTimelineFocusIndicator();
+
+  window.dispatchEvent(new CustomEvent("fuvar:focus", {
+    detail: { fuvarId: selectedFuvarId }
+  }));
+
+  if (!selectedFuvarId) {
+    SOFOROK.forEach((s) => { delete s.matchGrade; });
+    VONTATOK.forEach((v) => { delete v.matchGrade; });
+    POTKOCSIK.forEach((p) => { delete p.matchGrade; });
+    refreshAllViews();
+
+    if (options.broadcast) {
+      broadcastFuvarSelection(null);
+    }
+    return;
+  }
+
+  const fuvar = FUVAROK.find((item) => item.id === selectedFuvarId);
+  if (!fuvar) {
+    return;
+  }
+
+  const results = evaluateAllResources(SOFOROK, VONTATOK, POTKOCSIK, fuvar);
+  onSelectFuvar(results, { broadcast: options.broadcast });
+}
 
 /* ------------------------
    OLDAL BETÖLTÉSE
 ------------------------- */
 window.addEventListener("DOMContentLoaded", () => {
+  dockProfilesState = loadDockProfiles();
+  activeUserId = dockProfilesState.activeUserId;
+  const initialUserState = getActiveUserState();
+  activeViewId = initialUserState.lastUsedViewId || initialUserState.views[0].id;
+  dockLayoutState = loadDockLayout();
 
-  // FUVAR SZŰRŐK
-  renderFuvarFilters("filter-container", (filter) => {
-    renderFuvarCards("fuvar-list", filter, onSelectFuvar);
-    enableFuvarDrag();
+  bindLayoutProfileControls();
+  refreshLayoutProfileControls();
+  bindDockToolbarActions();
+  setupDockLayoutSync();
+  applyDockLayout();
+  updateTimelineFocusIndicator();
+
+  document.getElementById("timeline-focus-clear")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    clearFuvarSelection();
   });
 
-  // ALAPÉRTELMEZETT FUVARLISTA
-  renderFuvarCards("fuvar-list", "all", onSelectFuvar);
-  enableFuvarDrag();
+  // FUVAR SZŰRŐK
+  if (document.getElementById("filter-container")) {
+    renderFuvarFilters("filter-container", (filter) => {
+      currentFuvarFilter = filter;
+      renderFuvarCards("fuvar-list", filter, onSelectFuvar, {
+        visibleColumns: getActiveFuvarColumns(),
+        timelineReferenceDate: getTimelineFilterReferenceDate()
+      });
+      enableFuvarDrag();
+      restoreSelectedFuvarCard();
+    }, {
+      getTimelineReferenceDate: () => getTimelineFilterReferenceDate()
+    });
+  }
 
-  // TIMELINE RENDER
-  renderTimeline("timeline-container", [
-    { icon: "👤", name: "Sofőrök",    list: SOFOROK },
-    { icon: "🚛", name: "Vontatók",   list: VONTATOK },
-    { icon: "🚚", name: "Pótkocsik",  list: POTKOCSIK }
-  ]);
-  enableTimelineDrop();
+  // ALAPÉRTELMEZETT FUVARLISTA
+  if (document.getElementById("fuvar-list")) {
+    renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, {
+      visibleColumns: getActiveFuvarColumns(),
+      timelineReferenceDate: getTimelineFilterReferenceDate()
+    });
+    enableFuvarDrag();
+  }
+
+  ensureContinuousTimelines(SOFOROK, VONTATOK, POTKOCSIK);
+  setDragDropRefreshHandler(refreshAllViews);
+
+  window.addEventListener("assembly:resources:changed", () => {
+    refreshAllViews();
+  });
+
+  window.addEventListener("timeline:window-change", () => {
+    if (document.getElementById("fuvar-list")) {
+      renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, {
+        visibleColumns: getActiveFuvarColumns(),
+        timelineReferenceDate: getTimelineFilterReferenceDate()
+      });
+      enableFuvarDrag();
+      restoreSelectedFuvarCard();
+    }
+  });
+
+  refreshAllViews();
+
+  // ESC GOMB KEZELÉSE – FUVAR KIJELÖLÉS TÖRLÉSE
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      clearFuvarSelection();
+    }
+  });
 
   console.log("Fuvarszervezés v4.4 (Advanced) betöltve.");
 });
 
+function onSelectResource(type, resource) {
+  document.querySelectorAll(".resource-card.selected").forEach((node) => node.classList.remove("selected"));
+
+  const card = document.querySelector(`.resource-card[data-type="${type}"][data-id="${resource.id}"]`);
+  if (card) {
+    card.classList.add("selected");
+  }
+
+  const nameEl = document.querySelector(
+    `.timeline-resource-name[data-resource-type="${type}"][data-resource-id="${resource.id}"]`
+  );
+  if (!nameEl) {
+    return;
+  }
+
+  const timelineRow = nameEl.closest(".timeline-resource");
+  if (!timelineRow) {
+    return;
+  }
+
+  timelineRow.classList.add("selected");
+  timelineRow.scrollIntoView({ behavior: "smooth", block: "center" });
+  setTimeout(() => timelineRow.classList.remove("selected"), 1200);
+}
+
+function formatOperationDetails(entry) {
+  const parts = [];
+
+  if (entry.location) {
+    parts.push(`Hely: ${entry.location}`);
+  }
+
+  if (entry.sourceAssemblyId && entry.targetAssemblyId) {
+    parts.push(`Szerelvény: ${entry.sourceAssemblyId} → ${entry.targetAssemblyId}`);
+  }
+
+  if (entry.assignment) {
+    const sofor = entry.assignment.soforId || "-";
+    const vontato = entry.assignment.vontatoId || "-";
+    const potkocsi = entry.assignment.potkocsiId || "nincs";
+    parts.push(`Új kiosztás: ${sofor} | ${vontato} | ${potkocsi}`);
+  }
+
+  return parts.join(" • ");
+}
+
+function renderAssemblyOperationLog() {
+  const container = document.getElementById("assembly-operation-log");
+  if (!container) {
+    return;
+  }
+
+  const entries = getAssemblyOperationLogEntries(120);
+  if (entries.length === 0) {
+    container.innerHTML = '<div class="assembly-operation-log-empty">Még nincs rögzített elakasztás vagy erőforrás törés.</div>';
+    return;
+  }
+
+  container.innerHTML = entries.map((entry) => {
+    const details = formatOperationDetails(entry);
+    const at = new Date(entry.at);
+    const atLabel = Number.isNaN(at.getTime())
+      ? "-"
+      : at.toLocaleString("hu-HU", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+
+    return `
+      <div class="assembly-operation-log-item">
+        <div class="assembly-operation-log-head">
+          <div class="assembly-operation-log-type">${entry.typeLabel}</div>
+          <div class="assembly-operation-log-time">${atLabel}</div>
+        </div>
+        <div class="assembly-operation-log-line">Fuvar: ${entry.fuvarId} • ${entry.fuvarMegnevezes}</div>
+        ${details ? `<div class="assembly-operation-log-line">${details}</div>` : ""}
+      </div>
+    `;
+  }).join("");
+}
+
+  function refreshAllViews() {
+    if (document.getElementById("fuvar-list")) {
+      renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, {
+        visibleColumns: getActiveFuvarColumns(),
+        timelineReferenceDate: getTimelineFilterReferenceDate()
+      });
+      enableFuvarDrag();
+      restoreSelectedFuvarCard();
+    }
+
+    if (document.getElementById("resource-panel-container")) {
+      renderResourcePanel("resource-panel-container", FUVAROK, onSelectResource);
+      enableResourceCardDrop();
+    }
+
+    if (document.getElementById("timeline-container")) {
+      renderTimeline("timeline-container", [
+        { icon: "👤", name: "Sofőrök",    list: SOFOROK },
+        { icon: "🚛", name: "Vontatók",   list: VONTATOK },
+        { icon: "🚚", name: "Pótkocsik",  list: POTKOCSIK }
+      ]);
+      enableTimelineDrop();
+    }
+
+    if (document.getElementById("assembly-timeline-container")) {
+      renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK);
+    }
+
+    if (document.getElementById("assembly-map-container")) {
+      renderSzerelvenyMap("assembly-map-container", SOFOROK, VONTATOK, POTKOCSIK);
+    }
+
+    renderAssemblyOperationLog();
+}
+
 /* ==========================================================
    FUVAR KIJELÖLÉS → MATCHING ENGINE FUTTATÁSA
 ========================================================== */
-function onSelectFuvar(results) {
+function onSelectFuvar(results, options = { broadcast: true }) {
 
   console.log("Matching eredmények:", results);
 
@@ -131,14 +1536,19 @@ function onSelectFuvar(results) {
     p.matchGrade = r.result.grade;
   });
 
-  // TIMELINE újrarender matching highlight-tal
-  renderTimeline("timeline-container", [
-    { icon: "👤", name: "Sofőrök",    list: SOFOROK },
-    { icon: "🚛", name: "Vontatók",   list: VONTATOK },
-    { icon: "🚚", name: "Pótkocsik",  list: POTKOCSIK }
-  ]);
+  // RESOURCE PANEL újrarender matching körvonalakkal és sorrenddel
+  refreshAllViews();
 
-  enableTimelineDrop();
+  if (options.broadcast) {
+    broadcastFuvarSelection(selectedFuvarId);
+  }
+}
+
+/* ==========================================================
+   FUVAR KIJELÖLÉS TÖRLÉSE (ESC GOMB)
+========================================================== */
+function clearFuvarSelection() {
+  applyFuvarSelectionById(null, { broadcast: true });
 }
 
 </script>

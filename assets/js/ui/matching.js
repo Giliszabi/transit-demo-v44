@@ -10,10 +10,33 @@ function hasCollision(timeline, start, end) {
   const e = new Date(end);
 
   return timeline.some(b => {
+    if (b.synthetic) {
+      return false;
+    }
+
     const bs = new Date(b.start);
     const be = new Date(b.end);
     return (s < be && e > bs);
   });
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function ensureResourceTipus(resource, localTypeLabel) {
+  if (!resource.tipus) {
+    resource.tipus = Math.random() < 0.5 ? localTypeLabel : "nemzetkozi";
+  }
+
+  return resource.tipus;
+}
+
+function isDomesticOnlyTipus(tipus) {
+  return normalizeText(tipus).includes("belfold");
 }
 
 // =======================================================
@@ -55,6 +78,7 @@ export function evaluateFuvarTags(fuvar) {
 export function evaluateSoforForFuvar(sofor, fuvar) {
   const reasons = [];
   let suitable = true;
+  const soforTipus = ensureResourceTipus(sofor, "belföldes");
 
   // ADR
   if (fuvar.adr && !sofor.adr) {
@@ -63,7 +87,7 @@ export function evaluateSoforForFuvar(sofor, fuvar) {
   }
 
   // Belföldi vs nemzetközi
-  if (fuvar.kategoria !== "belfold" && sofor.tipus === "belföldes") {
+  if (fuvar.kategoria !== "belfold" && isDomesticOnlyTipus(soforTipus)) {
     suitable = false;
     reasons.push("Belföldes sofőr nem vihet nemzetközi fuvart");
   }
@@ -93,12 +117,13 @@ export function evaluateSoforForFuvar(sofor, fuvar) {
 export function evaluateVontatoForFuvar(vontato, fuvar) {
   const reasons = [];
   let suitable = true;
+  const vontatoTipus = ensureResourceTipus(vontato, "belföldi");
 
   // ADR → minden vontató alkalmas (kérésed szerint)
   // nincs ADR feltétel
 
   // Belföldi vs nemzetközi
-  if (fuvar.kategoria !== "belfold" && vontato.tipus === "belföldi") {
+  if (fuvar.kategoria !== "belfold" && isDomesticOnlyTipus(vontatoTipus)) {
     suitable = false;
     reasons.push("Belföldi vontató nem vihet nemzetközi fuvart");
   }
@@ -128,6 +153,7 @@ export function evaluateVontatoForFuvar(vontato, fuvar) {
 export function evaluatePotkocsiForFuvar(pk, fuvar) {
   const reasons = [];
   let suitable = true;
+  const potkocsiTipus = ensureResourceTipus(pk, "belföldi");
 
   // ADR
   if (fuvar.adr && !pk.adr) {
@@ -136,7 +162,7 @@ export function evaluatePotkocsiForFuvar(pk, fuvar) {
   }
 
   // Belföldi vs nemzetközi
-  if (fuvar.kategoria !== "belfold" && pk.tipus === "belföldi") {
+  if (fuvar.kategoria !== "belfold" && isDomesticOnlyTipus(potkocsiTipus)) {
     suitable = false;
     reasons.push("Belföldi pótkocsi nem vihet nemzetközi fuvart");
   }

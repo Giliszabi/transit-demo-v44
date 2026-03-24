@@ -14,6 +14,7 @@ export const SOFOROK = [
   // ===========================
   // 3 BELFÖLDES SOFŐR
   // ===========================
+  /*
   {
     id: "S1",
     nev: "Aranyos László",
@@ -41,6 +42,7 @@ export const SOFOROK = [
     jelenlegi_pozicio: { hely: "Kecskemét" },
     timeline: []
   },
+  */
 
   // ===========================
   // 3 NEMZETKÖZI – 1 KEZES
@@ -71,11 +73,13 @@ export const SOFOROK = [
     adr: randomADR(),
     jelenlegi_pozicio: { hely: "Székesfehérvár" },
     timeline: []
-  },
+  }
 
   // ===========================
   // 3 NEMZETKÖZI – 2 KEZES
   // ===========================
+  /*
+  ,
   {
     id: "S7",
     nev: "Adamek István",
@@ -103,4 +107,5 @@ export const SOFOROK = [
     jelenlegi_pozicio: { hely: "Pécs" },
     timeline: []
   }
+  */
 ];

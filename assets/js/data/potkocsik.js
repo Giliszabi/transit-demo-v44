@@ -14,6 +14,7 @@ export const POTKOCSIK = [
   // ===========================
   // 3 BELFÖLDI PÓTKOCSI
   // ===========================
+  /*
   {
     id: "P1",
     rendszam: "WBU760",
@@ -38,6 +39,7 @@ export const POTKOCSIK = [
     jelenlegi_pozicio: { hely: "Pécs" },
     timeline: []
   },
+  */
 
   // ===========================
   // 3 NEMZETKÖZI PÓTKOCSI

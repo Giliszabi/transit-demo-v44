@@ -10,6 +10,7 @@ export const VONTATOK = [
   // ===========================
   // 3 BELFÖLDI VONTATÓ
   // ===========================
+  /*
   {
     id: "V1",
     rendszam: "ABCDEF123",
@@ -37,6 +38,7 @@ export const VONTATOK = [
     jelenlegi_pozicio: { hely: "Kecskemét" },
     timeline: []
   },
+  */
 
   // ===========================
   // 3 NEMZETKÖZI VONTATÓ

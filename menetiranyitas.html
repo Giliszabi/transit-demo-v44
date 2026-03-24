@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TransIT v4.4 – Menetirányítás</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="./assets/css/base.css" />
+  <link rel="stylesheet" href="./assets/css/layout.css" />
+  <link rel="stylesheet" href="./assets/css/components.css" />
+  <link rel="stylesheet" href="./assets/css/timeline.css" />
+  <link rel="stylesheet" href="./assets/css/menetiranyitas.css" />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+</head>
+
+<body class="monitor-page">
+  <header class="monitor-header">
+    <div>
+      <p class="monitor-eyebrow">TransIT v4.4 • Menetirányítás</p>
+      <h1>📡 Sofőr-fókuszú Tachográf Monitor</h1>
+      <p class="monitor-subtitle">
+        Valós idejű vezetési és pihenőidő felügyelet, szabálykezelés, prediktív ETA és kockázati riasztások egy diszpécser-központú képernyőn.
+      </p>
+    </div>
+    <a href="./index.html" class="btn monitor-back-link">⬅ Modulválasztó</a>
+  </header>
+
+  <main class="monitor-shell">
+    <section id="monitor-kpi-strip" class="monitor-kpi-strip"></section>
+
+    <section class="monitor-workspace">
+      <aside class="panel monitor-column">
+        <div class="panel-title">👤 Sofőr időállapot + Risk Heatmap</div>
+        <div class="risk-legend">
+          <span>🔴 Magas kockázat</span>
+          <span>🟡 Közepes kockázat</span>
+          <span>🟢 Biztonságos</span>
+        </div>
+        <div id="driver-state-list" class="driver-state-list"></div>
+      </aside>
+
+      <div class="monitor-main-column">
+        <section id="monitor-main-panel" class="panel monitor-main-panel">
+          <div class="panel-title">⏱️ Tachográf monitor és timeline overlay</div>
+          <div id="tacho-main-content"></div>
+        </section>
+
+        <section class="panel monitor-insight-panel">
+          <div class="panel-title">🧠 Predikció + fuvar-kompatibilitás</div>
+          <div id="monitor-insight-grid"></div>
+        </section>
+
+        <section class="panel monitor-map-panel">
+          <div class="panel-title">� Szerelvény Timeline</div>
+          <div id="assembly-timeline-container">Betöltés...</div>
+        </section>
+
+        <section class="panel monitor-operation-panel">
+          <div class="panel-title">🧾 Szerelvény műveleti napló</div>
+          <div id="monitor-operation-log" class="assembly-operation-log"></div>
+        </section>
+
+        <section class="panel monitor-map-panel">
+          <div class="panel-title">�🗺️ MapView szinkron (Rig + Tacho)</div>
+          <div class="monitor-map-layer-switch">
+            <span class="monitor-map-layer-pill parking">🅿️ Truck parkolók</span>
+            <span class="monitor-map-layer-pill service">🔧 Szervizek</span>
+            <span class="monitor-map-layer-pill fuel">⛽ Benzinkutak</span>
+            <span class="monitor-map-layer-pill depot">🏭 Depók</span>
+          </div>
+          <div id="monitor-map-container"></div>
+        </section>
+      </div>
+
+      <aside class="panel monitor-alerts-panel">
+        <div class="panel-title">🚨 Alerts Panel</div>
+        <div id="monitor-alerts-list" class="monitor-alerts-list"></div>
+      </aside>
+    </section>
+  </main>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script type="module" src="./assets/js/ui/menetiranyitas-panel.js"></script>
+</body>
+</html>
