@@ -1,5 +1,21 @@
 # ⚡ QUICK REFERENCE - Fuvarszervezés Fejlesztés
 
+## 🆕 Demo Update (2026-03-27) - Azonnali fókusz
+
+### Top 5 kritikus fejlesztés
+1. **Üres futás automatikus beszúrás**
+2. **Szerelvény csoportos master timeline**
+3. **Erőforrás pozíció megjelenítés időpont szerint**
+4. **Scoring alapú javaslatok (szűrés helyett rangsorolás)**
+5. **Járat KPI-k élő számolása tervezés közben**
+
+### Modul felelőségek (rövid)
+- `timeline-generator.js`: üres futás beszúrás + folytonosság validáció
+- `szerelveny-timeline.js`: master csoportos megjelenítés
+- `matching.js`: scoring és ajánlati sorrend
+- `fuvar-panel.js`: fuvarra ugrás + KPI panel
+- `menetiranyitas-panel.js`: handoff adatok (vezetési idők, szabadulás)
+
 ## 🎯 3 Legfontosabb Feladat
 
 ### 1️⃣ **Fuvar Kártyák Megújítása**

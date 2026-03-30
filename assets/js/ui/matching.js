@@ -40,6 +40,22 @@ function isDomesticOnlyTipus(tipus) {
 }
 
 // =======================================================
+// AKTÍV FUVARSZERVEZÉSI PROFIL (opcionális, modul-szintű)
+// =======================================================
+let _activeDispatchProfile = null;
+
+/**
+ * Beállítja az aktív dispatch profil adatait.
+ * Ha nincs bekapcsolt profil, null-t kell átadni – ez esetben
+ * a matching logika az alapértelmezett viselkedéssel fut.
+ * @param {string|null} profileId
+ * @param {Object|null} params  – a profil aktuális paraméterei (key→value)
+ */
+export function setDispatchProfile(profileId, params) {
+  _activeDispatchProfile = params ? { _profileId: profileId, ...params } : null;
+}
+
+// =======================================================
 // FUVAR TAG-EK KIEGÉSZÍTÉSE (ADR, sürgős, típus)
 // =======================================================
 export function evaluateFuvarTags(fuvar) {
@@ -76,45 +92,109 @@ export function evaluateFuvarTags(fuvar) {
 // SOFŐR EVALUÁCIÓ
 // =======================================================
 export function evaluateSoforForFuvar(sofor, fuvar) {
-  const reasons = [];
+  evaluateFuvarTags(fuvar);
+
+  const profile = _activeDispatchProfile;
+  const reasons = [];   // kemény elutasítások
+  const warnings = [];  // puha figyelmeztetések (profil-alapú)
   let suitable = true;
   const soforTipus = ensureResourceTipus(sofor, "belföldes");
 
   // ADR
+  // safe-compliance profil: ha adrStrictness < 50%, ADR hiány csak figyelmeztetés
   if (fuvar.adr && !sofor.adr) {
-    suitable = false;
-    reasons.push("Nincs ADR képesítés");
+    const isRelaxed = profile?._profileId === "safe-compliance" && profile.adrStrictness < 50;
+    if (isRelaxed) {
+      warnings.push(`⚠ ADR képesítés hiányzik (engedélyezett, lazított szigor: ${profile.adrStrictness}%)`);
+    } else {
+      suitable = false;
+      reasons.push("Nincs ADR képesítés");
+    }
   }
 
   // Belföldi vs nemzetközi
+  // quick-flow profil: ha flexibility >= 70%, belföldes sofőr csak figyelmeztetés
   if (fuvar.kategoria !== "belfold" && isDomesticOnlyTipus(soforTipus)) {
-    suitable = false;
-    reasons.push("Belföldes sofőr nem vihet nemzetközi fuvart");
+    const isFlexible = profile?._profileId === "quick-flow" && profile.flexibility >= 70;
+    if (isFlexible) {
+      warnings.push(`⚠ Belföldes sofőr – rugalmas mód aktív (${profile.flexibility}%)`);
+    } else {
+      suitable = false;
+      reasons.push("Belföldes sofőr nem vihet nemzetközi fuvart");
+    }
   }
 
-  // Kezes kompatibilitás
+  // Kezes kompatibilitás – mindig kemény szabály
   if (fuvar.kezes && fuvar.kezes !== sofor.kezes) {
     suitable = false;
     reasons.push(`A fuvar ${fuvar.kezes} kezes, de a sofőr ${sofor.kezes} kezes`);
   }
 
-  // Időütközés (timeline)
+  // Időütközés – mindig kemény szabály
   if (hasCollision(sofor.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido)) {
     suitable = false;
     reasons.push("Időben ütközik meglévő foglalással");
   }
 
+  // Vezetési órák ellenőrzése
+  if (sofor.driving) {
+    let requiredHours = calculateRequiredDrivingHours(fuvar);
+
+    // service-focus profil: etaBuffer hozzáadódik a szükséges időhöz
+    if (profile?._profileId === "service-focus" && profile.etaBuffer > 0) {
+      requiredHours += profile.etaBuffer;
+    }
+
+    // Napi limit ellenőrzés (EU: max 9 óra/nap)
+    const remainingDailyHours = sofor.driving.dailyLimitHours - sofor.driving.dailyDrivenHours;
+    if (requiredHours > remainingDailyHours) {
+      suitable = false;
+      reasons.push(`Nincs elég napi vezetési idő (szükséges: ${requiredHours.toFixed(1)}h, maradt: ${remainingDailyHours.toFixed(1)}h)`);
+    } else if (profile?._profileId === "safe-compliance" && remainingDailyHours < profile.drivingReserveAlert) {
+      // safe-compliance: alacsony tartalék figyelmeztetés (de még ok)
+      warnings.push(`⚠ Alacsony napi tartalék: ${remainingDailyHours.toFixed(1)}h (küszöb: ${profile.drivingReserveAlert}h)`);
+    }
+
+    // Heti limit ellenőrzés (EU: max 56 óra/hét)
+    const remainingWeeklyHours = sofor.driving.weeklyLimitHours - sofor.driving.weeklyDrivenHours;
+    if (requiredHours > remainingWeeklyHours) {
+      suitable = false;
+      reasons.push(`Nincs elég heti vezetési idő (szükséges: ${requiredHours.toFixed(1)}h, maradt: ${remainingWeeklyHours.toFixed(1)}h)`);
+    } else if (profile?._profileId === "safe-compliance" && remainingWeeklyHours < profile.drivingReserveAlert * 3) {
+      warnings.push(`⚠ Alacsony heti tartalék: ${remainingWeeklyHours.toFixed(1)}h (küszöb: ${(profile.drivingReserveAlert * 3).toFixed(1)}h)`);
+    }
+
+    // Kötelező pihenő ellenőrzés (4.5 óra után)
+    if (sofor.driving.restMinutesEarned < 45 * 60 && requiredHours > 4.5) {
+      suitable = false;
+      reasons.push(`Kötelező pihenő szükséges (maradt: ${(sofor.driving.restMinutesEarned / 60).toFixed(0)} perc)`);
+    }
+  }
+
+  const grade = !suitable ? "bad" : warnings.length > 0 ? "warn" : "ok";
+
   return {
     suitable,
-    reasons,
-    grade: suitable ? "ok" : "bad"
+    reasons: [...reasons, ...warnings],
+    warnings,
+    grade
   };
+}
+
+// Helper: Calculate required driving hours for a fuvar
+function calculateRequiredDrivingHours(fuvar) {
+  const km = fuvar.tavolsag_km || 0;
+  const avgSpeed = 67; // km/h (EU átlag)
+  const hours = km / avgSpeed;
+  return Math.max(0.5, hours); // minimum 0.5 óra
 }
 
 // =======================================================
 // VONTATÓ EVALUÁCIÓ
 // =======================================================
 export function evaluateVontatoForFuvar(vontato, fuvar) {
+  evaluateFuvarTags(fuvar);
+
   const reasons = [];
   let suitable = true;
   const vontatoTipus = ensureResourceTipus(vontato, "belföldi");
@@ -143,6 +223,7 @@ export function evaluateVontatoForFuvar(vontato, fuvar) {
   return {
     suitable,
     reasons,
+    warnings: [],
     grade: suitable ? "ok" : "bad"
   };
 }
@@ -151,6 +232,8 @@ export function evaluateVontatoForFuvar(vontato, fuvar) {
 // PÓTKOCSI EVALUÁCIÓ
 // =======================================================
 export function evaluatePotkocsiForFuvar(pk, fuvar) {
+  evaluateFuvarTags(fuvar);
+
   const reasons = [];
   let suitable = true;
   const potkocsiTipus = ensureResourceTipus(pk, "belföldi");
@@ -176,6 +259,7 @@ export function evaluatePotkocsiForFuvar(pk, fuvar) {
   return {
     suitable,
     reasons,
+    warnings: [],
     grade: suitable ? "ok" : "bad"
   };
 }

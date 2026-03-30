@@ -6,7 +6,7 @@
 
 import { distanceKm, formatDate } from "../utils.js";
 import { FUVAROK } from "../data/fuvarok.js";
-import { addFuvarBlockToTimeline, hasCollision, refreshAutoDeadheadBlocksForVontato } from "./timeline.js";
+import { addFuvarBlockToTimeline, hasCollision, refreshAutoDriverStatesForLinkedConvoys, refreshAutoTransitBlocksForResource } from "./timeline.js";
 import { getCategoryPalette } from "./colors.js";
 
 const HOUR_WIDTH = 40;
@@ -21,7 +21,9 @@ let openAssemblyContextMenu = null;
 let openAssemblyOperationModal = null;
 let transientHandlersBound = false;
 let focusedFuvarId = null;
+let focusedAssemblyId = null;
 let assemblyDropoffVehiclesFilterActive = false;
+let activeAssemblyHoverTooltip = null;
 const IMPORT_LINK_WINDOW_HOURS = 4;
 const IMPORT_LINK_WINDOW_MS = IMPORT_LINK_WINDOW_HOURS * 3600 * 1000;
 const ADDRESS_COORDS = {
@@ -45,6 +47,67 @@ const ADDRESS_COORDS = {
   szekesfehervar: { lat: 47.186, lng: 18.4221 },
   kornye: { lat: 47.5449, lng: 18.3188 }
 };
+
+function ensureAssemblyHoverTooltip() {
+  if (activeAssemblyHoverTooltip && activeAssemblyHoverTooltip.isConnected) {
+    return activeAssemblyHoverTooltip;
+  }
+
+  const tooltip = document.createElement("div");
+  tooltip.className = "timeline-hover-tooltip";
+  tooltip.hidden = true;
+  document.body.appendChild(tooltip);
+  activeAssemblyHoverTooltip = tooltip;
+  return tooltip;
+}
+
+function showAssemblyHoverTooltip(content, clientX, clientY) {
+  const tooltip = ensureAssemblyHoverTooltip();
+  tooltip.textContent = content;
+  tooltip.hidden = false;
+
+  const margin = 14;
+  const rect = tooltip.getBoundingClientRect();
+  let left = clientX + margin;
+  let top = clientY + margin;
+
+  if (left + rect.width > window.innerWidth - 8) {
+    left = clientX - rect.width - margin;
+  }
+
+  if (top + rect.height > window.innerHeight - 8) {
+    top = clientY - rect.height - margin;
+  }
+
+  tooltip.style.left = `${Math.max(8, left)}px`;
+  tooltip.style.top = `${Math.max(8, top)}px`;
+}
+
+function hideAssemblyHoverTooltip() {
+  if (!activeAssemblyHoverTooltip) {
+    return;
+  }
+
+  activeAssemblyHoverTooltip.hidden = true;
+}
+
+function bindAssemblyBlockHoverTooltip(target, content) {
+  if (!target || !content) {
+    return;
+  }
+
+  target.addEventListener("mouseenter", (event) => {
+    showAssemblyHoverTooltip(content, event.clientX, event.clientY);
+  });
+
+  target.addEventListener("mousemove", (event) => {
+    showAssemblyHoverTooltip(content, event.clientX, event.clientY);
+  });
+
+  target.addEventListener("mouseleave", () => {
+    hideAssemblyHoverTooltip();
+  });
+}
 
 function normalizeSearchText(value) {
   return String(value || "")
@@ -165,6 +228,11 @@ window.addEventListener("fuvar:focus", (event) => {
   rerenderCurrentAssemblyTimeline();
 });
 
+window.addEventListener("assembly:focus", (event) => {
+  focusedAssemblyId = event?.detail?.assemblyId || null;
+  rerenderCurrentAssemblyTimeline();
+});
+
 function getFocusedImportFuvar() {
   if (!focusedFuvarId) {
     return null;
@@ -205,6 +273,48 @@ function formatDistanceKm(km) {
   return `${Math.round(km)} km`;
 }
 
+function formatCompactAssemblyTime(dateStr) {
+  const date = new Date(dateStr);
+
+  if (!Number.isFinite(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleTimeString("hu-HU", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function getCompactAssemblyLocation(address) {
+  const parts = String(address || "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length === 0) {
+    return "-";
+  }
+
+  const first = normalizeSearchText(parts[0]);
+  if ((first.includes("magyarorszag") || first.includes("hungary")) && parts[1]) {
+    return parts[1];
+  }
+
+  return parts[0];
+}
+
+function getAssemblyRouteForBlock(block) {
+  const linkedFuvar = findFuvarByBlock(block);
+  const pickupAddress = block?.felrakasCim || linkedFuvar?.felrakas?.cim || "";
+  const dropoffAddress = block?.lerakasCim || linkedFuvar?.lerakas?.cim || "";
+
+  return {
+    pickup: getCompactAssemblyLocation(pickupAddress),
+    dropoff: getCompactAssemblyLocation(dropoffAddress)
+  };
+}
+
 function getExportImportProximityHint(block, focusedImportFuvar) {
   if (!focusedImportFuvar || block?.type !== "fuvar" || block?.kategoria !== "export") {
     return null;
@@ -225,6 +335,101 @@ function getExportImportProximityHint(block, focusedImportFuvar) {
     distance,
     deltaHours
   };
+}
+
+const ASSEMBLY_FUVAR_REVENUE_PER_KM = 420;
+const ASSEMBLY_FUVAR_COST_PER_KM = 255;
+
+function getAssemblyBlockDistanceKm(block) {
+  if (Number.isFinite(block?.tavolsagKm)) {
+    return Number(block.tavolsagKm);
+  }
+
+  const fuvar = findFuvarByBlock(block);
+  if (Number.isFinite(fuvar?.tavolsag_km)) {
+    return Number(fuvar.tavolsag_km);
+  }
+
+  const distance = estimateAddressDistanceKm(block?.felrakasCim || "", block?.lerakasCim || "");
+  return Number.isFinite(distance) ? Math.round(distance) : Number.NaN;
+}
+
+function formatMoneyHuf(value) {
+  const safe = Number.isFinite(value) ? Math.round(value) : 0;
+  return `${safe.toLocaleString("hu-HU")} Ft`;
+}
+
+function isAssemblyKornyeAddress(address) {
+  return normalizeSearchText(address).includes("kornye");
+}
+
+function buildAssemblyCompletedJaratInfo(fuvarBlocks) {
+  const byBlock = new Map();
+  const summaries = [];
+  const ordered = (fuvarBlocks || [])
+    .filter((block) => block?.type === "fuvar")
+    .sort((left, right) => new Date(left.start) - new Date(right.start));
+
+  let segment = [];
+  let jaratCounter = 0;
+
+  const flush = () => {
+    segment = [];
+  };
+
+  ordered.forEach((block) => {
+    segment.push(block);
+
+    const dropoffAddress = block?.lerakasCim || "";
+    if (!isAssemblyKornyeAddress(dropoffAddress)) {
+      return;
+    }
+
+    jaratCounter += 1;
+    const jaratId = `JR-${jaratCounter}`;
+
+    segment.forEach((segmentBlock) => {
+      byBlock.set(segmentBlock, { jaratId });
+    });
+
+    summaries.push({
+      jaratId,
+      blockCount: segment.length,
+      end: block.end
+    });
+
+    flush();
+  });
+
+  return {
+    byBlock,
+    summaries
+  };
+}
+
+function buildAssemblyBlockTooltip(block, jaratMeta = null) {
+  const distanceKm = getAssemblyBlockDistanceKm(block);
+  const revenue = Number.isFinite(distanceKm) ? distanceKm * ASSEMBLY_FUVAR_REVENUE_PER_KM : 0;
+  const cost = Number.isFinite(distanceKm) ? distanceKm * ASSEMBLY_FUVAR_COST_PER_KM : 0;
+  const profit = revenue - cost;
+  const distanceLabel = Number.isFinite(distanceKm) ? `${Math.round(distanceKm)} km` : "n/a";
+
+  const route = getAssemblyRouteForBlock(block);
+
+  const lines = [
+    `${route.pickup} → ${route.dropoff}`,
+    `${formatDate(block.start)} → ${formatDate(block.end)}`,
+    `Táv: ${distanceLabel}`,
+    `Bevétel: ${formatMoneyHuf(revenue)}`,
+    `Költség: ${formatMoneyHuf(cost)}`,
+    `Eredményesség: ${formatMoneyHuf(profit)}`
+  ];
+
+  if (jaratMeta?.jaratId) {
+    lines.push(`Kész járat: ${jaratMeta.jaratId}`);
+  }
+
+  return lines.join("\n");
 }
 
 function escapeHtml(value) {
@@ -639,9 +844,19 @@ function applyFuvarAssignment(fuvar, assignment, soforok, vontatok, potkocsik) {
     }
   }
 
-  vontatok.forEach((vontato) => {
-    refreshAutoDeadheadBlocksForVontato(vontato);
+  soforok.forEach((sofor) => {
+    refreshAutoTransitBlocksForResource(sofor, FUVAROK);
   });
+
+  vontatok.forEach((vontato) => {
+    refreshAutoTransitBlocksForResource(vontato, FUVAROK);
+  });
+
+  potkocsik.forEach((potkocsi) => {
+    refreshAutoTransitBlocksForResource(potkocsi, FUVAROK);
+  });
+
+  refreshAutoDriverStatesForLinkedConvoys(soforok, vontatok, potkocsik);
 }
 
 function unlinkPotkocsi(potkocsi, vontatok) {
@@ -1250,6 +1465,9 @@ function buildAssemblies(soforok, vontatok, potkocsik) {
 function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik) {
   const row = document.createElement("div");
   row.className = "timeline-resource assembly-row";
+  if (focusedAssemblyId && focusedAssemblyId === assembly.id) {
+    row.classList.add("active");
+  }
   row.dataset.assemblyId = assembly.id;
   row.setAttribute("role", "button");
   row.setAttribute("tabindex", "0");
@@ -1269,11 +1487,12 @@ function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik) {
   const bar = document.createElement("div");
   bar.className = "timeline-bar assembly-bar";
   bar.style.width = TIMELINE_WIDTH + "px";
-  bar.style.height = "96px";
+  bar.style.height = "64px";
   bar.style.position = "relative";
 
   let visibleBlocks = 0;
   const focusedImportFuvar = getFocusedImportFuvar();
+  const completedJaratInfo = buildAssemblyCompletedJaratInfo(assembly.fuvarBlocks || []);
 
   assembly.fuvarBlocks.forEach((block) => {
     const visibleBlock = clipBlockToWindow(block);
@@ -1300,22 +1519,39 @@ function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik) {
       div.style.setProperty("--timeline-block-accent", palette.accent);
     }
 
-    const tags = [
-      visibleBlock.kategoria,
-      visibleBlock.adr ? "ADR" : "",
-      visibleBlock.surgos ? "Sürgős" : ""
-    ].filter(Boolean).join(" • ");
-
     const proximityHint = getExportImportProximityHint(visibleBlock, focusedImportFuvar);
     const proximityHintHtml = proximityHint
       ? `<span class="timeline-import-link-hint">↔ ${formatDistanceKm(proximityHint.distance)} • Δt ${formatSignedHours(proximityHint.deltaHours)}</span>`
       : "";
 
+    const route = getAssemblyRouteForBlock(visibleBlock);
+    const urgentHtml = visibleBlock.surgos
+      ? '<span class="timeline-inline-urgent">SÜRGŐS</span>'
+      : "";
+    const startText = formatCompactAssemblyTime(visibleBlock.start);
+    const endText = formatCompactAssemblyTime(visibleBlock.end);
+    const comboLine = `👤 ${soforName} | 🚛 ${assembly.vontato.rendszam} | 🚚 ${potkocsiRendszam}`;
+
     div.innerHTML = `
-      <div class="timeline-block-title"><strong>${visibleBlock.label}</strong>${proximityHintHtml}</div>
-      <div class="assembly-block-combo">👤 ${soforName} | 🚛 ${assembly.vontato.rendszam} | 🚚 ${potkocsiRendszam}</div>
-      <div class="timeline-block-time">${formatDate(visibleBlock.start)} → ${formatDate(visibleBlock.end)}${tags ? ` • ${tags}` : ""}</div>
+      <div class="assembly-block-line-primary">${urgentHtml}<strong>${route.pickup} → ${route.dropoff}</strong><span class="timeline-compact-separator">•</span><span>${startText} → ${endText}</span>${proximityHintHtml}</div>
+      <div class="assembly-block-line-secondary">${comboLine}</div>
     `;
+
+    const jaratMeta = completedJaratInfo.byBlock.get(block) || null;
+    if (jaratMeta?.jaratId) {
+      div.classList.add("jarat-complete");
+      const titleEl = div.querySelector(".timeline-block-title");
+      if (titleEl) {
+        const badge = document.createElement("span");
+        badge.className = "timeline-jarat-badge";
+        badge.textContent = jaratMeta.jaratId;
+        titleEl.appendChild(badge);
+      }
+    }
+
+    const blockTooltip = buildAssemblyBlockTooltip(visibleBlock, jaratMeta);
+    div.title = blockTooltip;
+    bindAssemblyBlockHoverTooltip(div, blockTooltip);
 
     div.addEventListener("contextmenu", (event) => {
       event.preventDefault();
@@ -1402,7 +1638,7 @@ function renderAssemblyPager(container, containerId, soforok, vontatok, potkocsi
   container.appendChild(nav);
 }
 
-export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocsik) {
+export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocsik, options = {}) {
   const container = document.getElementById(containerId);
   if (!container) {
     return;
@@ -1421,21 +1657,31 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
   container.innerHTML = "";
 
   const assemblies = buildAssemblies(soforok, vontatok, potkocsik);
-  const dropoffView = buildAssemblyDropoffView(assemblies);
+  const spedicioOnlyAssemblies = Boolean(options?.spedicioOnly)
+    ? assemblies.filter((assembly) => {
+      return (assembly?.fuvarBlocks || []).some((block) => {
+        const fuvar = findFuvarByBlock(block);
+        return Boolean(fuvar?.spediccio);
+      });
+    })
+    : assemblies;
+  const dropoffView = buildAssemblyDropoffView(spedicioOnlyAssemblies);
 
   renderAssemblyPager(container, containerId, soforok, vontatok, potkocsik, dropoffView);
   renderTimeScale(container);
 
-  if (assemblies.length === 0) {
+  if (spedicioOnlyAssemblies.length === 0) {
     const empty = document.createElement("div");
     empty.className = "assembly-empty-state";
-    empty.textContent = "Nincs még összeállított szerelvény. Húzz erőforrásokat egymásra a kártyákon.";
+    empty.textContent = options?.spedicioOnly
+      ? "Nincs olyan szerelvény, amelyen spediciós fuvar szerepel."
+      : "Nincs még összeállított szerelvény. Húzz erőforrásokat egymásra a kártyákon.";
     container.appendChild(empty);
     return;
   }
 
   const visibleAssemblies = assemblyDropoffVehiclesFilterActive
-    ? assemblies
+    ? spedicioOnlyAssemblies
       .filter((assembly) => dropoffView.insightByAssemblyId.has(assembly.id))
       .map((assembly, index) => ({ assembly, index }))
       .sort((left, right) => {
@@ -1457,7 +1703,7 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
         return left.index - right.index;
       })
       .map(({ assembly }) => assembly)
-    : assemblies;
+    : spedicioOnlyAssemblies;
 
   if (assemblyDropoffVehiclesFilterActive && visibleAssemblies.length === 0) {
     const info = document.createElement("div");

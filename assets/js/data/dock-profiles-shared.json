@@ -1,0 +1,31 @@
+{
+  "activeUserId": "default-user",
+  "users": {
+    "default-user": {
+      "displayName": "Fuvarszervező",
+      "views": [
+        {
+          "id": "view-default",
+          "name": "Alapnézet",
+          "updatedAt": 0,
+          "layout": {
+            "zones": {
+              "left": ["fuvar", "resource"],
+              "right": ["timeline", "map"],
+              "full": []
+            },
+            "detached": [],
+            "homeZone": {
+              "fuvar": "left",
+              "resource": "left",
+              "timeline": "right",
+              "map": "right"
+            }
+          },
+          "fuvarColumns": ["route", "pickup", "delivery", "distance", "status", "tractor"]
+        }
+      ],
+      "lastUsedViewId": "view-default"
+    }
+  }
+}

@@ -169,6 +169,291 @@
       color: #e8f7ff;
     }
 
+    .subpanel-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 14px 0 8px;
+    }
+
+    .assembly-focus-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(125, 141, 157, 0.48);
+      background: rgba(125, 141, 157, 0.12);
+      color: #c9d5e2;
+      max-width: min(48vw, 520px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .assembly-focus-indicator.active {
+      border-color: rgba(76, 217, 100, 0.55);
+      background: rgba(76, 217, 100, 0.16);
+      color: #e7ffe9;
+    }
+
+    .assembly-focus-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .assembly-focus-clear-btn {
+      border: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 1;
+      background: rgba(10, 15, 22, 0.42);
+      color: #d6e5f2;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .assembly-focus-indicator.active .assembly-focus-clear-btn {
+      display: inline-flex;
+    }
+
+    .assembly-focus-clear-btn:hover {
+      background: rgba(10, 15, 22, 0.65);
+      color: #ffffff;
+    }
+
+    .next-fuvar-recommendation {
+      margin: 0 0 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(125, 141, 157, 0.4);
+      background: rgba(125, 141, 157, 0.12);
+      color: #dce6ef;
+      font-size: 12px;
+      display: none;
+    }
+
+    .next-fuvar-recommendation.active {
+      display: block;
+    }
+
+    .next-fuvar-recommendation.good {
+      border-color: rgba(76, 217, 100, 0.55);
+      background: rgba(76, 217, 100, 0.14);
+      color: #e8ffe9;
+    }
+
+    .next-fuvar-recommendation.warn {
+      border-color: rgba(255, 183, 77, 0.55);
+      background: rgba(255, 183, 77, 0.14);
+      color: #ffe8bf;
+    }
+
+    .next-fuvar-recommendation .title {
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .timeline-resource.assembly-row.active {
+      box-shadow: inset 0 0 0 2px rgba(76, 217, 100, 0.5);
+      border-radius: 10px;
+    }
+
+    .timeline-resource.assembly-row.active .timeline-resource-name {
+      background: rgba(76, 217, 100, 0.18);
+      border-color: rgba(76, 217, 100, 0.52);
+    }
+
+    .dispatch-profile-panel {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(102, 123, 142, 0.38);
+      background: linear-gradient(180deg, rgba(20, 28, 38, 0.92) 0%, rgba(16, 23, 33, 0.92) 100%);
+      color: #dce8f3;
+    }
+
+    .dispatch-profile-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .dispatch-profile-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 800;
+      color: #ecf5ff;
+    }
+
+    .dispatch-profile-subtitle {
+      margin: 0;
+      font-size: 11px;
+      opacity: 0.75;
+    }
+
+    .dispatch-profile-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .dispatch-profile-card {
+      border: 1px solid rgba(130, 150, 171, 0.35);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(20, 30, 42, 0.72);
+    }
+
+    .dispatch-profile-card.active {
+      border-color: rgba(76, 217, 100, 0.55);
+      background: rgba(28, 44, 37, 0.62);
+      box-shadow: inset 0 0 0 1px rgba(76, 217, 100, 0.2);
+    }
+
+    .dispatch-profile-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .dispatch-profile-card-title {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: #eff8ff;
+    }
+
+    .dispatch-profile-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #d8e8f8;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .dispatch-profile-toggle input {
+      accent-color: #4cd964;
+    }
+
+    .dispatch-profile-note {
+      margin: 0 0 8px;
+      font-size: 11px;
+      opacity: 0.8;
+      line-height: 1.35;
+    }
+
+    .dispatch-profile-bullets {
+      margin: 0 0 8px;
+      padding-left: 16px;
+      display: grid;
+      gap: 3px;
+      font-size: 11px;
+      line-height: 1.3;
+      color: #d7e7f7;
+    }
+
+    .dispatch-profile-bullets li {
+      margin: 0;
+    }
+
+    .dispatch-profile-params {
+      display: grid;
+      gap: 8px;
+    }
+
+    .dispatch-profile-param {
+      display: grid;
+      gap: 4px;
+    }
+
+    .dispatch-profile-param-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      color: #d9e8f7;
+    }
+
+    .dispatch-profile-param-value {
+      color: #9ae4ff;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .dispatch-profile-param input[type="range"] {
+      width: 100%;
+      margin: 0;
+      accent-color: #4fc3f7;
+    }
+
+    .dispatch-profile-param-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 88px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .dispatch-profile-param-input {
+      width: 100%;
+      height: 30px;
+      border-radius: 8px;
+      border: 1px solid rgba(91, 123, 151, 0.5);
+      background: rgba(12, 18, 26, 0.9);
+      color: #e7f4ff;
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .dispatch-profile-param-input:focus {
+      outline: 2px solid rgba(79, 195, 247, 0.35);
+      border-color: rgba(79, 195, 247, 0.75);
+    }
+
+    .dispatch-profile-param-input:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .dispatch-profile-summary {
+      margin-top: 10px;
+      border-top: 1px dashed rgba(124, 148, 170, 0.35);
+      padding-top: 8px;
+      font-size: 11px;
+      color: #d6e5f3;
+      line-height: 1.35;
+    }
+
+    .dispatch-profile-summary strong {
+      color: #e9f5ff;
+    }
+
+    .dispatch-profile-summary ul {
+      margin: 6px 0 0;
+      padding-left: 16px;
+      display: grid;
+      gap: 3px;
+    }
+
     body.popup-panel-mode header {
       display: none;
     }
@@ -200,12 +485,12 @@
   <div id="layout-profile-bar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
     <label style="display:inline-flex;align-items:center;gap:6px;">
       <span style="font-size:12px;opacity:0.8;">Felhasználó</span>
-      <select id="layout-user-select" class="btn" style="height:32px;"></select>
+      <select id="layout-user-select" class="btn" style="height:32px;padding:6px 12px;"></select>
     </label>
     <button id="layout-user-add" type="button" class="btn" style="height:32px;">+ Felhasználó</button>
     <label style="display:inline-flex;align-items:center;gap:6px;">
       <span style="font-size:12px;opacity:0.8;">Nézet</span>
-      <select id="layout-view-select" class="btn" style="height:32px;"></select>
+      <select id="layout-view-select" class="btn" style="height:32px;padding:6px 12px;"></select>
     </label>
     <button id="layout-view-new" type="button" class="btn" style="height:32px;">Nézet mentése újként</button>
     <button id="layout-view-save" type="button" class="btn" style="height:32px;">Aktuális mentése</button>
@@ -213,7 +498,7 @@
     <button id="layout-view-delete" type="button" class="btn" style="height:32px;">Törlés</button>
     <button id="layout-view-reset" type="button" class="btn" style="height:32px;border-color:rgba(255,183,77,0.5);background:rgba(255,183,77,0.1);color:#ffe0a0;">Alapértelmezett nézet</button>
     <details id="layout-columns-details" style="position:relative;">
-      <summary class="btn" style="height:32px;display:inline-flex;align-items:center;list-style:none;cursor:pointer;">Kártya oszlopok</summary>
+      <summary class="btn" style="height:32px;display:inline-flex;align-items:center;list-style:none;cursor:pointer;font-size:14px;">Kártya oszlopok</summary>
       <div style="position:absolute;z-index:30;min-width:240px;max-width:320px;max-height:320px;overflow:auto;padding:10px;border:1px solid #2e2f33;border-radius:10px;background:#17181c;box-shadow:0 8px 24px rgba(0,0,0,0.35);">
         <div style="display:flex;gap:6px;margin-bottom:8px;">
           <button id="layout-columns-all" type="button" class="btn" style="height:28px;font-size:12px;">Összes</button>
@@ -222,6 +507,9 @@
         <div id="layout-columns-list" style="display:grid;gap:6px;"></div>
       </div>
     </details>
+    <button id="layout-view-export" type="button" class="btn" style="height:32px;min-width:32px;padding:0 10px;" title="Nézetek exportja fájlba" aria-label="Nézetek exportja fájlba">↓</button>
+    <button id="layout-view-import" type="button" class="btn" style="height:32px;min-width:32px;padding:0 10px;" title="Nézetek importja fájlból" aria-label="Nézetek importja fájlból">↑</button>
+    <input id="layout-view-import-input" type="file" accept="application/json" style="display:none;" />
   </div>
 </header>
 
@@ -291,10 +579,18 @@
       </div>
     </div>
 
-    <div id="timeline-container">Betöltés...</div>
-
-    <div class="subpanel-title" style="margin:14px 0 8px;">Szerelvény Timeline</div>
+    <div class="subpanel-title-row">
+      <div class="subpanel-title" style="margin:0;">Szerelvény Timeline</div>
+      <div id="assembly-focus-indicator" class="assembly-focus-indicator">
+        <span id="assembly-focus-text" class="assembly-focus-text">Szerelvény fókusz: nincs</span>
+        <button id="assembly-focus-clear" type="button" class="assembly-focus-clear-btn" title="Szerelvény fókusz törlése" aria-label="Szerelvény fókusz törlése">x</button>
+      </div>
+    </div>
+    <div id="next-fuvar-recommendation" class="next-fuvar-recommendation"></div>
     <div id="assembly-timeline-container">Betöltés...</div>
+
+    <div class="subpanel-title" style="margin:14px 0 8px;">Erőforrás idővonal</div>
+    <div id="timeline-container">Betöltés...</div>
 
     <div class="subpanel-title" style="margin:14px 0 8px;">Szerelvény műveleti napló</div>
     <div id="assembly-operation-log" class="assembly-operation-log"></div>
@@ -313,6 +609,7 @@
     </div>
 
     <div id="assembly-map-container"></div>
+    <div id="dispatch-profile-panel" class="dispatch-profile-panel"></div>
   </section>
 
 </div>
@@ -338,7 +635,8 @@ import { POTKOCSIK } from "./assets/js/data/potkocsik.js";
 /* ------------------------
    UI/MATCHING MODULOK
 ------------------------- */
-import { renderTimeline, getTimelineFilterReferenceDate } from "./assets/js/ui/timeline.js";
+import { renderTimeline, getTimelineFilterReferenceDate, refreshAutoDriverStatesForLinkedConvoys, refreshAutoTransitBlocksForResource } from "./assets/js/ui/timeline.js";
+import { setDispatchProfile as setTimelineDispatchProfile } from "./assets/js/ui/timeline.js";
 import { getAssemblyOperationLogEntries, renderSzerelvenyTimeline } from "./assets/js/ui/szerelveny-timeline.js";
 import { renderSzerelvenyMap } from "./assets/js/ui/szerelveny-map.js";
 import { renderResourcePanel } from "./assets/js/ui/resource-panel.js";
@@ -346,25 +644,139 @@ import { ensureContinuousTimelines } from "./assets/js/ui/timeline-generator.js"
 import {
   renderFuvarFilters,
   renderFuvarCards,
+  openSpedicioOrderFormModal,
   FUVAR_CARD_COLUMN_OPTIONS,
   DEFAULT_FUVAR_CARD_COLUMNS,
   createDefaultFuvarFilterState
 } from "./assets/js/ui/fuvar-panel.js";
 import { evaluateAllResources } from "./assets/js/ui/matching.js";
+import { setDispatchProfile as setMatchingDispatchProfile } from "./assets/js/ui/matching.js";
 import {
   enableFuvarDrag,
   enableTimelineDrop,
   enableResourceCardDrop,
   setDragDropRefreshHandler
 } from "./assets/js/ui/dragdrop.js";
+import { buildSpedicioPartnerResources } from "./assets/js/ui/spedicio-partners.js";
 
 let currentFuvarFilter = createDefaultFuvarFilterState();
+let previousFuvarFilterBeforeDropoffMode = null;
 let selectedFuvarId = null;
+let selectedAssemblyId = null;
+let resourceFocusScope = null;
+let resourceFocusSource = "none";
+
+const DISPATCH_PROFILE_STORAGE_KEY = "transit.v44.dispatchProfiles";
+const DISPATCH_PROFILE_DEFINITIONS = [
+  {
+    id: "cost-saving",
+    title: "A) Cost Saving Profil",
+    note: "Költség és üres futás minimalizálás fókusz.",
+    recommendationBullets: [
+      "Optimalizáld a távolságot",
+      "Minimalizáld a rezsi futást",
+      "Nem sürgős fuvarok előnyben"
+    ],
+    alertBullets: [
+      "Riasztás, ha rezsi futás túl magas",
+      "Riasztás, ha költség/km küszöb fölé megy"
+    ],
+    params: [
+      { key: "distanceWeight", label: "Távolság súly", min: 0, max: 100, step: 1, defaultValue: 80, suffix: "%" },
+      { key: "deadheadPenalty", label: "Rezsi futás büntetés", min: 0, max: 100, step: 1, defaultValue: 85, suffix: "%" },
+      { key: "deadheadAlertKm", label: "Rezsi riasztás", min: 20, max: 250, step: 5, defaultValue: 80, suffix: " km" }
+    ]
+  },
+  {
+    id: "quick-flow",
+    title: "B) Gyors Szervezés Profil (Pörgős)",
+    note: "Sebesség és rugalmasság fókusz.",
+    recommendationBullets: [
+      "Gyorsan szervezd le",
+      "Rugalmasabb paraméterek",
+      "Kevésbé a költségek számítanak"
+    ],
+    alertBullets: [
+      "Riasztás, ha 2 órán belüli indulás marad gazdátlan",
+      "Riasztás, ha túl sok részleges hozzárendelés van"
+    ],
+    params: [
+      { key: "speedWeight", label: "Gyorsaság súly", min: 0, max: 100, step: 1, defaultValue: 85, suffix: "%" },
+      { key: "flexibility", label: "Rugalmassági szint", min: 0, max: 100, step: 1, defaultValue: 70, suffix: "%" },
+      { key: "unassignedAlertHours", label: "Gazdátlan fuvar riasztás", min: 1, max: 12, step: 1, defaultValue: 2, suffix: " óra" }
+    ]
+  },
+  {
+    id: "safe-compliance",
+    title: "C) Biztonság / Compliance Profil",
+    note: "Jogszabályi és kockázati megfelelés fókusz.",
+    recommendationBullets: [
+      "ADR-kompatibilitás elsőbbség",
+      "Vezetési idő tartalék figyelembevétele",
+      "Papírmunka hiányosságok kerülése"
+    ],
+    alertBullets: [
+      "Riasztás ADR-inkompatibilis párosításnál",
+      "Riasztás, ha napi/heti vezetési tartalék alacsony"
+    ],
+    params: [
+      { key: "adrStrictness", label: "ADR szigor", min: 0, max: 100, step: 1, defaultValue: 90, suffix: "%" },
+      { key: "drivingReserveAlert", label: "Vezetési tartalék riasztás", min: 1, max: 10, step: 0.5, defaultValue: 3, suffix: " óra" },
+      { key: "docsStrictness", label: "Dokumentációs szigor", min: 0, max: 100, step: 1, defaultValue: 75, suffix: "%" }
+    ]
+  },
+  {
+    id: "service-focus",
+    title: "D) Ügyfélélmény / SLA Profil",
+    note: "Pontosság és késéskockázat fókusz.",
+    recommendationBullets: [
+      "SLA-kritikus fuvarok előre",
+      "Pontos ETA-k tartása",
+      "Késéskockázat csökkentése"
+    ],
+    alertBullets: [
+      "Riasztás, ha ETA-csúszás valószínű",
+      "Riasztás ismétlődő késési mintára"
+    ],
+    params: [
+      { key: "slaPriority", label: "SLA prioritás", min: 0, max: 100, step: 1, defaultValue: 80, suffix: "%" },
+      { key: "etaBuffer", label: "ETA puffer", min: 0, max: 8, step: 0.5, defaultValue: 1.5, suffix: " óra" },
+      { key: "delayAlertMinutes", label: "Késési riasztás", min: 10, max: 180, step: 5, defaultValue: 35, suffix: " perc" }
+    ]
+  }
+];
+
+let dispatchProfileState = createDefaultDispatchProfileState();
+
+const RECOMMENDATION_ADDRESS_COORDS = {
+  milano: { lat: 45.4642, lng: 9.19 },
+  hamburg: { lat: 53.5511, lng: 9.9937 },
+  lubeck: { lat: 53.8655, lng: 10.6866 },
+  munchen: { lat: 48.1351, lng: 11.582 },
+  frankfurt: { lat: 50.1109, lng: 8.6821 },
+  wien: { lat: 48.2082, lng: 16.3738 },
+  brno: { lat: 49.1951, lng: 16.6068 },
+  linz: { lat: 48.3069, lng: 14.2858 },
+  budapest: { lat: 47.4979, lng: 19.0402 },
+  gyor: { lat: 47.6875, lng: 17.6504 },
+  vac: { lat: 47.7826, lng: 19.1332 },
+  dunakeszi: { lat: 47.6364, lng: 19.1386 },
+  debrecen: { lat: 47.5316, lng: 21.6273 },
+  szeged: { lat: 46.253, lng: 20.1414 },
+  miskolc: { lat: 48.1035, lng: 20.7784 },
+  pecs: { lat: 46.0727, lng: 18.2323 },
+  tatabanya: { lat: 47.5692, lng: 18.4048 },
+  kecskemet: { lat: 46.8964, lng: 19.6897 },
+  esztergom: { lat: 47.7853, lng: 18.7423 },
+  szekesfehervar: { lat: 47.186, lng: 18.4221 },
+  kornye: { lat: 47.5449, lng: 18.3188 }
+};
 
 const PANEL_IDS = ["fuvar", "resource", "timeline", "map"];
 const DOCK_LAYOUT_KEY = "transit.v44.dockLayout";
 const DOCK_PROFILES_KEY = "transit.v44.dockProfiles";
 const DOCK_CHANNEL_NAME = "transit.v44.dockLayout.channel";
+const SHARED_DOCK_PROFILES_URL = "assets/js/data/dock-profiles-shared.json";
 
 const queryParams = new URLSearchParams(window.location.search);
 const requestedPanelMode = queryParams.get("panel");
@@ -413,7 +825,7 @@ function createView(name, layout = defaultDockLayout) {
   };
 }
 
-function createUserState(displayName = "Diszpécser") {
+function createUserState(displayName = "Fuvarszervező") {
   const defaultView = createView("Alapnézet", defaultDockLayout);
   return {
     displayName,
@@ -424,7 +836,7 @@ function createUserState(displayName = "Diszpécser") {
 
 function createDefaultProfiles(layoutFallback = null) {
   const fallback = layoutFallback ? sanitizeLayout(layoutFallback) : defaultDockLayout;
-  const baseUser = createUserState("Diszpécser");
+  const baseUser = createUserState("Fuvarszervező");
   baseUser.views[0].layout = sanitizeLayout(fallback);
 
   return {
@@ -619,7 +1031,12 @@ function loadDockProfiles() {
   try {
     const storedProfiles = localStorage.getItem(DOCK_PROFILES_KEY);
     if (storedProfiles) {
-      return sanitizeProfiles(JSON.parse(storedProfiles));
+      const profiles = sanitizeProfiles(JSON.parse(storedProfiles));
+      // Biztosítjuk, hogy az alapértelmezett felhasználó neve mindig "Fuvarszervező"
+      if (profiles.users["default-user"]) {
+        profiles.users["default-user"].displayName = "Fuvarszervező";
+      }
+      return profiles;
     }
 
     const legacyLayout = localStorage.getItem(DOCK_LAYOUT_KEY);
@@ -631,6 +1048,81 @@ function loadDockProfiles() {
   }
 
   return createDefaultProfiles();
+}
+
+function getProfilesLastUpdatedAt(profiles) {
+  const safeProfiles = sanitizeProfiles(profiles);
+  let lastUpdatedAt = 0;
+
+  Object.values(safeProfiles.users).forEach((userState) => {
+    userState.views.forEach((view) => {
+      const viewUpdatedAt = Number(view.updatedAt || 0);
+      if (Number.isFinite(viewUpdatedAt)) {
+        lastUpdatedAt = Math.max(lastUpdatedAt, viewUpdatedAt);
+      }
+    });
+  });
+
+  return lastUpdatedAt;
+}
+
+async function loadSharedDockProfilesFromFile() {
+  try {
+    const response = await fetch(`${SHARED_DOCK_PROFILES_URL}?v=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = await response.json();
+    return sanitizeProfiles(payload);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function exportDockProfilesToFile() {
+  const safeProfiles = sanitizeProfiles(dockProfilesState);
+  const blob = new Blob([JSON.stringify(safeProfiles, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "dock-profiles-shared.json";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => {
+    URL.revokeObjectURL(link.href);
+  }, 0);
+}
+
+function importDockProfilesFromFile(file) {
+  if (!file) {
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || "{}"));
+      dockProfilesState = sanitizeProfiles(parsed);
+      activeUserId = dockProfilesState.activeUserId;
+      const userState = getActiveUserState();
+      activeViewId = userState.lastUsedViewId || userState.views[0].id;
+      dockLayoutState = loadDockLayout();
+      persistDockProfiles({ broadcast: true });
+      refreshLayoutProfileControls();
+      applyDockLayout();
+      refreshAllViews();
+      alert("A nézetek sikeresen betöltve a fájlból.");
+    } catch (_error) {
+      alert("A kiválasztott fájl nem érvényes JSON nézetfájl.");
+    }
+  };
+
+  reader.onerror = () => {
+    alert("A fájl beolvasása sikertelen.");
+  };
+
+  reader.readAsText(file, "utf-8");
 }
 
 function persistDockProfiles(options = { broadcast: true }) {
@@ -1127,6 +1619,20 @@ function bindLayoutProfileControls() {
     deleteCurrentView();
   });
 
+  document.getElementById("layout-view-export")?.addEventListener("click", () => {
+    exportDockProfilesToFile();
+  });
+
+  document.getElementById("layout-view-import")?.addEventListener("click", () => {
+    document.getElementById("layout-view-import-input")?.click();
+  });
+
+  document.getElementById("layout-view-import-input")?.addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    importDockProfilesFromFile(file);
+    event.target.value = "";
+  });
+
   document.getElementById("layout-view-reset")?.addEventListener("click", () => {
     resetViewToDefault({ broadcast: true });
   });
@@ -1232,7 +1738,146 @@ function setupDockLayoutSync() {
 
 window.addEventListener("fuvar:focus", (event) => {
   selectedFuvarId = event?.detail?.fuvarId || null;
+  syncResourceFocusFromFuvarSelection();
+  updateAssemblyFocusIndicator();
 });
+
+window.addEventListener("assembly:focus", (event) => {
+  const assemblyId = event?.detail?.assemblyId || null;
+  selectedAssemblyId = assemblyId;
+  updateAssemblyFocusIndicator();
+  applyResourceFocusScope(buildResourceFocusScopeFromAssemblyId(assemblyId), "assembly");
+});
+
+function createEmptyResourceFocusScope(assemblyId = null) {
+  return {
+    assemblyId,
+    soforIds: new Set(),
+    vontatoIds: new Set(),
+    potkocsiIds: new Set()
+  };
+}
+
+function buildResourceFocusScopeFromAssemblyId(assemblyId) {
+  if (!assemblyId) {
+    return null;
+  }
+
+  const assemblyVontato = VONTATOK.find((item) => item.id === assemblyId);
+  if (!assemblyVontato) {
+    return null;
+  }
+
+  const scope = createEmptyResourceFocusScope(assemblyId);
+  scope.vontatoIds.add(assemblyVontato.id);
+
+  if (assemblyVontato.linkedSoforId) {
+    scope.soforIds.add(assemblyVontato.linkedSoforId);
+  }
+
+  if (assemblyVontato.linkedPotkocsiId) {
+    scope.potkocsiIds.add(assemblyVontato.linkedPotkocsiId);
+  }
+
+  return scope;
+}
+
+function buildResourceFocusScopeFromFuvarId(fuvarId) {
+  if (!fuvarId) {
+    return null;
+  }
+
+  const fuvar = FUVAROK.find((item) => item.id === fuvarId);
+  if (!fuvar?.assignedVontatoId) {
+    return null;
+  }
+
+  const scope = buildResourceFocusScopeFromAssemblyId(fuvar.assignedVontatoId)
+    || createEmptyResourceFocusScope(fuvar.assignedVontatoId);
+
+  scope.vontatoIds.add(fuvar.assignedVontatoId);
+
+  if (fuvar.assignedSoforId) {
+    scope.soforIds.add(fuvar.assignedSoforId);
+  }
+
+  if (fuvar.assignedPotkocsiId) {
+    scope.potkocsiIds.add(fuvar.assignedPotkocsiId);
+  }
+
+  return scope;
+}
+
+function resourceScopeEquals(left, right) {
+  if (!left && !right) {
+    return true;
+  }
+
+  if (!left || !right) {
+    return false;
+  }
+
+  const sameAssemblyId = left.assemblyId === right.assemblyId;
+  const sameSet = (setA, setB) => {
+    if (setA.size !== setB.size) {
+      return false;
+    }
+
+    for (const value of setA) {
+      if (!setB.has(value)) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  return sameAssemblyId
+    && sameSet(left.soforIds, right.soforIds)
+    && sameSet(left.vontatoIds, right.vontatoIds)
+    && sameSet(left.potkocsiIds, right.potkocsiIds);
+}
+
+function applyResourceFocusScope(nextScope, source = "none") {
+  const normalizedScope = nextScope || null;
+  if (resourceScopeEquals(resourceFocusScope, normalizedScope) && resourceFocusSource === source) {
+    return;
+  }
+
+  resourceFocusScope = normalizedScope;
+  resourceFocusSource = normalizedScope ? source : "none";
+  refreshAllViews();
+}
+
+function syncResourceFocusFromFuvarSelection() {
+  if (!selectedFuvarId) {
+    if (resourceFocusSource === "assembly" && selectedAssemblyId) {
+      return;
+    }
+
+    applyResourceFocusScope(null, "none");
+    return;
+  }
+
+  selectedAssemblyId = null;
+  applyResourceFocusScope(buildResourceFocusScopeFromFuvarId(selectedFuvarId), "fuvar");
+}
+
+function getVisibleResourcesByScope() {
+  if (!resourceFocusScope) {
+    return {
+      soforok: SOFOROK,
+      vontatok: VONTATOK,
+      potkocsik: POTKOCSIK
+    };
+  }
+
+  return {
+    soforok: SOFOROK.filter((item) => resourceFocusScope.soforIds.has(item.id)),
+    vontatok: VONTATOK.filter((item) => resourceFocusScope.vontatoIds.has(item.id)),
+    potkocsik: POTKOCSIK.filter((item) => resourceFocusScope.potkocsiIds.has(item.id))
+  };
+}
 
 function restoreSelectedFuvarCard() {
   document.querySelectorAll(".menu-card.active-fuvar").forEach((card) => {
@@ -1279,6 +1924,500 @@ function updateTimelineFocusIndicator() {
   indicator.classList.add("active");
 }
 
+function normalizeRecommendationText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function recommendationAddressCoords(address) {
+  const normalized = normalizeRecommendationText(address);
+  if (!normalized) {
+    return null;
+  }
+
+  const cityKey = Object.keys(RECOMMENDATION_ADDRESS_COORDS).find((key) => normalized.includes(key));
+  return cityKey ? RECOMMENDATION_ADDRESS_COORDS[cityKey] : null;
+}
+
+function recommendationDistanceKm(addressA, addressB) {
+  const coordsA = recommendationAddressCoords(addressA);
+  const coordsB = recommendationAddressCoords(addressB);
+
+  if (!coordsA || !coordsB) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(coordsB.lat - coordsA.lat);
+  const dLng = toRad(coordsB.lng - coordsA.lng);
+  const lat1 = toRad(coordsA.lat);
+  const lat2 = toRad(coordsB.lat);
+
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function isKornyeRecommendationAddress(address) {
+  return normalizeRecommendationText(address).includes("kornye");
+}
+
+function isHungarianRecommendationAddress(address) {
+  const normalized = normalizeRecommendationText(address);
+  return normalized.includes("magyarorszag") || normalized.includes("hungary") || normalized.includes("kornye");
+}
+
+function isFullyAssignedFuvarForRecommendation(fuvar) {
+  return Boolean(fuvar?.assignedSoforId && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId);
+}
+
+function getRecommendationAnchorFuvar() {
+  if (selectedAssemblyId) {
+    const assemblyFuvarok = FUVAROK
+      .filter((fuvar) => fuvar?.assignedVontatoId === selectedAssemblyId)
+      .filter((fuvar) => fuvar?.lerakas?.ido)
+      .sort((left, right) => new Date(right.lerakas.ido) - new Date(left.lerakas.ido));
+
+    if (assemblyFuvarok.length > 0) {
+      return assemblyFuvarok[0];
+    }
+  }
+
+  if (selectedFuvarId) {
+    const selected = FUVAROK.find((fuvar) => fuvar.id === selectedFuvarId) || null;
+    if (selected) {
+      return selected;
+    }
+  }
+
+  return null;
+}
+
+function getNextDomesticRecommendation(anchorFuvar) {
+  if (!anchorFuvar?.lerakas?.cim || !anchorFuvar?.lerakas?.ido) {
+    return null;
+  }
+
+  const anchorDropAddress = anchorFuvar.lerakas.cim;
+  const anchorInHungary = isHungarianRecommendationAddress(anchorDropAddress);
+  const anchorEndMs = new Date(anchorFuvar.lerakas.ido).getTime();
+  if (!Number.isFinite(anchorEndMs)) {
+    return null;
+  }
+
+  if (isKornyeRecommendationAddress(anchorDropAddress)) {
+    return { state: "hub" };
+  }
+
+  const candidates = FUVAROK
+    .filter((fuvar) => fuvar?.id !== anchorFuvar.id)
+    .filter((fuvar) => {
+      if (!anchorInHungary) {
+        return true;
+      }
+
+      return (fuvar?.kategoria || fuvar?.viszonylat) === "belfold";
+    })
+    .filter((fuvar) => !isFullyAssignedFuvarForRecommendation(fuvar))
+    .filter((fuvar) => fuvar?.felrakas?.ido && fuvar?.felrakas?.cim)
+    .map((fuvar) => {
+      const startMs = new Date(fuvar.felrakas.ido).getTime();
+      const distance = recommendationDistanceKm(anchorDropAddress, fuvar.felrakas.cim);
+      return { fuvar, startMs, distance };
+    })
+    .filter((entry) => Number.isFinite(entry.startMs) && entry.startMs >= anchorEndMs)
+    .sort((left, right) => {
+      const leftDistance = Number.isFinite(left.distance) ? left.distance : Number.POSITIVE_INFINITY;
+      const rightDistance = Number.isFinite(right.distance) ? right.distance : Number.POSITIVE_INFINITY;
+
+      if (leftDistance !== rightDistance) {
+        return leftDistance - rightDistance;
+      }
+
+      return left.startMs - right.startMs;
+    });
+
+  if (candidates.length === 0) {
+    return { state: "none" };
+  }
+
+  return { state: "recommended", ...candidates[0] };
+}
+
+function updateNextFuvarRecommendation() {
+  const host = document.getElementById("next-fuvar-recommendation");
+  if (!host) {
+    return;
+  }
+
+  const anchorFuvar = getRecommendationAnchorFuvar();
+  if (!anchorFuvar) {
+    host.className = "next-fuvar-recommendation";
+    host.innerHTML = "";
+    return;
+  }
+
+  const recommendation = getNextDomesticRecommendation(anchorFuvar);
+  if (!recommendation) {
+    host.className = "next-fuvar-recommendation";
+    host.innerHTML = "";
+    return;
+  }
+
+  if (recommendation.state === "hub") {
+    host.className = "next-fuvar-recommendation active";
+    host.innerHTML = `
+      <div class="title">Ajánlott következő fuvar</div>
+      <div>Az aktuális fuvar Környén ér véget, nincs kötelező további belföldi ajánlás.</div>
+    `;
+    return;
+  }
+
+  if (recommendation.state === "none") {
+    host.className = "next-fuvar-recommendation active warn";
+    const anchorAddress = anchorFuvar?.lerakas?.cim || "";
+    const anchorInHungary = isHungarianRecommendationAddress(anchorAddress);
+    const warningText = anchorInHungary
+      ? "Nincs elérhető belföldi ajánlat a lerakási ponthoz. Várhatóan rezsi futás vissza Környére."
+      : "Nincs elérhető következő fuvar a lerakási ponthoz illeszkedve. Várhatóan üres továbbutazás szükséges.";
+
+    host.innerHTML = `
+      <div class="title">Ajánlott következő fuvar</div>
+      <div>${warningText}</div>
+    `;
+    return;
+  }
+
+  const distanceLabel = Number.isFinite(recommendation.distance)
+    ? `${Math.round(recommendation.distance)} km`
+    : "n/a";
+
+  const startLabel = new Date(recommendation.fuvar.felrakas.ido).toLocaleString("hu-HU", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  host.className = "next-fuvar-recommendation active good";
+  host.innerHTML = `
+    <div class="title">Ajánlott következő fuvar</div>
+    <div><strong>${recommendation.fuvar.id}</strong> • ${recommendation.fuvar.megnevezes}</div>
+    <div>Felrakás: ${recommendation.fuvar.felrakas.cim}</div>
+    <div>Távolság a jelenlegi lerakótól: ${distanceLabel} • Indulás: ${startLabel}</div>
+  `;
+}
+
+function createDefaultDispatchProfileState() {
+  const profiles = {};
+
+  DISPATCH_PROFILE_DEFINITIONS.forEach((definition) => {
+    const params = {};
+    definition.params.forEach((param) => {
+      params[param.key] = param.defaultValue;
+    });
+
+    profiles[definition.id] = {
+      enabled: false,
+      params
+    };
+  });
+
+  return { profiles };
+}
+
+function sanitizeDispatchProfileState(raw) {
+  const base = createDefaultDispatchProfileState();
+  if (!raw || typeof raw !== "object" || !raw.profiles || typeof raw.profiles !== "object") {
+    return base;
+  }
+
+  DISPATCH_PROFILE_DEFINITIONS.forEach((definition) => {
+    const incomingProfile = raw.profiles[definition.id] || {};
+    const safeProfile = base.profiles[definition.id];
+    safeProfile.enabled = Boolean(incomingProfile.enabled);
+
+    definition.params.forEach((param) => {
+      const rawValue = Number(incomingProfile?.params?.[param.key]);
+      if (!Number.isFinite(rawValue)) {
+        return;
+      }
+
+      const bounded = Math.min(param.max, Math.max(param.min, rawValue));
+      safeProfile.params[param.key] = bounded;
+    });
+  });
+
+  return base;
+}
+
+function loadDispatchProfileState() {
+  try {
+    const raw = localStorage.getItem(DISPATCH_PROFILE_STORAGE_KEY);
+    if (!raw) {
+      return createDefaultDispatchProfileState();
+    }
+
+    return sanitizeDispatchProfileState(JSON.parse(raw));
+  } catch (_error) {
+    return createDefaultDispatchProfileState();
+  }
+}
+
+function syncDispatchProfileToModules() {
+  const activeDefinition = DISPATCH_PROFILE_DEFINITIONS.find(
+    (def) => dispatchProfileState?.profiles?.[def.id]?.enabled
+  );
+
+  if (activeDefinition) {
+    const profileId = activeDefinition.id;
+    const params = dispatchProfileState.profiles[profileId].params;
+    setMatchingDispatchProfile(profileId, params);
+    setTimelineDispatchProfile(profileId, params);
+  } else {
+    setMatchingDispatchProfile(null, null);
+    setTimelineDispatchProfile(null, null);
+  }
+}
+
+function persistDispatchProfileState() {
+  try {
+    localStorage.setItem(DISPATCH_PROFILE_STORAGE_KEY, JSON.stringify(dispatchProfileState));
+  } catch (_error) {
+    // no-op
+  }
+  syncDispatchProfileToModules();
+}
+
+function formatDispatchParamValue(definition, value) {
+  const isInteger = Number.isInteger(definition.step);
+  const numeric = isInteger ? Math.round(value) : Math.round(value * 10) / 10;
+  return `${numeric}${definition.suffix || ""}`;
+}
+
+function getActiveDispatchProfileItems() {
+  return DISPATCH_PROFILE_DEFINITIONS.filter((definition) => {
+    return Boolean(dispatchProfileState?.profiles?.[definition.id]?.enabled);
+  });
+}
+
+function buildDispatchSummaryHtml() {
+  const activeItems = getActiveDispatchProfileItems();
+  if (activeItems.length === 0) {
+    return `
+      <div class="dispatch-profile-summary">
+        <strong>Aktív profilok:</strong> nincs bekapcsolva.
+        <div>A rendszer alap módban fut, minden meglévő logika változatlan.</div>
+      </div>
+    `;
+  }
+
+  const listHtml = activeItems.map((definition) => {
+    const profileState = dispatchProfileState.profiles[definition.id];
+    const firstParam = definition.params[0];
+    const firstValue = formatDispatchParamValue(firstParam, profileState.params[firstParam.key]);
+    return `<li><strong>${definition.title}</strong> • fő súly: ${firstValue}</li>`;
+  }).join("");
+
+  return `
+    <div class="dispatch-profile-summary">
+      <strong>Aktív profilok:</strong> ${activeItems.length} db
+      <ul>${listHtml}</ul>
+    </div>
+  `;
+}
+
+function renderDispatchProfilePanel() {
+  const host = document.getElementById("dispatch-profile-panel");
+  if (!host) {
+    return;
+  }
+
+  const activeCount = getActiveDispatchProfileItems().length;
+
+  const cardsHtml = DISPATCH_PROFILE_DEFINITIONS.map((definition) => {
+    const profileState = dispatchProfileState.profiles[definition.id];
+    const enabledClass = profileState.enabled ? " active" : "";
+
+    const recommendationList = definition.recommendationBullets
+      .map((item) => `<li>${item}</li>`)
+      .join("");
+
+    const alertList = definition.alertBullets
+      .map((item) => `<li>${item}</li>`)
+      .join("");
+
+    const paramsHtml = definition.params.map((param) => {
+      const value = Number(profileState.params[param.key]);
+      return `
+        <label class="dispatch-profile-param">
+          <span class="dispatch-profile-param-head">
+            <span>${param.label}</span>
+            <span class="dispatch-profile-param-value">${formatDispatchParamValue(param, value)}</span>
+          </span>
+          <div class="dispatch-profile-param-controls">
+            <input
+              type="range"
+              min="${param.min}"
+              max="${param.max}"
+              step="${param.step}"
+              value="${value}"
+              data-dispatch-profile-param="${definition.id}"
+              data-dispatch-param-key="${param.key}"
+              ${profileState.enabled ? "" : "disabled"}
+            />
+            <input
+              type="number"
+              class="dispatch-profile-param-input"
+              min="${param.min}"
+              max="${param.max}"
+              step="${param.step}"
+              value="${value}"
+              data-dispatch-profile-input="${definition.id}"
+              data-dispatch-param-key="${param.key}"
+              ${profileState.enabled ? "" : "disabled"}
+            />
+          </div>
+        </label>
+      `;
+    }).join("");
+
+    return `
+      <article class="dispatch-profile-card${enabledClass}">
+        <div class="dispatch-profile-card-head">
+          <h4 class="dispatch-profile-card-title">${definition.title}</h4>
+          <label class="dispatch-profile-toggle">
+            <input
+              type="checkbox"
+              data-dispatch-profile-toggle="${definition.id}"
+              ${profileState.enabled ? "checked" : ""}
+            />
+            <span>${profileState.enabled ? "Bekapcsolva" : "Kikapcsolva"}</span>
+          </label>
+        </div>
+        <p class="dispatch-profile-note">${definition.note}</p>
+        <ul class="dispatch-profile-bullets">${recommendationList}</ul>
+        <ul class="dispatch-profile-bullets">${alertList}</ul>
+        <div class="dispatch-profile-params">${paramsHtml}</div>
+      </article>
+    `;
+  }).join("");
+
+  host.innerHTML = `
+    <div class="dispatch-profile-header">
+      <div>
+        <h3 class="dispatch-profile-title">Fuvarszervezési profilok (dummy)</h3>
+        <p class="dispatch-profile-subtitle">Aktív profilok: ${activeCount} • Alapállapotban minden profil ki van kapcsolva.</p>
+      </div>
+    </div>
+    <div class="dispatch-profile-grid">${cardsHtml}</div>
+    ${buildDispatchSummaryHtml()}
+  `;
+
+  host.querySelectorAll("[data-dispatch-profile-toggle]").forEach((toggle) => {
+    toggle.addEventListener("change", (event) => {
+      const profileId = event.target.dataset.dispatchProfileToggle;
+      const profileState = dispatchProfileState.profiles[profileId];
+      if (!profileState) {
+        return;
+      }
+
+      const shouldEnable = Boolean(event.target.checked);
+
+      Object.entries(dispatchProfileState.profiles).forEach(([candidateId, candidateState]) => {
+        candidateState.enabled = shouldEnable ? candidateId === profileId : false;
+      });
+
+      profileState.enabled = shouldEnable;
+      persistDispatchProfileState();
+      renderDispatchProfilePanel();
+    });
+  });
+
+  host.querySelectorAll("[data-dispatch-profile-param]").forEach((slider) => {
+    slider.addEventListener("input", (event) => {
+      const profileId = event.target.dataset.dispatchProfileParam;
+      const paramKey = event.target.dataset.dispatchParamKey;
+      const profileState = dispatchProfileState.profiles[profileId];
+      if (!profileState || !Object.prototype.hasOwnProperty.call(profileState.params, paramKey)) {
+        return;
+      }
+
+      profileState.params[paramKey] = Number(event.target.value);
+      persistDispatchProfileState();
+      renderDispatchProfilePanel();
+    });
+  });
+
+  host.querySelectorAll("[data-dispatch-profile-input]").forEach((input) => {
+    const applyValue = (event) => {
+      const profileId = event.target.dataset.dispatchProfileInput;
+      const paramKey = event.target.dataset.dispatchParamKey;
+      const profileState = dispatchProfileState.profiles[profileId];
+      const definition = DISPATCH_PROFILE_DEFINITIONS.find((item) => item.id === profileId);
+      const param = definition?.params?.find((item) => item.key === paramKey);
+
+      if (!profileState || !param || !Object.prototype.hasOwnProperty.call(profileState.params, paramKey)) {
+        return;
+      }
+
+      const rawValue = Number(event.target.value);
+      if (!Number.isFinite(rawValue)) {
+        event.target.value = String(profileState.params[paramKey]);
+        return;
+      }
+
+      const bounded = Math.min(param.max, Math.max(param.min, rawValue));
+      profileState.params[paramKey] = bounded;
+      persistDispatchProfileState();
+      renderDispatchProfilePanel();
+    };
+
+    input.addEventListener("change", applyValue);
+    input.addEventListener("blur", applyValue);
+  });
+}
+
+function updateAssemblyFocusIndicator() {
+  const indicator = document.getElementById("assembly-focus-indicator");
+  const indicatorText = document.getElementById("assembly-focus-text");
+  if (!indicator || !indicatorText) {
+    return;
+  }
+
+  if (!selectedAssemblyId) {
+    indicatorText.textContent = "Szerelvény fókusz: nincs";
+    indicator.classList.remove("active");
+    return;
+  }
+
+  const assemblyVontato = VONTATOK.find((item) => item.id === selectedAssemblyId);
+  const assemblyLabel = assemblyVontato?.rendszam || selectedAssemblyId;
+  indicatorText.textContent = `Szerelvény fókusz: ${assemblyLabel}`;
+  indicator.classList.add("active");
+  updateNextFuvarRecommendation();
+}
+
+function clearAssemblyFocus() {
+  selectedAssemblyId = null;
+  updateAssemblyFocusIndicator();
+
+  window.dispatchEvent(new CustomEvent("assembly:focus", {
+    detail: { assemblyId: null }
+  }));
+
+  if (selectedFuvarId) {
+    syncResourceFocusFromFuvarSelection();
+    return;
+  }
+
+  applyResourceFocusScope(null, "none");
+}
+
 function broadcastFuvarSelection(fuvarId) {
   if (!dockChannel) {
     return;
@@ -1293,15 +2432,17 @@ function broadcastFuvarSelection(fuvarId) {
 function applyFuvarSelectionById(fuvarId, options = { broadcast: true }) {
   selectedFuvarId = fuvarId || null;
   updateTimelineFocusIndicator();
+  syncResourceFocusFromFuvarSelection();
+  updateNextFuvarRecommendation();
 
   window.dispatchEvent(new CustomEvent("fuvar:focus", {
     detail: { fuvarId: selectedFuvarId }
   }));
 
   if (!selectedFuvarId) {
-    SOFOROK.forEach((s) => { delete s.matchGrade; });
-    VONTATOK.forEach((v) => { delete v.matchGrade; });
-    POTKOCSIK.forEach((p) => { delete p.matchGrade; });
+    SOFOROK.forEach((s) => { delete s.matchGrade; delete s.matchReasons; });
+    VONTATOK.forEach((v) => { delete v.matchGrade; delete v.matchReasons; });
+    POTKOCSIK.forEach((p) => { delete p.matchGrade; delete p.matchReasons; });
     refreshAllViews();
 
     if (options.broadcast) {
@@ -1319,11 +2460,53 @@ function applyFuvarSelectionById(fuvarId, options = { broadcast: true }) {
   onSelectFuvar(results, { broadcast: options.broadcast });
 }
 
+function updateFuvarCardsByCurrentFilter() {
+  if (!document.getElementById("fuvar-list")) {
+    return;
+  }
+
+  renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, {
+    visibleColumns: getActiveFuvarColumns(),
+    timelineReferenceDate: getTimelineFilterReferenceDate()
+  });
+  enableFuvarDrag();
+  restoreSelectedFuvarCard();
+}
+
+function isSpedicioModeActive() {
+  return Boolean(currentFuvarFilter?.spediccio);
+}
+
+function renderFuvarFiltersWithCurrentState() {
+  if (!document.getElementById("filter-container")) {
+    return;
+  }
+
+  renderFuvarFilters("filter-container", (filter) => {
+    currentFuvarFilter = filter;
+    refreshAllViews();
+  }, {
+    getTimelineReferenceDate: () => getTimelineFilterReferenceDate(),
+    initialFilterState: currentFuvarFilter
+  });
+}
+
+function applyProgrammaticFuvarFilter(nextFilter) {
+  currentFuvarFilter = nextFilter;
+  renderFuvarFiltersWithCurrentState();
+  refreshAllViews();
+}
+
 /* ------------------------
    OLDAL BETÖLTÉSE
 ------------------------- */
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
+  dispatchProfileState = loadDispatchProfileState();
+  syncDispatchProfileToModules();
+
+  // Csak a lokális localStorage-t használjuk – a megosztott fájl nem írja felül a helyi mentést.
   dockProfilesState = loadDockProfiles();
+  localStorage.setItem(DOCK_PROFILES_KEY, JSON.stringify(dockProfilesState));
   activeUserId = dockProfilesState.activeUserId;
   const initialUserState = getActiveUserState();
   activeViewId = initialUserState.lastUsedViewId || initialUserState.views[0].id;
@@ -1335,25 +2518,23 @@ window.addEventListener("DOMContentLoaded", () => {
   setupDockLayoutSync();
   applyDockLayout();
   updateTimelineFocusIndicator();
+  updateAssemblyFocusIndicator();
+  updateNextFuvarRecommendation();
+  renderDispatchProfilePanel();
 
   document.getElementById("timeline-focus-clear")?.addEventListener("click", (event) => {
     event.preventDefault();
     clearFuvarSelection();
   });
 
+  document.getElementById("assembly-focus-clear")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    clearAssemblyFocus();
+  });
+
   // FUVAR SZŰRŐK
   if (document.getElementById("filter-container")) {
-    renderFuvarFilters("filter-container", (filter) => {
-      currentFuvarFilter = filter;
-      renderFuvarCards("fuvar-list", filter, onSelectFuvar, {
-        visibleColumns: getActiveFuvarColumns(),
-        timelineReferenceDate: getTimelineFilterReferenceDate()
-      });
-      enableFuvarDrag();
-      restoreSelectedFuvarCard();
-    }, {
-      getTimelineReferenceDate: () => getTimelineFilterReferenceDate()
-    });
+    renderFuvarFiltersWithCurrentState();
   }
 
   // ALAPÉRTELMEZETT FUVARLISTA
@@ -1369,17 +2550,62 @@ window.addEventListener("DOMContentLoaded", () => {
   setDragDropRefreshHandler(refreshAllViews);
 
   window.addEventListener("assembly:resources:changed", () => {
+    if (resourceFocusSource === "assembly" && selectedAssemblyId) {
+      applyResourceFocusScope(buildResourceFocusScopeFromAssemblyId(selectedAssemblyId), "assembly");
+      return;
+    }
+
     refreshAllViews();
   });
 
   window.addEventListener("timeline:window-change", () => {
-    if (document.getElementById("fuvar-list")) {
-      renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, {
-        visibleColumns: getActiveFuvarColumns(),
-        timelineReferenceDate: getTimelineFilterReferenceDate()
-      });
-      enableFuvarDrag();
-      restoreSelectedFuvarCard();
+    updateFuvarCardsByCurrentFilter();
+  });
+
+  window.addEventListener("fuvar:road-distance-updated", () => {
+    updateFuvarCardsByCurrentFilter();
+  });
+
+  window.addEventListener("sofor:sort-changed", () => {
+    refreshAllViews();
+  });
+
+  window.addEventListener("spediccio:form-updated", () => {
+    refreshAllViews();
+  });
+
+  window.addEventListener("spediccio:open-form", async (event) => {
+    const fuvarId = event?.detail?.fuvarId;
+    const fuvar = FUVAROK.find((f) => f.id === fuvarId);
+    if (!fuvar) return;
+    const formData = await openSpedicioOrderFormModal(fuvar);
+    if (formData) {
+      fuvar.spediccioForm = formData;
+      window.dispatchEvent(new CustomEvent("spediccio:form-updated", {
+        detail: { fuvarId: fuvar.id, partnerName: fuvar.spediccioPartner || "" }
+      }));
+    }
+  });
+
+  window.addEventListener("timeline:dropoff-filter-change", (event) => {
+    const active = Boolean(event?.detail?.active);
+
+    if (active) {
+      if (!previousFuvarFilterBeforeDropoffMode) {
+        previousFuvarFilterBeforeDropoffMode = { ...currentFuvarFilter };
+      }
+
+      const importOnlyFilter = {
+        ...createDefaultFuvarFilterState(),
+        category: "import"
+      };
+      applyProgrammaticFuvarFilter(importOnlyFilter);
+      return;
+    }
+
+    if (previousFuvarFilterBeforeDropoffMode) {
+      applyProgrammaticFuvarFilter(previousFuvarFilterBeforeDropoffMode);
+      previousFuvarFilterBeforeDropoffMode = null;
     }
   });
 
@@ -1480,6 +2706,24 @@ function renderAssemblyOperationLog() {
 }
 
   function refreshAllViews() {
+    SOFOROK.forEach((sofor) => {
+      refreshAutoTransitBlocksForResource(sofor, FUVAROK);
+    });
+
+    VONTATOK.forEach((vontato) => {
+      refreshAutoTransitBlocksForResource(vontato, FUVAROK);
+    });
+
+    POTKOCSIK.forEach((potkocsi) => {
+      refreshAutoTransitBlocksForResource(potkocsi, FUVAROK);
+    });
+
+    refreshAutoDriverStatesForLinkedConvoys(SOFOROK, VONTATOK, POTKOCSIK);
+
+    const visibleResources = getVisibleResourcesByScope();
+    const spedicioMode = isSpedicioModeActive();
+    const spedicioPartners = spedicioMode ? buildSpedicioPartnerResources(selectedFuvarId) : [];
+
     if (document.getElementById("fuvar-list")) {
       renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, {
         visibleColumns: getActiveFuvarColumns(),
@@ -1490,28 +2734,50 @@ function renderAssemblyOperationLog() {
     }
 
     if (document.getElementById("resource-panel-container")) {
-      renderResourcePanel("resource-panel-container", FUVAROK, onSelectResource);
+      if (spedicioMode) {
+        renderResourcePanel("resource-panel-container", FUVAROK, onSelectResource, {
+          mode: "spedicio-partners",
+          spedicioPartners
+        });
+      } else {
+        renderResourcePanel("resource-panel-container", FUVAROK, onSelectResource, {
+          soforok: visibleResources.soforok,
+          vontatok: visibleResources.vontatok,
+          potkocsik: visibleResources.potkocsik
+        });
+      }
       enableResourceCardDrop();
     }
 
     if (document.getElementById("timeline-container")) {
-      renderTimeline("timeline-container", [
-        { icon: "👤", name: "Sofőrök",    list: SOFOROK },
-        { icon: "🚛", name: "Vontatók",   list: VONTATOK },
-        { icon: "🚚", name: "Pótkocsik",  list: POTKOCSIK }
-      ]);
+      if (spedicioMode) {
+        renderTimeline("timeline-container", [
+          { icon: "🤝", name: "Spediciós partnerek", type: "partner", list: spedicioPartners }
+        ]);
+      } else {
+        renderTimeline("timeline-container", [
+          { icon: "👤", name: "Sofőrök",    list: visibleResources.soforok },
+          { icon: "🚛", name: "Vontatók",   list: visibleResources.vontatok },
+          { icon: "🚚", name: "Pótkocsik",  list: visibleResources.potkocsik }
+        ]);
+      }
       enableTimelineDrop();
     }
 
     if (document.getElementById("assembly-timeline-container")) {
-      renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK);
+      renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK, {
+        spedicioOnly: spedicioMode
+      });
     }
 
     if (document.getElementById("assembly-map-container")) {
       renderSzerelvenyMap("assembly-map-container", SOFOROK, VONTATOK, POTKOCSIK);
     }
 
+    renderDispatchProfilePanel();
+
     renderAssemblyOperationLog();
+    updateNextFuvarRecommendation();
 }
 
 /* ==========================================================
@@ -1522,19 +2788,23 @@ function onSelectFuvar(results, options = { broadcast: true }) {
   console.log("Matching eredmények:", results);
 
   // Minden erőforrásra rögzítjük a matchGrade értéket (timeline highlight miatt)
+  // VALAMINT a reasons-okat a vizuális megjelenítéshez
   SOFOROK.forEach((s) => {
     const r = results.soforok.find(x => x.id === s.id);
     s.matchGrade = r.result.grade;
+    s.matchReasons = r.result.reasons || [];
   });
 
   VONTATOK.forEach((v) => {
     const r = results.vontatok.find(x => x.id === v.id);
     v.matchGrade = r.result.grade;
+    v.matchReasons = r.result.reasons || [];
   });
 
   POTKOCSIK.forEach((p) => {
     const r = results.potkocsik.find(x => x.id === p.id);
     p.matchGrade = r.result.grade;
+    p.matchReasons = r.result.reasons || [];
   });
 
   // RESOURCE PANEL újrarender matching körvonalakkal és sorrenddel

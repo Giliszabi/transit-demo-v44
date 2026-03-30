@@ -6,6 +6,7 @@
 import { SOFOROK } from "../data/soforok.js";
 import { VONTATOK } from "../data/vontatok.js";
 import { POTKOCSIK } from "../data/potkocsik.js";
+import { buildSoforMetaTooltip, renderSoforMetaBadges } from "./sofor-display-meta.js";
 
 // Matching integráció
 import { evaluateFuvarokForResource } from "./matching.js";
@@ -28,6 +29,89 @@ function getMatchGradePriority(matchGrade) {
   if (matchGrade === "bad") return 1;
   if (matchGrade === "warn") return 2;
   return 3;
+}
+
+// ======================================================================
+// SOFŐR RENDEZÉSI SEGÉDFÜGGVÉNYEK
+// ======================================================================
+
+function getSoforSortValue(sofor, columnId) {
+  const driving = sofor.driving || {};
+  if (columnId === "daily") {
+    return Math.max(0, (driving.dailyLimitHours || 0) - (driving.dailyDrivenHours || 0));
+  }
+  if (columnId === "weekly") {
+    return Math.max(0, (driving.weeklyLimitHours || 0) - (driving.weeklyDrivenHours || 0));
+  }
+  if (columnId === "match") {
+    // Dummy score: biztosan adjon látható sorrendet a Matching gombra.
+    const idNum = Number.parseInt(String(sofor?.id || "").replace(/\D+/g, ""), 10) || 0;
+    const name = getSoforSortName(sofor);
+    const nameScore = Array.from(name).reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 100;
+    return idNum * 100 + nameScore;
+  }
+  return 0;
+}
+
+function getSoforSortName(sofor) {
+  return String(sofor?.nev || "").toLocaleLowerCase("hu-HU");
+}
+
+function applySoforSort(list) {
+  const state = window._soforSortState;
+  if (!state?.columnId) {
+    return sortResourcesByMatch(list);
+  }
+  const dir = state.direction === "asc" ? 1 : -1;
+  if (state.columnId === "abc") {
+    return [...list].sort((a, b) => getSoforSortName(a).localeCompare(getSoforSortName(b), "hu-HU") * dir);
+  }
+  return [...list].sort((a, b) => {
+    return (getSoforSortValue(a, state.columnId) - getSoforSortValue(b, state.columnId)) * dir;
+  });
+}
+
+function buildSoforSortBarHtml() {
+  const state = window._soforSortState || {};
+  const COLS = [
+    { col: "abc", label: "ABC" },
+    { col: "daily", label: "Napi idő" },
+    { col: "weekly", label: "Heti idő" },
+    { col: "match", label: "Matching" }
+  ];
+  const btns = COLS.map(({ col, label }) => {
+    const isActive = state.columnId === col;
+    const arrow = isActive ? (state.direction === "asc" ? " ↑" : " ↓") : "";
+    return `<button type="button" class="resource-sort-btn${isActive ? " active" : ""}" data-sort-column="${col}" title="Rendezés: ${label}">${label}${arrow}</button>`;
+  }).join("");
+  const hasActiveSort = Boolean(state.columnId);
+  const resetBtn = `<button type="button" class="resource-sort-btn resource-sort-btn-reset" data-sort-reset="true" title="Rendezés visszaállítása" aria-label="Rendezés visszaállítása" ${hasActiveSort ? "" : "disabled"}>X</button>`;
+  return `<div class="resource-sort-bar" data-sort-for="sofor">${btns}${resetBtn}</div>`;
+}
+
+function bindSoforSortButtons(container) {
+  const bar = container.querySelector('[data-sort-for="sofor"]');
+  if (!bar) return;
+
+  bar.querySelectorAll(".resource-sort-btn").forEach((btn) => {
+    ["mousedown", "keydown"].forEach((ev) => btn.addEventListener(ev, (e) => e.stopPropagation()));
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (btn.dataset.sortReset === "true") {
+        window._soforSortState = { columnId: null, direction: "desc" };
+        window.dispatchEvent(new CustomEvent("sofor:sort-changed"));
+        return;
+      }
+      const col = btn.dataset.sortColumn;
+      const cur = window._soforSortState || { columnId: null, direction: "desc" };
+      window._soforSortState = {
+        columnId: col,
+        direction: cur.columnId === col && cur.direction === "desc" ? "asc" : "desc"
+      };
+      window.dispatchEvent(new CustomEvent("sofor:sort-changed"));
+    });
+  });
 }
 
 function sortResourcesByMatch(list) {
@@ -106,8 +190,19 @@ function bindResourceSearchInputs(container) {
 // =======================================================
 // PANEL GENERÁTOR – LÉTREHOZZA A 3 OSZLOPOT
 // =======================================================
-export function renderResourcePanel(containerId, FUVAROK, onSelectResource) {
+export function renderResourcePanel(containerId, FUVAROK, onSelectResource, options = {}) {
   const container = document.getElementById(containerId);
+  const spedicioMode = options.mode === "spedicio-partners";
+
+  if (spedicioMode) {
+    const partnerList = Array.isArray(options.spedicioPartners) ? options.spedicioPartners : [];
+    renderSpedicioPartnerPanel(container, FUVAROK, onSelectResource, partnerList);
+    return;
+  }
+
+  const soforList = Array.isArray(options.soforok) ? options.soforok : SOFOROK;
+  const vontatoList = Array.isArray(options.vontatok) ? options.vontatok : VONTATOK;
+  const potkocsiList = Array.isArray(options.potkocsik) ? options.potkocsik : POTKOCSIK;
 
   const openState = {
     sofor: true,
@@ -139,6 +234,7 @@ export function renderResourcePanel(containerId, FUVAROK, onSelectResource) {
             <span class="resource-toggle-icon" aria-hidden="true"></span>
           </span>
         </summary>
+        ${buildSoforSortBarHtml()}
         <div class="resource-list" id="list-sofor"></div>
       </details>
 
@@ -179,9 +275,112 @@ export function renderResourcePanel(containerId, FUVAROK, onSelectResource) {
     </div>
   `;
 
-  renderSoforList("list-sofor", SOFOROK, FUVAROK, onSelectResource);
-  renderVontatoList("list-vontato", VONTATOK, FUVAROK, onSelectResource);
-  renderPotkocsiList("list-potkocsi", POTKOCSIK, FUVAROK, onSelectResource);
+  renderSoforList("list-sofor", soforList, FUVAROK, onSelectResource);
+  renderVontatoList("list-vontato", vontatoList, FUVAROK, onSelectResource);
+  renderPotkocsiList("list-potkocsi", potkocsiList, FUVAROK, onSelectResource);
+  bindSoforSortButtons(container);
+  bindResourceSearchInputs(container);
+}
+
+function renderSpedicioPartnerPanel(container, FUVAROK, onSelectResource, partnerList) {
+  container.innerHTML = `
+    <div class="resource-columns">
+      <details class="resource-column" data-resource-type="partner" open>
+        <summary class="resource-column-summary">
+          <span class="resource-column-title">🤝 Spediciós partnerek</span>
+          <span class="resource-column-controls">
+            <input
+              class="resource-search-input"
+              data-resource-type="partner"
+              type="search"
+              placeholder="Keresés"
+              aria-label="Partner keresés"
+            />
+            <span class="resource-toggle-icon" aria-hidden="true"></span>
+          </span>
+        </summary>
+        <div class="resource-list" id="list-partner"></div>
+      </details>
+    </div>
+  `;
+
+  const list = container.querySelector("#list-partner");
+  if (!list) {
+    return;
+  }
+
+  partnerList.forEach((partner) => {
+    const div = document.createElement("div");
+    div.className = "resource-card";
+    div.dataset.id = partner.id;
+    div.dataset.type = "partner";
+    const latestPrice = partner?.spedicioMeta?.latestPrice || "-";
+    const typeMatches = Number(partner?.spedicioMeta?.actualTypeCount || 0);
+    div.dataset.searchText = normalizeSearchText(`${partner.nev || partner.id} ${latestPrice}`);
+
+    div.innerHTML = resourceCardHtml(
+      "🤝",
+      partner.nev || partner.id,
+      `Egyező fuvar típus: ${typeMatches}`,
+      partner.timeline,
+      `
+        <div class="res-links">
+          <div class="res-link-item">Előző ár (azonos típus): ${latestPrice}</div>
+          <div class="res-link-item">Összes kiosztott fuvar: ${partner?.spedicioMeta?.assignedCount || 0}</div>
+        </div>
+      `
+    );
+
+    // Adatlap gomb minden kiosztott fuvarhoz + opcionális AJÁNLATKÉRÉS badge
+    (partner.timeline || []).forEach((block) => {
+      if (!block.fuvarId) return;
+      const itemEl = div.querySelector(`[data-fuvar-id="${CSS.escape(block.fuvarId)}"]`);
+      if (!itemEl) return;
+
+      const actions = document.createElement("div");
+      actions.className = "partner-fuvar-actions";
+
+      if (block.spedicioOperationType === "offer-request") {
+        const badge = document.createElement("span");
+        badge.className = "partner-ajanlatkeres-badge";
+        badge.textContent = "AJÁNLATKÉRÉS";
+        actions.appendChild(badge);
+      }
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "fuvar-spediccio-form-btn fuvar-spediccio-form-btn-inline partner-adatlap-btn";
+      btn.dataset.action = "partner-adatlap";
+      btn.dataset.fuvarId = block.fuvarId;
+      btn.textContent = "Adatlap";
+
+      actions.appendChild(btn);
+      itemEl.appendChild(actions);
+    });
+
+    div.addEventListener("click", (event) => {
+      if (event.target.closest('[data-action="partner-adatlap"]')) {
+        return; // kezeli a list-szintű delegált listener
+      }
+      if (typeof onSelectResource === "function") {
+        onSelectResource("partner", partner, { soforok: [], vontatok: [], potkocsik: [], partnerek: [] }, FUVAROK);
+      }
+    });
+
+    list.appendChild(div);
+  });
+
+  // Delegált Adatlap gomb klikk
+  list.addEventListener("click", (event) => {
+    const btn = event.target.closest('[data-action="partner-adatlap"]');
+    if (!btn) return;
+    event.stopPropagation();
+    const fuvarId = btn.dataset.fuvarId;
+    if (fuvarId) {
+      window.dispatchEvent(new CustomEvent("spediccio:open-form", { detail: { fuvarId } }));
+    }
+  });
+
   bindResourceSearchInputs(container);
 }
 
@@ -227,9 +426,9 @@ function renderLinkedInfo(resourceType, resource) {
 }
 
 // ======================================================================
-// SEGÉDFÜGGVÉNY – egy erőforrás kártya HTML-je (fuvar + kapcsolati adatok)
+// SEGÉDFÜGGVÉNY – egy erőforrás kártya HTML-je (fuvar + kapcsolati adatok + reasons)
 // ======================================================================
-function resourceCardHtml(icon, title, position, timeline = [], linkedInfoHtml = "") {
+function resourceCardHtml(icon, title, position, timeline = [], linkedInfoHtml = "", reasons = [], topMetaHtml = "") {
   const seenFuvarKeys = new Set();
 
   const fuvarBlocks = (timeline || [])
@@ -244,14 +443,38 @@ function resourceCardHtml(icon, title, position, timeline = [], linkedInfoHtml =
     });
 
   const fuvarListHtml = fuvarBlocks.length > 0
-    ? fuvarBlocks.map((block) => `<div class="res-fuvar-item">📦 ${block.label}</div>`).join("")
+    ? fuvarBlocks.map((block) => {
+      const details = block.partnerSummary
+        ? `<div class="res-fuvar-item-meta">${block.partnerSummary}</div>`
+        : "";
+      return `
+        <div class="res-fuvar-item" data-fuvar-id="${block.fuvarId || ''}">
+          <div>📦 ${block.label}</div>
+          ${details}
+        </div>
+      `;
+    }).join("")
     : "<div class=\"res-no-fuvar\">–</div>";
+
+  // Reasons megjelenítése - piros hibakokkal
+  const reasonsHtml = reasons && reasons.length > 0
+    ? `
+      <div class="res-reasons">
+        <div class="res-reasons-label">⚠️ Eltérések:</div>
+        <div class="res-reasons-list">
+          ${reasons.map((reason) => `<div class="res-reason-item">• ${reason}</div>`).join("")}
+        </div>
+      </div>
+    `
+    : "";
 
   return `
     <div class="res-card">
       <div class="res-title">${icon} ${title}</div>
+      ${topMetaHtml}
       <div class="res-pos">📍 ${position || "-"}</div>
       ${linkedInfoHtml}
+      ${reasonsHtml}
       <div class="res-fuvars">
         <div class="res-fuvars-label">Fuvarok:</div>
         <div class="res-fuvars-list">
@@ -269,7 +492,7 @@ function renderSoforList(targetId, list, FUVAROK, onSelectResource) {
   const el = document.getElementById(targetId);
   el.innerHTML = "";
 
-  const sortedList = sortResourcesByMatch(list);
+  const sortedList = applySoforSort(list);
 
   sortedList.forEach((s) => {
     const div = document.createElement("div");
@@ -285,8 +508,11 @@ function renderSoforList(targetId, list, FUVAROK, onSelectResource) {
       s.nev,
       s.jelenlegi_pozicio?.hely,
       s.timeline,
-      renderLinkedInfo("sofor", s)
+      renderLinkedInfo("sofor", s),
+      s.matchReasons || [],
+      renderSoforMetaBadges(s)
     );
+    div.title = buildSoforMetaTooltip(s);
 
     div.addEventListener("click", () => {
       const results = evaluateFuvarokForResource(s, FUVAROK, "sofor");
@@ -321,7 +547,8 @@ function renderVontatoList(targetId, list, FUVAROK, onSelectResource) {
       v.rendszam,
       v.jelenlegi_pozicio?.hely,
       v.timeline,
-      renderLinkedInfo("vontato", v)
+      renderLinkedInfo("vontato", v),
+      v.matchReasons || []
     );
 
     div.addEventListener("click", () => {
@@ -356,7 +583,8 @@ function renderPotkocsiList(targetId, list, FUVAROK, onSelectResource) {
       p.rendszam,
       p.jelenlegi_pozicio?.hely,
       p.timeline,
-      renderLinkedInfo("potkocsi", p)
+      renderLinkedInfo("potkocsi", p),
+      p.matchReasons || []
     );
 
     div.addEventListener("click", () => {

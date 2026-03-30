@@ -1,3 +1,5 @@
+import { DEMO_NEARBY_FREE_PAIR_SCENARIO, createScenarioTimelineBlock } from "./demo-warning-scenario.js";
+
 // ==========================================================
 // TransIT v4.4 – Vontató adatbázis (Demo Dataset)
 // 3 belföldi + 3 nemzetközi vontató
@@ -10,35 +12,15 @@ export const VONTATOK = [
   // ===========================
   // 3 BELFÖLDI VONTATÓ
   // ===========================
-  /*
   {
     id: "V1",
     rendszam: "ABCDEF123",
     tipus: "belföldi",
     kezes: "1",
     adr: true,
-    jelenlegi_pozicio: { hely: "Budapest" },
+    jelenlegi_pozicio: { hely: "Környe" },
     timeline: []
   },
-  {
-    id: "V2",
-    rendszam: "LWH532",
-    tipus: "belföldi",
-    kezes: "1",
-    adr: true,
-    jelenlegi_pozicio: { hely: "Győr" },
-    timeline: []
-  },
-  {
-    id: "V3",
-    rendszam: "MHL581",
-    tipus: "belföldi",
-    kezes: "1",
-    adr: true,
-    jelenlegi_pozicio: { hely: "Kecskemét" },
-    timeline: []
-  },
-  */
 
   // ===========================
   // 3 NEMZETKÖZI VONTATÓ
@@ -50,7 +32,18 @@ export const VONTATOK = [
     kezes: "1",
     adr: true,
     jelenlegi_pozicio: { hely: "Budapest" },
-    timeline: []
+    linkedPotkocsiId: DEMO_NEARBY_FREE_PAIR_SCENARIO.cargoPotkocsiId,
+    timeline: [
+      createScenarioTimelineBlock({
+        fuvarId: DEMO_NEARBY_FREE_PAIR_SCENARIO.cargoFuvarId,
+        label: "Demo rakott vontató – Budapest → Győr",
+        start: DEMO_NEARBY_FREE_PAIR_SCENARIO.cargoStartIso,
+        end: DEMO_NEARBY_FREE_PAIR_SCENARIO.cargoEndIso,
+        felrakasCim: DEMO_NEARBY_FREE_PAIR_SCENARIO.cargoPickupAddress,
+        lerakasCim: DEMO_NEARBY_FREE_PAIR_SCENARIO.cargoDropoffAddress,
+        viszonylat: "belfold"
+      })
+    ]
   },
   {
     id: "V5",
@@ -58,7 +51,8 @@ export const VONTATOK = [
     tipus: "nemzetkozi",
     kezes: "1",
     adr: true,
-    jelenlegi_pozicio: { hely: "Tatabánya" },
+    jelenlegi_pozicio: { hely: "Környe" },
+    linkedSoforId: "S5",
     timeline: []
   },
   {
@@ -67,8 +61,28 @@ export const VONTATOK = [
     tipus: "nemzetkozi",
     kezes: "1",
     adr: true,
-    jelenlegi_pozicio: { hely: "Székesfehérvár" },
+    jelenlegi_pozicio: { hely: "Környe" },
     timeline: []
+  },
+  {
+    id: "V7",
+    rendszam: "AAJX904",
+    tipus: "nemzetkozi",
+    kezes: "1",
+    adr: true,
+    jelenlegi_pozicio: { hely: "Budapest" },
+    linkedSoforId: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeSoforId,
+    timeline: [
+      createScenarioTimelineBlock({
+        fuvarId: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeFuvarId,
+        label: "Demo felszabaduló pár – Tatabánya → Budapest",
+        start: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeStartIso,
+        end: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeEndIso,
+        felrakasCim: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativePickupAddress,
+        lerakasCim: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeDropoffAddress,
+        viszonylat: "belfold"
+      })
+    ]
   }
 
 ];

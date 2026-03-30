@@ -61,6 +61,11 @@ const FUVAR_TAG_META = {
     label: "Spedicció",
     color: FIXED_CATEGORY_COLORS.spediccio,
     textColor: "#FCF5FF"
+  },
+  ajanlatkeres: {
+    label: "Ajánlatkérés",
+    color: "#00ACC1",
+    textColor: "#E8FBFF"
   }
 };
 

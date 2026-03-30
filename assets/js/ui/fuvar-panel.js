@@ -3,12 +3,13 @@
 // ==============================================================
 
 import { FUVAROK } from "../data/fuvarok.js";
+import { SPEDICIO_PARTNER_NAMES } from "../data/spedicio-partners.js";
 import { formatDate } from "../utils.js";
 import { evaluateFuvarTags, evaluateAllResources } from "./matching.js";
 import { SOFOROK } from "../data/soforok.js";
 import { VONTATOK } from "../data/vontatok.js";
 import { POTKOCSIK } from "../data/potkocsik.js";
-import { renderTimeline, refreshAutoDeadheadBlocksForVontato } from "./timeline.js";
+import { renderTimeline, refreshAutoDriverStatesForLinkedConvoys, refreshAutoTransitBlocksForResource } from "./timeline.js";
 import { getFuvarTagMeta, getCategoryPalette } from "./colors.js";
 import { enableFuvarDrag } from "./dragdrop.js";
 
@@ -128,6 +129,8 @@ export function createDefaultFuvarFilterState() {
 }
 const CITY_COORDS = {
   milano: { lat: 45.4642, lon: 9.19 },
+  hamburg: { lat: 53.5511, lon: 9.9937 },
+  lubeck: { lat: 53.8655, lon: 10.6866 },
   munchen: { lat: 48.1351, lon: 11.582 },
   frankfurt: { lat: 50.1109, lon: 8.6821 },
   wien: { lat: 48.2082, lon: 16.3738 },
@@ -135,15 +138,23 @@ const CITY_COORDS = {
   linz: { lat: 48.3069, lon: 14.2858 },
   budapest: { lat: 47.4979, lon: 19.0402 },
   gyor: { lat: 47.6875, lon: 17.6504 },
+  vac: { lat: 47.7826, lon: 19.1332 },
+  dunakeszi: { lat: 47.6364, lon: 19.1386 },
   debrecen: { lat: 47.5316, lon: 21.6273 },
   szeged: { lat: 46.253, lon: 20.1414 },
   miskolc: { lat: 48.1035, lon: 20.7784 },
   pecs: { lat: 46.0727, lon: 18.2323 },
   tatabanya: { lat: 47.5692, lon: 18.4048 },
   kecskemet: { lat: 46.8964, lon: 19.6897 },
+  esztergom: { lat: 47.7853, lon: 18.7423 },
+  kornye: { lat: 47.5449, lon: 18.3188 },
   szekesfehervar: { lat: 47.186, lon: 18.4221 }
 };
+const ROAD_DISTANCE_CACHE = new Map();
+const ROAD_DISTANCE_FALLBACK_MULTIPLIER = 1.2;
+let roadDistanceRefreshTimer = null;
 let focusedFuvarId = null;
+let focusedAssemblyId = null;
 let currentFuvarSort = {
   columnId: null,
   direction: "asc"
@@ -152,21 +163,11 @@ let currentFuvarSort = {
 window.addEventListener("fuvar:focus", (event) => {
   focusedFuvarId = event?.detail?.fuvarId || null;
 });
-const SPEDICIO_PARTNERS = [
-  "EURASIA LOGISTICS Kft",
-  "Radex Fuvarozó és Szállítmányozó Korlátolt Felelősségű Társaság",
-  '"PLUTO" Árufuvarozó Korlátolt Felelősségű Társaság',
-  "3B SCIENTIFIC GMBH",
-  "606 S.R.O.",
-  "ACTIVE PLUS LOGISTICS KFT.",
-  "ADLER-TRANS KFT",
-  "AGRICAMION Szállítmányozó És Kereskedelmi Korlátolt Felelősségű Társaság",
-  "AGZO-SZITI KFT.",
-  "AKTUELL Szolgáltató és Kereskedelmi Korlátolt Felelősségű Társaság",
-  "ALFA SPED s.r.o.",
-  "ANTS - IN GmbH",
-  "ARANYGOMB KERESKEDELMI ÉS SZOLGÁLTATÓ"
-];
+
+window.addEventListener("assembly:focus", (event) => {
+  focusedAssemblyId = event?.detail?.assemblyId || null;
+});
+export const SPEDICIO_PARTNERS = [...SPEDICIO_PARTNER_NAMES];
 
 function normalizeText(value) {
   return String(value || "")
@@ -510,6 +511,12 @@ function getBaseColumnDisplayValue(fuvar, columnId, context) {
     return `📦 ${formatDate(fuvar.lerakas.ido)}`;
   }
   if (columnId === "distance") {
+    const assemblyDropoffAddress = getFocusedAssemblyDropoffAddress();
+    const selectedAssemblyDistance = getSelectedAssemblyDistanceKm(fuvar, assemblyDropoffAddress);
+    if (focusedAssemblyId && Number.isFinite(selectedAssemblyDistance)) {
+      return `🎯 ${Math.round(selectedAssemblyDistance)} km`;
+    }
+
     return `🚚 ${fuvar.tavolsag_km} km`;
   }
   if (columnId === "type") {
@@ -541,6 +548,12 @@ function getBaseColumnSortValue(fuvar, columnId, context) {
     return new Date(fuvar.lerakas.ido).getTime();
   }
   if (columnId === "distance") {
+    const assemblyDropoffAddress = getFocusedAssemblyDropoffAddress();
+    const selectedAssemblyDistance = getSelectedAssemblyDistanceKm(fuvar, assemblyDropoffAddress);
+    if (focusedAssemblyId && Number.isFinite(selectedAssemblyDistance)) {
+      return selectedAssemblyDistance;
+    }
+
     return Number(fuvar.tavolsag_km || 0);
   }
   if (columnId === "type") {
@@ -597,6 +610,17 @@ function getDisplayLocation(address) {
   return parts[0];
 }
 
+function scheduleRoadDistanceRefresh() {
+  if (roadDistanceRefreshTimer) {
+    return;
+  }
+
+  roadDistanceRefreshTimer = window.setTimeout(() => {
+    roadDistanceRefreshTimer = null;
+    window.dispatchEvent(new CustomEvent("fuvar:road-distance-updated"));
+  }, 120);
+}
+
 function isHungaryAddress(address) {
   const normalized = normalizeText(address);
   return normalized.includes("magyarorszag") || normalized.includes("hungary");
@@ -621,14 +645,20 @@ function getCityKeyFromAddress(address) {
   const aliases = {
     "budapest": "budapest",
     "gyor": "gyor",
+    "vac": "vac",
+    "dunakeszi": "dunakeszi",
     "debrecen": "debrecen",
     "szeged": "szeged",
     "miskolc": "miskolc",
     "pecs": "pecs",
     "tatabanya": "tatabanya",
     "kecskemet": "kecskemet",
+    "esztergom": "esztergom",
+    "kornye": "kornye",
     "szekesfehervar": "szekesfehervar",
     "milano": "milano",
+    "hamburg": "hamburg",
+    "lubeck": "lubeck",
     "munchen": "munchen",
     "frankfurt": "frankfurt",
     "wien": "wien",
@@ -655,6 +685,93 @@ function estimateDistanceKm(addressA, addressB) {
   const avgLatRad = ((a.lat + b.lat) / 2) * (Math.PI / 180);
   const lonDiffKm = (a.lon - b.lon) * 111 * Math.cos(avgLatRad);
   return Math.sqrt(latDiffKm * latDiffKm + lonDiffKm * lonDiffKm);
+}
+
+async function fetchRoadDistanceKm(cityA, cityB) {
+  if (!cityA || !cityB) {
+    return Number.NaN;
+  }
+
+  if (cityA === cityB) {
+    return 0;
+  }
+
+  const from = CITY_COORDS[cityA];
+  const to = CITY_COORDS[cityB];
+  if (!from || !to) {
+    return Number.NaN;
+  }
+
+  const abortController = new AbortController();
+  const timeoutId = window.setTimeout(() => abortController.abort(), 3500);
+
+  try {
+    const response = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false&alternatives=false&steps=false`,
+      {
+        method: "GET",
+        signal: abortController.signal
+      }
+    );
+
+    if (!response.ok) {
+      return Number.NaN;
+    }
+
+    const payload = await response.json();
+    const meters = payload?.routes?.[0]?.distance;
+    return Number.isFinite(meters) ? meters / 1000 : Number.NaN;
+  } catch (_error) {
+    return Number.NaN;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+function getRoadDistanceKm(addressA, addressB, options = { prime: true }) {
+  const cityA = getCityKeyFromAddress(addressA);
+  const cityB = getCityKeyFromAddress(addressB);
+
+  if (!cityA || !cityB) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const key = [cityA, cityB].sort().join("::");
+  const cached = ROAD_DISTANCE_CACHE.get(key);
+  if (Number.isFinite(cached?.km)) {
+    return cached.km;
+  }
+
+  if (options?.prime && !cached?.pending) {
+    ROAD_DISTANCE_CACHE.set(key, { km: Number.NaN, pending: true });
+
+    fetchRoadDistanceKm(cityA, cityB)
+      .then((km) => {
+        if (Number.isFinite(km)) {
+          ROAD_DISTANCE_CACHE.set(key, { km, pending: false });
+          scheduleRoadDistanceRefresh();
+          return;
+        }
+
+        ROAD_DISTANCE_CACHE.set(key, { km: Number.NaN, pending: false });
+      })
+      .catch(() => {
+        ROAD_DISTANCE_CACHE.set(key, { km: Number.NaN, pending: false });
+      });
+  }
+
+  const airDistanceKm = estimateDistanceKm(addressA, addressB);
+  return Number.isFinite(airDistanceKm)
+    ? airDistanceKm * ROAD_DISTANCE_FALLBACK_MULTIPLIER
+    : Number.POSITIVE_INFINITY;
+}
+
+function getSelectedAssemblyDistanceKm(fuvar, assemblyDropoffAddress) {
+  if (!focusedAssemblyId || !assemblyDropoffAddress || !fuvar?.felrakas?.cim) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return getRoadDistanceKm(assemblyDropoffAddress, fuvar.felrakas.cim, { prime: true });
 }
 
 function findRecommendedImportForFocusedExport() {
@@ -717,6 +834,53 @@ function findRecommendedImportForFocusedExport() {
   });
 
   return bestCandidate ? { fuvarId: bestCandidate.id, basedOnFuvarId: focusedFuvar.id } : null;
+}
+
+function getFocusedAssemblyDropoffAddress() {
+  if (!focusedAssemblyId) {
+    return "";
+  }
+
+  const completedFuvarok = FUVAROK
+    .filter((fuvar) => fuvar?.assignedVontatoId === focusedAssemblyId)
+    .filter((fuvar) => fuvar?.lerakas?.cim && fuvar?.lerakas?.ido)
+    .sort((left, right) => new Date(right.lerakas.ido) - new Date(left.lerakas.ido));
+
+  if (completedFuvarok.length > 0) {
+    return completedFuvarok[0].lerakas.cim;
+  }
+
+  const fallbackFuvar = FUVAROK.find((fuvar) => {
+    return fuvar?.assignedVontatoId === focusedAssemblyId && fuvar?.lerakas?.cim;
+  });
+
+  if (fallbackFuvar?.lerakas?.cim) {
+    return fallbackFuvar.lerakas.cim;
+  }
+
+  const selectedVontato = VONTATOK.find((item) => item.id === focusedAssemblyId);
+  const latestTimelineDropoff = (selectedVontato?.timeline || [])
+    .filter((block) => block?.type === "fuvar" && !block?.synthetic && block?.lerakasCim)
+    .sort((left, right) => new Date(right.end || right.start) - new Date(left.end || left.start))[0]?.lerakasCim;
+
+  if (latestTimelineDropoff) {
+    return latestTimelineDropoff;
+  }
+
+  return selectedVontato?.jelenlegi_pozicio?.hely || "";
+}
+
+function renderAssemblyDistanceTag(fuvar, assemblyDropoffAddress) {
+  if (!focusedAssemblyId || !assemblyDropoffAddress || !fuvar?.felrakas?.cim) {
+    return "";
+  }
+
+  const roadDistanceKm = getSelectedAssemblyDistanceKm(fuvar, assemblyDropoffAddress);
+  if (!Number.isFinite(roadDistanceKm)) {
+    return "";
+  }
+
+  return `<span class="fuvar-tag fuvar-card-tag fuvar-assembly-distance-tag" title="Távolság a kijelölt szerelvény lerakójától">${Math.round(roadDistanceKm)} km</span>`;
 }
 
 function getQuickFilterPreviewState(filterState, key) {
@@ -954,9 +1118,8 @@ function openSpedicioPartnerPicker(initialPartner = "") {
   });
 }
 
-function openSpedicioOrderFormModal(fuvar, partnerName) {
+export function openSpedicioOrderFormModal(fuvar) {
   return new Promise((resolve) => {
-    const existing = fuvar.spediccioForm || {};
     const overlay = document.createElement("div");
     overlay.className = "spediccio-modal-overlay";
 
@@ -976,75 +1139,75 @@ function openSpedicioOrderFormModal(fuvar, partnerName) {
         <form class="spediccio-form-grid">
           <label>
             <span>Megrendelés kód</span>
-            <input name="orderCode" type="text" value="${existing.orderCode || `POR-SP-${fuvar.id}-0001000`}" />
+            <input name="orderCode" type="text" value="" />
           </label>
 
           <label>
             <span>Spediciós partner</span>
-            <input name="partnerName" type="text" value="${partnerName}" readonly />
+            <input name="partnerName" type="text" value="" />
           </label>
 
           <label class="spediccio-price-row">
             <span>Megrendelés ár és pénznem</span>
             <div>
-              <input name="orderPrice" type="text" placeholder="Összeg" value="${existing.orderPrice || ""}" />
+              <input name="orderPrice" type="text" placeholder="Összeg" value="" />
               <select name="currency">
-                <option value="" ${!existing.currency ? "selected" : ""}>---</option>
-                <option value="HUF" ${existing.currency === "HUF" ? "selected" : ""}>HUF</option>
-                <option value="EUR" ${existing.currency === "EUR" ? "selected" : ""}>EUR</option>
-                <option value="USD" ${existing.currency === "USD" ? "selected" : ""}>USD</option>
+                <option value="" selected>---</option>
+                <option value="HUF">HUF</option>
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
               </select>
             </div>
           </label>
 
           <label>
             <span>Partner ajánlat szám</span>
-            <input name="partnerOfferNo" type="text" value="${existing.partnerOfferNo || ""}" />
+            <input name="partnerOfferNo" type="text" value="" />
           </label>
 
           <label>
             <span>Sofőr 1</span>
-            <input name="driver1" type="text" value="${existing.driver1 || ""}" />
+            <input name="driver1" type="text" value="" />
           </label>
 
           <label>
             <span>Sofőr 2</span>
-            <input name="driver2" type="text" value="${existing.driver2 || ""}" />
+            <input name="driver2" type="text" value="" />
           </label>
 
           <label>
             <span>Vontató rendszám</span>
-            <input name="tractorPlate" type="text" value="${existing.tractorPlate || ""}" />
+            <input name="tractorPlate" type="text" value="" />
           </label>
 
           <label>
             <span>Pót rendszám</span>
-            <input name="trailerPlate" type="text" value="${existing.trailerPlate || ""}" />
+            <input name="trailerPlate" type="text" value="" />
           </label>
 
           <label>
             <span>Fuvarszervező</span>
-            <input name="dispatcher" type="text" value="${existing.dispatcher || ""}" />
+            <input name="dispatcher" type="text" value="" />
           </label>
 
           <label>
             <span>Partner kapcsolattartó</span>
-            <input name="partnerContact" type="text" value="${existing.partnerContact || ""}" />
+            <input name="partnerContact" type="text" value="" />
           </label>
 
           <label>
             <span>Visszaigazolás dátuma</span>
-            <input name="confirmDate" type="date" value="${existing.confirmDate || ""}" />
+            <input name="confirmDate" type="date" value="" />
           </label>
 
           <label>
             <span>Várható teljesítés dátuma</span>
-            <input name="etaDate" type="date" value="${existing.etaDate || ""}" />
+            <input name="etaDate" type="date" value="" />
           </label>
 
           <label class="full-width">
             <span>Pénzügyi konfiguráció</span>
-            <input name="financeConfig" type="text" value="${existing.financeConfig || ""}" placeholder="Válasszon ki egy pénzügyi konfigurációt..." />
+            <input name="financeConfig" type="text" value="" placeholder="Válasszon ki egy pénzügyi konfigurációt..." />
           </label>
 
           <div class="spediccio-modal-actions full-width">
@@ -1160,6 +1323,7 @@ function clearSpedicioAssignment(fuvar) {
   fuvar.spediccio = false;
   delete fuvar.spediccioPartner;
   delete fuvar.spediccioForm;
+  delete fuvar.spediccioOperationType;
 }
 
 function clearFuvarResourceAssignment(fuvar) {
@@ -1179,9 +1343,78 @@ function clearFuvarResourceAssignment(fuvar) {
     });
   });
 
-  VONTATOK.forEach((vontato) => {
-    refreshAutoDeadheadBlocksForVontato(vontato);
+  SOFOROK.forEach((sofor) => {
+    refreshAutoTransitBlocksForResource(sofor, FUVAROK);
   });
+
+  VONTATOK.forEach((vontato) => {
+    refreshAutoTransitBlocksForResource(vontato, FUVAROK);
+  });
+
+  POTKOCSIK.forEach((potkocsi) => {
+    refreshAutoTransitBlocksForResource(potkocsi, FUVAROK);
+  });
+
+  refreshAutoDriverStatesForLinkedConvoys(SOFOROK, VONTATOK, POTKOCSIK);
+}
+
+function getDomesticImportLinkOptions(fuvar) {
+  const fuvarStartMs = new Date(fuvar?.felrakas?.ido || "").getTime();
+
+  return FUVAROK
+    .filter((candidate) => candidate?.id !== fuvar?.id)
+    .filter((candidate) => (candidate?.kategoria || candidate?.viszonylat) === "import")
+    .filter((candidate) => {
+      if (!candidate?.lerakas?.cim || !isHungaryAddress(candidate.lerakas.cim)) {
+        return false;
+      }
+
+      const candidateEndMs = new Date(candidate?.lerakas?.ido || "").getTime();
+      if (!Number.isFinite(candidateEndMs) || !Number.isFinite(fuvarStartMs)) {
+        return true;
+      }
+
+      return candidateEndMs <= fuvarStartMs;
+    })
+    .sort((left, right) => new Date(right.lerakas.ido) - new Date(left.lerakas.ido));
+}
+
+function renderDomesticUtofutasControl(fuvar) {
+  if ((fuvar?.kategoria || fuvar?.viszonylat) !== "belfold") {
+    return "";
+  }
+
+  const options = getDomesticImportLinkOptions(fuvar);
+  const selectedImportId = fuvar.utofutasImportFuvarId || fuvar.kapcsoltImportFuvarId || "";
+
+  const optionHtml = options.map((candidate) => {
+    const selected = candidate.id === selectedImportId ? "selected" : "";
+    const endLabel = candidate?.lerakas?.ido
+      ? new Date(candidate.lerakas.ido).toLocaleString("hu-HU", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+      : "-";
+
+    return `<option value="${candidate.id}" ${selected}>[${candidate.id}] ${candidate.megnevezes} • lerakás: ${endLabel}</option>`;
+  }).join("");
+
+  return `
+    <div class="fuvar-utofutas-link-row">
+      <label class="fuvar-utofutas-link-label" for="utofutas-link-${fuvar.id}">Utófutás import forrás</label>
+      <select
+        id="utofutas-link-${fuvar.id}"
+        class="fuvar-utofutas-link-select"
+        data-action="set-utofutas-import-link"
+        data-fuvar-id="${fuvar.id}"
+      >
+        <option value="">Nincs (belföldi önálló fuvar)</option>
+        ${optionHtml}
+      </select>
+    </div>
+  `;
 }
 
 function getAssignedResourceName(type, id) {
@@ -1227,7 +1460,7 @@ function renderFuvarAssignment(fuvar) {
 // =============================================================
 export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
   const cont = document.getElementById(containerId);
-  let filterState = createDefaultFuvarFilterState();
+  let filterState = normalizeFuvarFilterState(options.initialFilterState);
   cont.innerHTML = `
     <div class="fuvar-filter-bar">
       <label class="fuvar-filter-field">
@@ -1333,7 +1566,7 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
 
     spediccioButton.addEventListener("dragleave", clearDropState);
 
-    spediccioButton.addEventListener("drop", async (event) => {
+    spediccioButton.addEventListener("drop", (event) => {
       event.preventDefault();
       event.stopPropagation();
       clearDropState();
@@ -1345,18 +1578,6 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
       }
 
       fuvar.spediccio = true;
-
-      const selectedPartner = await openSpedicioPartnerPicker(fuvar.spediccioPartner || "");
-      if (selectedPartner) {
-        fuvar.spediccioPartner = selectedPartner;
-
-        const formData = await openSpedicioOrderFormModal(fuvar, selectedPartner);
-        if (formData) {
-          fuvar.spediccioForm = formData;
-        }
-      }
-
-      filterState.spediccio = true;
       emit();
     });
   }
@@ -1374,6 +1595,8 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
   const effectiveColumns = visibleColumns.length > 0 ? visibleColumns : DEFAULT_FUVAR_CARD_COLUMNS;
   const importRecommendation = filterState.category === "import" ? findRecommendedImportForFocusedExport() : null;
   const renderList = [...FUVAROK];
+  const assemblyDropoffAddress = getFocusedAssemblyDropoffAddress();
+  const hasAssemblyDistanceContext = Boolean(focusedAssemblyId && assemblyDropoffAddress);
 
   if (filterState.category === "import" && importRecommendation?.fuvarId) {
     renderList.sort((a, b) => {
@@ -1404,17 +1627,15 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
       return;
     }
 
-    const tagsHtml = getFuvarTags(fuvar)
-      .map((tag) => renderTag(tag, "fuvar-card-tag"))
-      .join("");
+    const tagsHtml = [
+      renderAssemblyDistanceTag(fuvar, assemblyDropoffAddress),
+      ...getFuvarTags(fuvar).map((tag) => renderTag(tag, "fuvar-card-tag")),
+      fuvar.spediccio
+        ? `<button type="button" class="fuvar-spediccio-form-btn fuvar-spediccio-form-btn-inline" data-action="open-spediccio-form">Adatlap</button>`
+        : ""
+    ].filter(Boolean).join("");
 
-    const partnerAssignment = fuvar.spediccio
-      ? `<div class="fuvar-partner-assignment">🤝 Partnerhez rendelés${fuvar.spediccioPartner ? ` • ${fuvar.spediccioPartner}` : ""}</div>`
-      : "";
-
-    const recommendationHtml = importRecommendation?.fuvarId === fuvar.id
-      ? `<div class="fuvar-import-recommendation">💡 Ajánlott visszfuvar a [${importRecommendation.basedOnFuvarId}] export lerakási pontjához</div>`
-      : "";
+    void importRecommendation;
 
     const soforName = getAssignedResourceName("sofor", fuvar.assignedSoforId);
     const vontatoName = getAssignedResourceName("vontato", fuvar.assignedVontatoId);
@@ -1427,6 +1648,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     const clearBtnHtml = isFullyAssigned
       ? `<button type="button" class="fuvar-resource-clear-btn fuvar-header-clear-btn" data-action="clear-fuvar-assignment">Erőforrás törlés</button>`
       : "";
+    const actionButtonsHtml = clearBtnHtml;
 
     const context = {
       soforName,
@@ -1439,26 +1661,29 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
 
     rowModels.push({
       fuvar,
-      partnerAssignment,
-      recommendationHtml,
       tagsHtml,
-      clearBtnHtml,
+      actionButtonsHtml,
       context
     });
   });
 
-  if (currentFuvarSort.columnId && effectiveColumns.includes(currentFuvarSort.columnId)) {
-    const sortMeta = getColumnMeta(currentFuvarSort.columnId);
+  const isAssemblyDistanceSort = currentFuvarSort.columnId === "assemblyDistance";
+  if (currentFuvarSort.columnId && (effectiveColumns.includes(currentFuvarSort.columnId) || isAssemblyDistanceSort)) {
+    const sortMeta = isAssemblyDistanceSort ? { sortType: "number" } : getColumnMeta(currentFuvarSort.columnId);
 
     rowModels.sort((left, right) => {
       const optionMeta = FUVAR_CARD_COLUMN_OPTION_MAP.get(currentFuvarSort.columnId);
 
-      const leftValue = optionMeta?.excelLabel
-        ? getExcelFieldSortValue(left.fuvar, optionMeta.excelLabel, left.context)
-        : getBaseColumnSortValue(left.fuvar, currentFuvarSort.columnId, left.context);
-      const rightValue = optionMeta?.excelLabel
-        ? getExcelFieldSortValue(right.fuvar, optionMeta.excelLabel, right.context)
-        : getBaseColumnSortValue(right.fuvar, currentFuvarSort.columnId, right.context);
+      const leftValue = isAssemblyDistanceSort
+        ? getSelectedAssemblyDistanceKm(left.fuvar, assemblyDropoffAddress)
+        : optionMeta?.excelLabel
+          ? getExcelFieldSortValue(left.fuvar, optionMeta.excelLabel, left.context)
+          : getBaseColumnSortValue(left.fuvar, currentFuvarSort.columnId, left.context);
+      const rightValue = isAssemblyDistanceSort
+        ? getSelectedAssemblyDistanceKm(right.fuvar, assemblyDropoffAddress)
+        : optionMeta?.excelLabel
+          ? getExcelFieldSortValue(right.fuvar, optionMeta.excelLabel, right.context)
+          : getBaseColumnSortValue(right.fuvar, currentFuvarSort.columnId, right.context);
 
       let result = 0;
       if (sortMeta.sortType === "number" || sortMeta.sortType === "date") {
@@ -1473,7 +1698,25 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     });
   }
 
-  headerRow.innerHTML = effectiveColumns.map((columnId) => {
+  const assemblyDistanceHeaderActive = currentFuvarSort.columnId === "assemblyDistance";
+  const assemblyDistanceIndicator = assemblyDistanceHeaderActive
+    ? (currentFuvarSort.direction === "asc" ? " ↑" : " ↓")
+    : "";
+
+  let headerHtml = `
+    <button
+      type="button"
+      class="fuvar-card-header-cell fuvar-card-header-cell-lane${assemblyDistanceHeaderActive ? " active" : ""}"
+      data-sort-column="assemblyDistance"
+      style="width:var(--fuvar-tag-lane-width);min-width:var(--fuvar-tag-lane-width);max-width:var(--fuvar-tag-lane-width);"
+      ${hasAssemblyDistanceContext ? "" : "disabled"}
+      title="${hasAssemblyDistanceContext ? "Rendezés a kijelölt szerelvénytől mért távolság alapján" : "Válassz ki egy szerelvényt a rendezéshez"}"
+    >
+      Szerelvénytől km${assemblyDistanceIndicator}
+    </button>
+  `;
+  
+  headerHtml += effectiveColumns.map((columnId) => {
     const optionMeta = FUVAR_CARD_COLUMN_OPTION_MAP.get(columnId);
     if (!optionMeta) {
       return "";
@@ -1493,6 +1736,8 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
       </button>
     `;
   }).join("");
+  
+  headerRow.innerHTML = headerHtml;
 
   headerRow.querySelectorAll("[data-sort-column]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -1510,7 +1755,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     });
   });
 
-  rowModels.forEach(({ fuvar, partnerAssignment, recommendationHtml, tagsHtml, clearBtnHtml, context }) => {
+  rowModels.forEach(({ fuvar, tagsHtml, actionButtonsHtml, context }) => {
     const card = document.createElement("div");
     card.className = "menu-card";
     card.style.marginBottom = "6px";
@@ -1550,17 +1795,12 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     }).join("");
 
     card.innerHTML = `
-      <div class="fuvar-card-header">
-        <div class="fuvar-card-header-left">
-          <h3 class="fuvar-card-title">${fuvar.megnevezes}</h3>
-          ${clearBtnHtml}
+      <div class="fuvar-card-inline">
+        <div class="fuvar-tag-list fuvar-tag-list-inline">${tagsHtml}</div>
+        <div class="fuvar-card-grid fuvar-card-grid-inline">
+          ${columnsHtml}
         </div>
-        <div class="fuvar-tag-list">${tagsHtml}</div>
-      </div>
-      ${partnerAssignment}
-      ${recommendationHtml}
-      <div class="fuvar-card-grid">
-        ${columnsHtml}
+        <div class="fuvar-card-inline-actions">${actionButtonsHtml}</div>
       </div>
     `;
 
@@ -1587,6 +1827,25 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
         clearSpedicioAssignment(fuvar);
         renderFuvarCards(containerId, filter, onSelectFuvar, options);
         enableFuvarDrag();
+      });
+    }
+
+    const openSpediccioFormBtn = card.querySelector('[data-action="open-spediccio-form"]');
+    if (openSpediccioFormBtn) {
+      openSpediccioFormBtn.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const formData = await openSpedicioOrderFormModal(fuvar);
+        if (formData) {
+          fuvar.spediccioForm = formData;
+          window.dispatchEvent(new CustomEvent("spediccio:form-updated", {
+            detail: {
+              fuvarId: fuvar.id,
+              partnerName: fuvar.spediccioPartner || ""
+            }
+          }));
+        }
       });
     }
 
