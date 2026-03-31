@@ -449,6 +449,28 @@ summary.btn {
   background: rgba(255, 82, 82, 0.22);
 }
 
+.fuvar-transit-edit-btn {
+  border: 1px solid rgba(79, 195, 247, 0.6);
+  background: rgba(79, 195, 247, 0.14);
+  color: #dff4ff;
+  border-radius: 7px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fuvar-transit-edit-btn:hover {
+  background: rgba(79, 195, 247, 0.24);
+}
+
+.spediccio-modal-subtitle {
+  margin: -2px 0 10px;
+  color: #9bb5cb;
+  font-size: 12px;
+}
+
 .fuvar-header-clear-btn {
   margin: 0;
   font-size: 10px;
@@ -486,6 +508,222 @@ summary.btn {
   max-height: min(46vh, 520px);
   overflow: auto;
   padding-right: 0;
+}
+
+#transit-task-board {
+  margin-bottom: 10px;
+}
+
+.domestic-relay-board {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(115, 132, 156, 0.28);
+  background:
+    radial-gradient(circle at top right, rgba(52, 152, 219, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(20, 24, 31, 0.98), rgba(15, 18, 24, 0.96));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.domestic-relay-board-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.domestic-relay-board-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #eef4fb;
+}
+
+.domestic-relay-board-subtitle {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #91a2b5;
+  line-height: 1.45;
+}
+
+.domestic-relay-board-total {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(79, 195, 247, 0.16);
+  border: 1px solid rgba(79, 195, 247, 0.32);
+  color: #dff5ff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.domestic-relay-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.domestic-relay-column {
+  min-width: 0;
+  border: 1px solid rgba(110, 122, 140, 0.22);
+  border-radius: 12px;
+  background: rgba(12, 15, 20, 0.82);
+  overflow: hidden;
+}
+
+.domestic-relay-column-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.domestic-relay-column-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #eff4f9;
+}
+
+.domestic-relay-column-count {
+  font-size: 11px;
+  color: #98abc0;
+}
+
+.domestic-relay-column-body {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+}
+
+.domestic-relay-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(30, 35, 44, 0.98), rgba(21, 25, 32, 0.96));
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.domestic-relay-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(79, 195, 247, 0.34);
+  box-shadow: 0 10px 20px rgba(10, 17, 26, 0.36);
+}
+
+.domestic-relay-card.active {
+  border-color: rgba(79, 195, 247, 0.64);
+  box-shadow: 0 0 0 1px rgba(79, 195, 247, 0.35), 0 12px 22px rgba(8, 19, 32, 0.42);
+}
+
+.domestic-relay-card.linked-active {
+  border-color: rgba(255, 183, 77, 0.56);
+}
+
+.domestic-relay-card-head,
+.domestic-relay-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.domestic-relay-role-badge,
+.domestic-relay-status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.domestic-relay-role-badge.elofutas {
+  background: rgba(46, 154, 121, 0.18);
+  border: 1px solid rgba(84, 214, 173, 0.3);
+  color: #e5fff6;
+}
+
+.domestic-relay-role-badge.utofutas {
+  background: rgba(182, 106, 43, 0.18);
+  border: 1px solid rgba(255, 191, 134, 0.3);
+  color: #fff2e6;
+}
+
+.domestic-relay-status-badge.ready {
+  background: rgba(76, 175, 80, 0.18);
+  color: #e9ffe9;
+}
+
+.domestic-relay-status-badge.partial {
+  background: rgba(255, 193, 7, 0.18);
+  color: #fff5d6;
+}
+
+.domestic-relay-status-badge.empty {
+  background: rgba(239, 83, 80, 0.18);
+  color: #ffe9e8;
+}
+
+.domestic-relay-card-title,
+.domestic-relay-linked-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #eef4fb;
+}
+
+.domestic-relay-card-route,
+.domestic-relay-card-time,
+.domestic-relay-linked-route,
+.domestic-relay-linked-label {
+  font-size: 12px;
+  color: #9db0c4;
+}
+
+.domestic-relay-linked-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #c3d5e7;
+}
+
+.domestic-relay-action-btn {
+  min-width: 0;
+  flex: 1;
+  height: 30px;
+  font-size: 12px;
+}
+
+.domestic-relay-action-btn.secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e8f0f6;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.domestic-relay-action-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.domestic-relay-empty-state,
+.domestic-relay-board-muted {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #95a8bc;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1080px) {
+  .domestic-relay-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 .fuvar-tag-list {

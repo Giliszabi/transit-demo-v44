@@ -384,8 +384,12 @@ function buildTimelineBlockTooltip(block, jaratMeta = null) {
     const linkedFuvar = findFuvarByTimelineBlock(block);
     const pickupAddress = block?.felrakasCim || linkedFuvar?.felrakas?.cim || "";
     const dropoffAddress = block?.lerakasCim || linkedFuvar?.lerakas?.cim || "";
+    const transitRoleInfo = getDomesticTransitRoleInfo(linkedFuvar);
 
     lines.push(`${getCompactLocation(pickupAddress)} → ${getCompactLocation(dropoffAddress)}`);
+    if (transitRoleInfo?.label) {
+      lines.push(`Kapcsolt szakasz: ${transitRoleInfo.label}`);
+    }
     lines.push(`Idő: ${formatDate(block.start)} → ${formatDate(block.end)}`);
     lines.push(`Táv: ${distanceLabel}`);
     lines.push(`Költség: ${formatMoneyHuf(financials.cost)}`);
@@ -1581,6 +1585,83 @@ function getFuvarCategoryFromFuvar(fuvar) {
   return fuvar?.kategoria || fuvar?.viszonylat || "";
 }
 
+function findFuvarById(fuvarId) {
+  if (!fuvarId) {
+    return null;
+  }
+
+  return FUVAROK.find((item) => item.id === fuvarId) || null;
+}
+
+function getLinkedImportFuvarForDomestic(domesticFuvar) {
+  if (!domesticFuvar || getFuvarCategoryFromFuvar(domesticFuvar) !== "belfold") {
+    return null;
+  }
+
+  const directLinkedImportId = domesticFuvar.utofutasImportFuvarId || domesticFuvar.kapcsoltImportFuvarId || null;
+  const directLinkedImport = findFuvarById(directLinkedImportId);
+  if (directLinkedImport && getFuvarCategoryFromFuvar(directLinkedImport) === "import") {
+    return directLinkedImport;
+  }
+
+  return FUVAROK.find((candidate) => {
+    return getFuvarCategoryFromFuvar(candidate) === "import"
+      && candidate?.utofutasBelfoldFuvarId === domesticFuvar.id;
+  }) || null;
+}
+
+function getLinkedExportFuvarForDomestic(domesticFuvar) {
+  if (!domesticFuvar || getFuvarCategoryFromFuvar(domesticFuvar) !== "belfold") {
+    return null;
+  }
+
+  const directLinkedExportId = domesticFuvar.elofutasExportFuvarId || domesticFuvar.kapcsoltExportFuvarId || null;
+  const directLinkedExport = findFuvarById(directLinkedExportId);
+  if (directLinkedExport && getFuvarCategoryFromFuvar(directLinkedExport) === "export") {
+    return directLinkedExport;
+  }
+
+  return FUVAROK.find((candidate) => {
+    return getFuvarCategoryFromFuvar(candidate) === "export"
+      && candidate?.elofutasBelfoldFuvarId === domesticFuvar.id;
+  }) || null;
+}
+
+function getDomesticTransitRoleInfo(fuvar) {
+  if (!fuvar || getFuvarCategoryFromFuvar(fuvar) !== "belfold") {
+    return null;
+  }
+
+  const linkedExportFuvar = getLinkedExportFuvarForDomestic(fuvar);
+  if (linkedExportFuvar) {
+    return {
+      role: "elofutas",
+      label: `Előfutás • ${linkedExportFuvar.id}`,
+      linkedFuvar: linkedExportFuvar
+    };
+  }
+
+  const linkedImportFuvar = getLinkedImportFuvarForDomestic(fuvar);
+  if (linkedImportFuvar) {
+    return {
+      role: "utofutas",
+      label: `Utófutás • ${linkedImportFuvar.id}`,
+      linkedFuvar: linkedImportFuvar
+    };
+  }
+
+  return null;
+}
+
+function getDomesticTransitRoleInfoForBlock(block) {
+  const fuvar = findFuvarByTimelineBlock(block);
+  if (!fuvar) {
+    return null;
+  }
+
+  return getDomesticTransitRoleInfo(fuvar);
+}
+
 function isExplicitImportToDomesticUtofutas(prevBlock, currentBlock) {
   const prevFuvar = findFuvarByTimelineBlock(prevBlock);
   const currentFuvar = findFuvarByTimelineBlock(currentBlock);
@@ -1595,8 +1676,8 @@ function isExplicitImportToDomesticUtofutas(prevBlock, currentBlock) {
     return false;
   }
 
-  const linkedImportFuvarId = currentFuvar.utofutasImportFuvarId || currentFuvar.kapcsoltImportFuvarId || null;
-  if (!linkedImportFuvarId || linkedImportFuvarId !== prevFuvar.id) {
+  const linkedImportFuvar = getLinkedImportFuvarForDomestic(currentFuvar);
+  if (!linkedImportFuvar || linkedImportFuvar.id !== prevFuvar.id) {
     return false;
   }
 
@@ -1705,8 +1786,8 @@ export function refreshAutoTransitBlocksForResource(resource, allFuvarok = FUVAR
       if (!prev) {
         const leadHours = estimateTransitDurationHours(KORNYE_HUB_ADDRESS, currentPickup);
         const leadMs = Math.round(leadHours * 3600 * 1000);
-        const leadType = currentCategory === "belfold" ? "rezsifutas" : "elofutas";
-        const leadLabel = currentCategory === "belfold" ? AUTO_DEADHEAD_LABEL : ELOFUTAS_LABEL;
+        const leadType = "rezsifutas";
+        const leadLabel = AUTO_DEADHEAD_LABEL;
         const leadBlock = buildTransitBlock({
           startMs: currentStartMs - leadMs,
           endMs: currentStartMs,
@@ -1715,9 +1796,7 @@ export function refreshAutoTransitBlocksForResource(resource, allFuvarok = FUVAR
           fromAddress: KORNYE_HUB_ADDRESS,
           toAddress: currentPickup,
           targetFuvarId: current.fuvarId,
-          flags: currentCategory === "belfold"
-            ? { autoDeadhead: true, autoReposition: true }
-            : { autoLeadRun: true }
+          flags: { autoDeadhead: true, autoReposition: true }
         });
 
         if (leadBlock) {
@@ -1734,9 +1813,6 @@ export function refreshAutoTransitBlocksForResource(resource, allFuvarok = FUVAR
           const blockDurationMs = Math.min(gapMs, estimatedMs);
           const repositionEndMs = prevEndMs + blockDurationMs;
 
-          const fromHub = isKornyeAddress(prevDrop);
-          const prevCategory = getFuvarCategory(prev);
-
           let repositionType;
           let repositionLabel;
           let repositionFlags;
@@ -1752,12 +1828,11 @@ export function refreshAutoTransitBlocksForResource(resource, allFuvarok = FUVAR
               repositionFlags = { autoDeadhead: true, autoReposition: true };
             }
           } else {
-            repositionType = fromHub ? "elofutas" : "rezsifutas";
-            repositionLabel = fromHub ? ELOFUTAS_LABEL : AUTO_DEADHEAD_LABEL;
+            repositionType = "rezsifutas";
+            repositionLabel = AUTO_DEADHEAD_LABEL;
             repositionFlags = {
               autoReposition: true,
-              autoDeadhead: !fromHub,
-              autoLeadRun: fromHub
+              autoDeadhead: true
             };
           }
 
@@ -1799,36 +1874,6 @@ export function refreshAutoTransitBlocksForResource(resource, allFuvarok = FUVAR
       }
     }
 
-    const currentPickupAddress = current.felrakasCim || "";
-    const currentDropAddress = current.lerakasCim || "";
-    const currentEndMs = new Date(current.end).getTime();
-
-    if (
-      currentCategory === "import"
-      && isHungarianAddress(currentDropAddress)
-      && !isHungarianAddress(currentPickupAddress)
-      && Number.isFinite(currentEndMs)
-      && Number.isFinite(currentStartMs)
-      && currentEndMs > currentStartMs
-    ) {
-      const totalMs = currentEndMs - currentStartMs;
-      const utofutasMs = Math.min(6 * 3600 * 1000, Math.max(1 * 3600 * 1000, Math.round(totalMs * 0.28)));
-
-      const utofutasBlock = buildTransitBlock({
-        startMs: currentEndMs - utofutasMs,
-        endMs: currentEndMs,
-        type: "utofutas",
-        label: `${UTOFUTAS_LABEL} (HU belépéstől)` ,
-        fromAddress: "HU határ",
-        toAddress: currentDropAddress,
-        sourceFuvarId: current.fuvarId,
-        flags: { autoUtofutas: true }
-      });
-
-      if (utofutasBlock) {
-        autoBlocks.push(utofutasBlock);
-      }
-    }
   }
 
   const lastFuvar = fuvarBlocks[fuvarBlocks.length - 1] || null;
@@ -2498,12 +2543,16 @@ function renderResourceRow(parent, r, type) {
         const urgentHtml = visibleBlock.surgos
           ? '<span class="timeline-inline-urgent">SÜRGŐS</span>'
           : "";
+        const transitRoleInfo = getDomesticTransitRoleInfoForBlock(visibleBlock);
+        const transitRoleHtml = transitRoleInfo
+          ? `<span class="timeline-inline-transit-role ${transitRoleInfo.role}">${transitRoleInfo.label}</span>`
+          : "";
         const partnerSummaryHtml = type === "partner" && visibleBlock.partnerSummary
           ? `<div class="timeline-block-compact-line" style="opacity:0.84;">${visibleBlock.partnerSummary}</div>`
           : "";
 
         div.innerHTML = `
-          <div class="timeline-block-compact-line">${urgentHtml}<strong>${route.pickup} → ${route.dropoff}</strong><span class="timeline-compact-separator">•</span><span>${startText} → ${endText}</span>${proximityHintHtml}</div>
+          <div class="timeline-block-compact-line">${urgentHtml}${transitRoleHtml}<strong>${route.pickup} → ${route.dropoff}</strong><span class="timeline-compact-separator">•</span><span>${startText} → ${endText}</span>${proximityHintHtml}</div>
           ${partnerSummaryHtml}
         `;
       } else {

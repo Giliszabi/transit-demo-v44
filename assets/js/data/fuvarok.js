@@ -1,17 +1,60 @@
 import { DEMO_NEARBY_FREE_PAIR_SCENARIO } from "./demo-warning-scenario.js";
+import { FUVAROK_REAL } from "./fuvarok-real.js";
+
+// --- Páty ↔ Környe előfutás / utófutás auto-generáló ---
+// Előfutás: export ahol felrakás = Páty  →  feladat: Páty → Környe Telephely
+// Utófutás: import ahol lerakás = Páty   →  feladat: Környe Telephely → Páty
+function generatePatyRelayFuvarok(fuvarokList) {
+  const TRAVEL_MIN = 40;
+  const DISTANCE_KM = 35;
+
+  function addMinutes(isoStr, minutes) {
+    const d = new Date(isoStr);
+    d.setMinutes(d.getMinutes() + minutes);
+    return d.toISOString().slice(0, 16);
+  }
+
+  const result = [];
+  fuvarokList.forEach((fuvar) => {
+    const felC = String(fuvar?.felrakas?.cim || "");
+    const leC = String(fuvar?.lerakas?.cim || "");
+
+    if (fuvar.viszonylat === "export" && felC === "Páty") {
+      const startIdo = fuvar.felrakas.ido;
+      result.push({
+        id: `ELO-${fuvar.id}`,
+        megnevezes: `Előfutás – Páty → Környe [${fuvar.id}]`,
+        viszonylat: "belfold",
+        fixedDomestic: true,
+        felrakas: { cim: "Páty", ido: startIdo },
+        lerakas: { cim: "Környe, Telephely", ido: addMinutes(startIdo, TRAVEL_MIN) },
+        tavolsag_km: DISTANCE_KM,
+        adr: false,
+        surgos: false,
+        elofutasExportFuvarId: fuvar.id
+      });
+    }
+
+    if (fuvar.viszonylat === "import" && leC === "Páty") {
+      const endIdo = fuvar.lerakas.ido;
+      result.push({
+        id: `UTO-${fuvar.id}`,
+        megnevezes: `Utófutás – Környe → Páty [${fuvar.id}]`,
+        viszonylat: "belfold",
+        fixedDomestic: true,
+        felrakas: { cim: "Környe, Telephely", ido: addMinutes(endIdo, -TRAVEL_MIN) },
+        lerakas: { cim: "Páty", ido: endIdo },
+        tavolsag_km: DISTANCE_KM,
+        adr: false,
+        surgos: false,
+        utofutasImportFuvarId: fuvar.id
+      });
+    }
+  });
+  return result;
+}
 
 export const FUVAROK = [
-  {
-    id: "F4",
-    megnevezes: "Demo belföldi – Környe → Debrecen",
-    viszonylat: "belfold",
-    fixedDomestic: true,
-    felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-03-27T08:00" },
-    lerakas: { cim: "Magyarország, Debrecen, Logisztikai Központ", ido: "2026-03-27T13:30" },
-    tavolsag_km: 270,
-    adr: false,
-    surgos: false
-  },
   {
     id: "F7",
     megnevezes: "Demo export – Tatabánya → Milano",
@@ -127,17 +170,6 @@ export const FUVAROK = [
     surgos: false
   },
   {
-    id: "F19",
-    megnevezes: "Demo belföldi – Dunakeszi → Környe",
-    viszonylat: "belfold",
-    fixedDomestic: true,
-    felrakas: { cim: "Magyarország, Dunakeszi, Logisztikai Központ", ido: "2026-03-27T12:15" },
-    lerakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-03-27T15:45" },
-    tavolsag_km: 86,
-    adr: false,
-    surgos: false
-  },
-  {
     id: "F20",
     megnevezes: "Demo belföldi – Győr → Budapest",
     viszonylat: "belfold",
@@ -196,7 +228,11 @@ export const FUVAROK = [
     surgos: false,
     assignedSoforId: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeSoforId,
     assignedVontatoId: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeVontatoId
-  }
+  },
+  // --- Valós fuvarok (fuvarösszesítő_20260330150011.xlsx) ---
+  ...FUVAROK_REAL,
+  // --- Auto-generált Páty előfutás / utófutás feladatok ---
+  ...generatePatyRelayFuvarok(FUVAROK_REAL)
   /*
   ,{
     id: "F1",
@@ -209,7 +245,6 @@ export const FUVAROK = [
     surgos: false
   },
   {
-    id: "F2",
     megnevezes: "Autóalkatrészek – Wien",
     viszonylat: "export",
     felrakas: { cim: "Magyarország, Győr, Audi gyár", ido: "2026-03-21T08:00" },
@@ -260,6 +295,16 @@ export const FUVAROK = [
   }
   */
 ];
+
+function resetInitialSpedicioState() {
+  FUVAROK.forEach((fuvar) => {
+    fuvar.spediccio = false;
+    delete fuvar.spediccioPartner;
+    delete fuvar.spediccioForm;
+    delete fuvar.spediccioOperationType;
+    delete fuvar.spediccioLastKnownPrice;
+  });
+}
 
 const BELFOLD_NAGYVAROSOK = [
   "Budapest",
@@ -338,7 +383,7 @@ function extractDomesticCitiesFromName(name) {
 
 function syncDomesticEndpointsToName() {
   FUVAROK
-    .filter((fuvar) => fuvar.viszonylat === "belfold")
+    .filter((fuvar) => fuvar.viszonylat === "belfold" && !fuvar.fixedDomestic)
     .forEach((fuvar) => {
       const cities = extractDomesticCitiesFromName(fuvar.megnevezes);
       if (!cities) {
@@ -372,3 +417,4 @@ function applyRandomDomesticEndpoints() {
 
 applyRandomDomesticEndpoints();
 syncDomesticEndpointsToName();
+resetInitialSpedicioState();

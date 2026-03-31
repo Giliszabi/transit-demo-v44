@@ -540,6 +540,16 @@
 
     <details class="panel-collapsible" open>
       <summary class="panel-summary">
+        <span class="panel-title">🚚 Kapcsolt belföldi szakaszok</span>
+        <span class="panel-toggle-icon" aria-hidden="true">▾</span>
+      </summary>
+      <div class="panel-content">
+        <div id="transit-task-board">Betöltés...</div>
+      </div>
+    </details>
+
+    <details class="panel-collapsible" open>
+      <summary class="panel-summary">
         <span class="panel-title">📋 Fuvarfeladat lista</span>
         <span class="panel-toggle-icon" aria-hidden="true">▾</span>
       </summary>
@@ -649,6 +659,7 @@ import {
   DEFAULT_FUVAR_CARD_COLUMNS,
   createDefaultFuvarFilterState
 } from "./assets/js/ui/fuvar-panel.js";
+import { renderTransitTaskBoard } from "./assets/js/ui/domestic-relay-panel.js";
 import { evaluateAllResources } from "./assets/js/ui/matching.js";
 import { setDispatchProfile as setMatchingDispatchProfile } from "./assets/js/ui/matching.js";
 import {
@@ -2723,6 +2734,15 @@ function renderAssemblyOperationLog() {
     const visibleResources = getVisibleResourcesByScope();
     const spedicioMode = isSpedicioModeActive();
     const spedicioPartners = spedicioMode ? buildSpedicioPartnerResources(selectedFuvarId) : [];
+
+    if (document.getElementById("transit-task-board")) {
+      renderTransitTaskBoard("transit-task-board", {
+        hidden: spedicioMode,
+        selectedFuvarId,
+        onSelectFuvar: (fuvarId) => applyFuvarSelectionById(fuvarId),
+        onSelectLinkedFuvar: (fuvarId) => applyFuvarSelectionById(fuvarId)
+      });
+    }
 
     if (document.getElementById("fuvar-list")) {
       renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, {

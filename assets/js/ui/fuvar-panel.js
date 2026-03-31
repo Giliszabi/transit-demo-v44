@@ -12,6 +12,7 @@ import { POTKOCSIK } from "../data/potkocsik.js";
 import { renderTimeline, refreshAutoDriverStatesForLinkedConvoys, refreshAutoTransitBlocksForResource } from "./timeline.js";
 import { getFuvarTagMeta, getCategoryPalette } from "./colors.js";
 import { enableFuvarDrag } from "./dragdrop.js";
+import { getDomesticTransitRoleInfo } from "./transit-relations.js";
 
 const FILTERS = ["all", "adr", "surgos", "belfold", "export", "import", "spediccio"];
 const DEFAULT_FUVAR_FILTER_STATE = Object.freeze({
@@ -621,9 +622,24 @@ function scheduleRoadDistanceRefresh() {
   }, 120);
 }
 
+const KNOWN_FOREIGN_FIRST_PARTS = [
+  "hollandia", "nemetorszag", "germany", "dania", "franciaorszag", "olaszorszag",
+  "csehorszag", "luxemburg", "ausztria", "austria", "belgium", "netherlands",
+  "lengyelorszag", "polska", "romania", "szerbiai", "bulgaria", "horvato",
+  "szlovakia", "ukrajna"
+];
+
 function isHungaryAddress(address) {
   const normalized = normalizeText(address);
-  return normalized.includes("magyarorszag") || normalized.includes("hungary");
+  if (normalized.includes("magyarorszag") || normalized.includes("hungary")) {
+    return true;
+  }
+  // Ha nincs vesszős ország-prefix (pl. "Páty", "Tata"), feltétel szerint Magyarország
+  if (!String(address || "").includes(",")) {
+    return true;
+  }
+  const firstPart = normalizeText(String(address || "").split(",")[0].trim());
+  return !KNOWN_FOREIGN_FIRST_PARTS.some((country) => firstPart.includes(country));
 }
 
 function hasFullAssignment(fuvar) {
@@ -1033,6 +1049,15 @@ function closeSpedicioModal(overlay, onKeyDown) {
   }
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function openSpedicioPartnerPicker(initialPartner = "") {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
@@ -1312,8 +1337,9 @@ function getFuvarTags(fuvar) {
     tags.push(fuvar.kategoria);
   }
 
-  if (fuvar.spediccio) {
-    tags.push("spediccio");
+  const transitRoleInfo = getDomesticTransitRoleInfo(fuvar);
+  if (transitRoleInfo?.role) {
+    tags.push(transitRoleInfo.role);
   }
 
   return tags;
@@ -1415,6 +1441,368 @@ function renderDomesticUtofutasControl(fuvar) {
       </select>
     </div>
   `;
+}
+
+function getFuvarCategory(fuvar) {
+  return fuvar?.kategoria || fuvar?.viszonylat || "";
+}
+
+function getLinkedExportFromDomestic(domesticFuvar) {
+  const linkedExportId = domesticFuvar?.elofutasExportFuvarId || domesticFuvar?.kapcsoltExportFuvarId || "";
+  if (!linkedExportId) {
+    return null;
+  }
+
+  return FUVAROK.find((candidate) => candidate.id === linkedExportId) || null;
+}
+
+function getLinkedImportFromDomestic(domesticFuvar) {
+  const linkedImportId = domesticFuvar?.utofutasImportFuvarId || domesticFuvar?.kapcsoltImportFuvarId || "";
+  if (!linkedImportId) {
+    return null;
+  }
+
+  return FUVAROK.find((candidate) => candidate.id === linkedImportId) || null;
+}
+
+function clearDomesticExportLink(domesticFuvar) {
+  const linkedExport = getLinkedExportFromDomestic(domesticFuvar);
+  if (linkedExport && linkedExport.elofutasBelfoldFuvarId === domesticFuvar.id) {
+    delete linkedExport.elofutasBelfoldFuvarId;
+  }
+
+  FUVAROK.forEach((candidate) => {
+    if (getFuvarCategory(candidate) === "export" && candidate.elofutasBelfoldFuvarId === domesticFuvar.id) {
+      delete candidate.elofutasBelfoldFuvarId;
+    }
+  });
+
+  delete domesticFuvar.elofutasExportFuvarId;
+  delete domesticFuvar.kapcsoltExportFuvarId;
+}
+
+function clearDomesticImportLink(domesticFuvar) {
+  const linkedImport = getLinkedImportFromDomestic(domesticFuvar);
+  if (linkedImport && linkedImport.utofutasBelfoldFuvarId === domesticFuvar.id) {
+    delete linkedImport.utofutasBelfoldFuvarId;
+  }
+
+  FUVAROK.forEach((candidate) => {
+    if (getFuvarCategory(candidate) === "import" && candidate.utofutasBelfoldFuvarId === domesticFuvar.id) {
+      delete candidate.utofutasBelfoldFuvarId;
+    }
+  });
+
+  delete domesticFuvar.utofutasImportFuvarId;
+  delete domesticFuvar.kapcsoltImportFuvarId;
+}
+
+function clearExportDomesticLink(exportFuvar) {
+  const linkedDomesticId = exportFuvar?.elofutasBelfoldFuvarId || "";
+  if (!linkedDomesticId) {
+    return;
+  }
+
+  const linkedDomestic = FUVAROK.find((candidate) => candidate.id === linkedDomesticId);
+  if (linkedDomestic && linkedDomestic.elofutasExportFuvarId === exportFuvar.id) {
+    delete linkedDomestic.elofutasExportFuvarId;
+    delete linkedDomestic.kapcsoltExportFuvarId;
+  }
+
+  delete exportFuvar.elofutasBelfoldFuvarId;
+}
+
+function clearImportDomesticLink(importFuvar) {
+  const linkedDomesticId = importFuvar?.utofutasBelfoldFuvarId || "";
+  if (!linkedDomesticId) {
+    return;
+  }
+
+  const linkedDomestic = FUVAROK.find((candidate) => candidate.id === linkedDomesticId);
+  if (linkedDomestic && linkedDomestic.utofutasImportFuvarId === importFuvar.id) {
+    delete linkedDomestic.utofutasImportFuvarId;
+    delete linkedDomestic.kapcsoltImportFuvarId;
+  }
+
+  delete importFuvar.utofutasBelfoldFuvarId;
+}
+
+function setExportDomesticLink(exportFuvar, domesticFuvarId) {
+  clearExportDomesticLink(exportFuvar);
+
+  if (!domesticFuvarId) {
+    return;
+  }
+
+  const domesticFuvar = FUVAROK.find((candidate) => candidate.id === domesticFuvarId);
+  if (!domesticFuvar || getFuvarCategory(domesticFuvar) !== "belfold") {
+    return;
+  }
+
+  clearDomesticExportLink(domesticFuvar);
+  exportFuvar.elofutasBelfoldFuvarId = domesticFuvar.id;
+  domesticFuvar.elofutasExportFuvarId = exportFuvar.id;
+}
+
+function setImportDomesticLink(importFuvar, domesticFuvarId) {
+  clearImportDomesticLink(importFuvar);
+
+  if (!domesticFuvarId) {
+    return;
+  }
+
+  const domesticFuvar = FUVAROK.find((candidate) => candidate.id === domesticFuvarId);
+  if (!domesticFuvar || getFuvarCategory(domesticFuvar) !== "belfold") {
+    return;
+  }
+
+  clearDomesticImportLink(domesticFuvar);
+  importFuvar.utofutasBelfoldFuvarId = domesticFuvar.id;
+  domesticFuvar.utofutasImportFuvarId = importFuvar.id;
+}
+
+function getDomesticExportOptions(domesticFuvar) {
+  const domesticEndMs = new Date(domesticFuvar?.lerakas?.ido || "").getTime();
+
+  return FUVAROK
+    .filter((candidate) => candidate?.id !== domesticFuvar?.id)
+    .filter((candidate) => getFuvarCategory(candidate) === "export")
+    .filter((candidate) => {
+      const exportStartMs = new Date(candidate?.felrakas?.ido || "").getTime();
+      if (!Number.isFinite(domesticEndMs) || !Number.isFinite(exportStartMs)) {
+        return true;
+      }
+
+      return domesticEndMs <= exportStartMs;
+    })
+    .sort((left, right) => new Date(left.felrakas?.ido || "").getTime() - new Date(right.felrakas?.ido || "").getTime());
+}
+
+function getDomesticImportOptions(domesticFuvar) {
+  return getDomesticImportLinkOptions(domesticFuvar);
+}
+
+function getDomesticCandidatesForExport(exportFuvar) {
+  const exportStartMs = new Date(exportFuvar?.felrakas?.ido || "").getTime();
+
+  return FUVAROK
+    .filter((candidate) => candidate?.id !== exportFuvar?.id)
+    .filter((candidate) => getFuvarCategory(candidate) === "belfold")
+    .filter((candidate) => {
+      const domesticEndMs = new Date(candidate?.lerakas?.ido || "").getTime();
+      if (!Number.isFinite(exportStartMs) || !Number.isFinite(domesticEndMs)) {
+        return true;
+      }
+
+      return domesticEndMs <= exportStartMs;
+    })
+    .sort((left, right) => new Date(left.lerakas?.ido || "").getTime() - new Date(right.lerakas?.ido || "").getTime());
+}
+
+function getDomesticCandidatesForImport(importFuvar) {
+  const importEndMs = new Date(importFuvar?.lerakas?.ido || "").getTime();
+
+  return FUVAROK
+    .filter((candidate) => candidate?.id !== importFuvar?.id)
+    .filter((candidate) => getFuvarCategory(candidate) === "belfold")
+    .filter((candidate) => {
+      const domesticStartMs = new Date(candidate?.felrakas?.ido || "").getTime();
+      if (!Number.isFinite(importEndMs) || !Number.isFinite(domesticStartMs)) {
+        return true;
+      }
+
+      return domesticStartMs >= importEndMs;
+    })
+    .sort((left, right) => new Date(left.felrakas?.ido || "").getTime() - new Date(right.felrakas?.ido || "").getTime());
+}
+
+function formatTransitSelectOptions(optionList, selectedId, timeField = "felrakas") {
+  return optionList.map((candidate) => {
+    const selected = candidate.id === selectedId ? "selected" : "";
+    const timeValue = candidate?.[timeField]?.ido || "";
+    const timeLabel = timeValue
+      ? new Date(timeValue).toLocaleString("hu-HU", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+      : "-";
+
+    return `<option value="${escapeHtml(candidate.id)}" ${selected}>[${escapeHtml(candidate.id)}] ${escapeHtml(candidate.megnevezes)} • ${timeLabel}</option>`;
+  }).join("");
+}
+
+function buildTransitLinkEditorFields(fuvar) {
+  const category = getFuvarCategory(fuvar);
+
+  if (category === "belfold") {
+    const exportOptions = getDomesticExportOptions(fuvar);
+    const importOptions = getDomesticImportOptions(fuvar);
+    const selectedExportId = fuvar.elofutasExportFuvarId || fuvar.kapcsoltExportFuvarId || "";
+    const selectedImportId = fuvar.utofutasImportFuvarId || fuvar.kapcsoltImportFuvarId || "";
+
+    return `
+      <label class="timeline-event-form-label">
+        Előfutás kapcsolt export
+        <select class="timeline-event-form-input" name="elofutasExportFuvarId">
+          <option value="">Nincs kapcsolt export</option>
+          ${formatTransitSelectOptions(exportOptions, selectedExportId, "felrakas")}
+        </select>
+      </label>
+      <label class="timeline-event-form-label">
+        Utófutás kapcsolt import
+        <select class="timeline-event-form-input" name="utofutasImportFuvarId">
+          <option value="">Nincs kapcsolt import</option>
+          ${formatTransitSelectOptions(importOptions, selectedImportId, "lerakas")}
+        </select>
+      </label>
+    `;
+  }
+
+  if (category === "export") {
+    const domesticOptions = getDomesticCandidatesForExport(fuvar);
+    const selectedDomesticId = fuvar.elofutasBelfoldFuvarId || "";
+
+    return `
+      <label class="timeline-event-form-label">
+        Kapcsolt előfutás (belföld)
+        <select class="timeline-event-form-input" name="elofutasBelfoldFuvarId">
+          <option value="">Nincs kapcsolt belföld</option>
+          ${formatTransitSelectOptions(domesticOptions, selectedDomesticId, "lerakas")}
+        </select>
+      </label>
+    `;
+  }
+
+  if (category === "import") {
+    const domesticOptions = getDomesticCandidatesForImport(fuvar);
+    const selectedDomesticId = fuvar.utofutasBelfoldFuvarId || "";
+
+    return `
+      <label class="timeline-event-form-label">
+        Kapcsolt utófutás (belföld)
+        <select class="timeline-event-form-input" name="utofutasBelfoldFuvarId">
+          <option value="">Nincs kapcsolt belföld</option>
+          ${formatTransitSelectOptions(domesticOptions, selectedDomesticId, "felrakas")}
+        </select>
+      </label>
+    `;
+  }
+
+  return "";
+}
+
+function applyTransitLinkEditorForm(fuvar, formData) {
+  const category = getFuvarCategory(fuvar);
+
+  if (category === "belfold") {
+    clearDomesticExportLink(fuvar);
+    clearDomesticImportLink(fuvar);
+
+    if (formData.elofutasExportFuvarId) {
+      const exportFuvar = FUVAROK.find((candidate) => candidate.id === formData.elofutasExportFuvarId);
+      if (exportFuvar) {
+        setExportDomesticLink(exportFuvar, fuvar.id);
+      }
+    }
+
+    if (formData.utofutasImportFuvarId) {
+      const importFuvar = FUVAROK.find((candidate) => candidate.id === formData.utofutasImportFuvarId);
+      if (importFuvar) {
+        setImportDomesticLink(importFuvar, fuvar.id);
+      }
+    }
+
+    return;
+  }
+
+  if (category === "export") {
+    setExportDomesticLink(fuvar, formData.elofutasBelfoldFuvarId || "");
+    return;
+  }
+
+  if (category === "import") {
+    setImportDomesticLink(fuvar, formData.utofutasBelfoldFuvarId || "");
+  }
+}
+
+function shouldShowTransitLinkEditor(fuvar) {
+  const category = getFuvarCategory(fuvar);
+  return category === "belfold" || category === "export" || category === "import";
+}
+
+function openTransitLinkEditorModal(fuvar) {
+  return new Promise((resolve) => {
+    const fieldsHtml = buildTransitLinkEditorFields(fuvar);
+    if (!fieldsHtml) {
+      resolve(false);
+      return;
+    }
+
+    const overlay = document.createElement("div");
+    overlay.className = "spediccio-modal-overlay";
+    overlay.innerHTML = `
+      <div class="spediccio-modal" role="dialog" aria-modal="true" aria-label="Kapcsolt fuvar szerkesztése">
+        <div class="spediccio-modal-header">
+          <h3>Kapcsolt fuvar szerkesztése • ${escapeHtml(fuvar.id)}</h3>
+          <button type="button" class="spediccio-modal-close" aria-label="Bezárás">✕</button>
+        </div>
+        <div class="spediccio-modal-subtitle">${escapeHtml(fuvar.megnevezes || "")}</div>
+        <form class="spediccio-form-grid transit-link-form-grid">
+          ${fieldsHtml}
+          <div class="spediccio-modal-actions full-width">
+            <button type="button" class="btn spediccio-cancel-btn" data-action="cancel">Mégse</button>
+            <button type="submit" class="btn spediccio-save-btn">Mentés</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const dialog = overlay.querySelector(".spediccio-modal");
+    const closeBtn = overlay.querySelector(".spediccio-modal-close");
+    const cancelBtn = overlay.querySelector('[data-action="cancel"]');
+    const form = overlay.querySelector(".transit-link-form-grid");
+
+    let settled = false;
+    const finish = (value) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      closeSpedicioModal(overlay, onKeyDown);
+      resolve(value);
+    };
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        finish(false);
+      }
+    };
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const formData = Object.fromEntries(new FormData(form).entries());
+      applyTransitLinkEditorForm(fuvar, formData);
+      finish(true);
+    });
+
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) {
+        finish(false);
+      }
+    });
+
+    dialog.addEventListener("click", (event) => event.stopPropagation());
+    closeBtn.addEventListener("click", () => finish(false));
+    cancelBtn.addEventListener("click", () => finish(false));
+
+    document.addEventListener("keydown", onKeyDown);
+  });
 }
 
 function getAssignedResourceName(type, id) {
@@ -1648,7 +2036,10 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     const clearBtnHtml = isFullyAssigned
       ? `<button type="button" class="fuvar-resource-clear-btn fuvar-header-clear-btn" data-action="clear-fuvar-assignment">Erőforrás törlés</button>`
       : "";
-    const actionButtonsHtml = clearBtnHtml;
+    const transitLinkBtnHtml = shouldShowTransitLinkEditor(fuvar)
+      ? '<button type="button" class="fuvar-transit-edit-btn" data-action="edit-transit-link">Kapcsolás</button>'
+      : "";
+    const actionButtonsHtml = [transitLinkBtnHtml, clearBtnHtml].filter(Boolean).join("");
 
     const context = {
       soforName,
@@ -1845,6 +2236,30 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
               partnerName: fuvar.spediccioPartner || ""
             }
           }));
+        }
+      });
+    }
+
+    const editTransitLinkBtn = card.querySelector('[data-action="edit-transit-link"]');
+    if (editTransitLinkBtn) {
+      editTransitLinkBtn.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const didSave = await openTransitLinkEditorModal(fuvar);
+        if (!didSave) {
+          return;
+        }
+
+        renderFuvarCards(containerId, filter, onSelectFuvar, options);
+        enableFuvarDrag();
+        window.dispatchEvent(new CustomEvent("fuvar:focus", {
+          detail: { fuvarId: fuvar.id }
+        }));
+
+        const results = evaluateAllResources(SOFOROK, VONTATOK, POTKOCSIK, fuvar);
+        if (typeof onSelectFuvar === "function") {
+          onSelectFuvar(results);
         }
       });
     }

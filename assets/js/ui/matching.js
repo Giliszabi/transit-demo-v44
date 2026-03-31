@@ -70,7 +70,14 @@ export function evaluateFuvarTags(fuvar) {
     fuvar.adr = Math.random() < 0.25;
   }
 
-  // fuvar típus: belföld / export / import / spedició
+  // Fuvar típus: elsődlegesen a rögzített viszonylatot használjuk.
+  // A "spediccio" nem automatikus fuvar-kategória, csak explicit UI állapot lehet.
+  if (["belfold", "export", "import"].includes(fuvar.viszonylat)) {
+    fuvar.kategoria = fuvar.viszonylat;
+    return;
+  }
+
+  // Fallback csak legacy adatokhoz, ha nincs viszonylat megadva.
   const fel = fuvar.felrakas.cim.toLowerCase();
   const ler = fuvar.lerakas.cim.toLowerCase();
 
@@ -81,10 +88,8 @@ export function evaluateFuvarTags(fuvar) {
     fuvar.kategoria = "belfold";
   } else if (huFel && !huLer) {
     fuvar.kategoria = "export";
-  } else if (!huFel && huLer) {
-    fuvar.kategoria = "import";
   } else {
-    fuvar.kategoria = "spediccio";
+    fuvar.kategoria = "import";
   }
 }
 

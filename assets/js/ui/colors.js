@@ -57,6 +57,16 @@ const FUVAR_TAG_META = {
     color: FIXED_CATEGORY_COLORS.import,
     textColor: "#FFF8EF"
   },
+  elofutas: {
+    label: "Előfutás",
+    color: "#2E9A79",
+    textColor: "#F2FFF8"
+  },
+  utofutas: {
+    label: "Utófutás",
+    color: "#B66A2B",
+    textColor: "#FFF6EC"
+  },
   spediccio: {
     label: "Spedicció",
     color: FIXED_CATEGORY_COLORS.spediccio,

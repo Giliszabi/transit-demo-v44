@@ -415,6 +415,8 @@ function buildAssemblyBlockTooltip(block, jaratMeta = null) {
   const distanceLabel = Number.isFinite(distanceKm) ? `${Math.round(distanceKm)} km` : "n/a";
 
   const route = getAssemblyRouteForBlock(block);
+  const linkedFuvar = findFuvarByBlock(block);
+  const transitRoleInfo = getDomesticTransitRoleInfo(linkedFuvar);
 
   const lines = [
     `${route.pickup} → ${route.dropoff}`,
@@ -424,6 +426,10 @@ function buildAssemblyBlockTooltip(block, jaratMeta = null) {
     `Költség: ${formatMoneyHuf(cost)}`,
     `Eredményesség: ${formatMoneyHuf(profit)}`
   ];
+
+  if (transitRoleInfo?.label) {
+    lines.splice(1, 0, `Kapcsolt szakasz: ${transitRoleInfo.label}`);
+  }
 
   if (jaratMeta?.jaratId) {
     lines.push(`Kész járat: ${jaratMeta.jaratId}`);
@@ -770,6 +776,139 @@ function findFuvarByBlock(block) {
       && item.felrakas?.ido === block.start
       && item.lerakas?.ido === block.end;
   }) || null;
+}
+
+function getFuvarCategoryFromFuvar(fuvar) {
+  return fuvar?.kategoria || fuvar?.viszonylat || "";
+}
+
+function findFuvarById(fuvarId) {
+  if (!fuvarId) {
+    return null;
+  }
+
+  return FUVAROK.find((item) => item.id === fuvarId) || null;
+}
+
+function getLinkedImportFuvarForDomestic(domesticFuvar) {
+  if (!domesticFuvar || getFuvarCategoryFromFuvar(domesticFuvar) !== "belfold") {
+    return null;
+  }
+
+  const directLinkedImportId = domesticFuvar.utofutasImportFuvarId || domesticFuvar.kapcsoltImportFuvarId || null;
+  const directLinkedImport = findFuvarById(directLinkedImportId);
+  if (directLinkedImport && getFuvarCategoryFromFuvar(directLinkedImport) === "import") {
+    return directLinkedImport;
+  }
+
+  return FUVAROK.find((candidate) => {
+    return getFuvarCategoryFromFuvar(candidate) === "import"
+      && candidate?.utofutasBelfoldFuvarId === domesticFuvar.id;
+  }) || null;
+}
+
+function getLinkedExportFuvarForDomestic(domesticFuvar) {
+  if (!domesticFuvar || getFuvarCategoryFromFuvar(domesticFuvar) !== "belfold") {
+    return null;
+  }
+
+  const directLinkedExportId = domesticFuvar.elofutasExportFuvarId || domesticFuvar.kapcsoltExportFuvarId || null;
+  const directLinkedExport = findFuvarById(directLinkedExportId);
+  if (directLinkedExport && getFuvarCategoryFromFuvar(directLinkedExport) === "export") {
+    return directLinkedExport;
+  }
+
+  return FUVAROK.find((candidate) => {
+    return getFuvarCategoryFromFuvar(candidate) === "export"
+      && candidate?.elofutasBelfoldFuvarId === domesticFuvar.id;
+  }) || null;
+}
+
+function getDomesticTransitRoleInfo(fuvar) {
+  if (!fuvar || getFuvarCategoryFromFuvar(fuvar) !== "belfold") {
+    return null;
+  }
+
+  const linkedExportFuvar = getLinkedExportFuvarForDomestic(fuvar);
+  if (linkedExportFuvar) {
+    return {
+      role: "elofutas",
+      label: `Előfutás • ${linkedExportFuvar.id}`
+    };
+  }
+
+  const linkedImportFuvar = getLinkedImportFuvarForDomestic(fuvar);
+  if (linkedImportFuvar) {
+    return {
+      role: "utofutas",
+      label: `Utófutás • ${linkedImportFuvar.id}`
+    };
+  }
+
+  return null;
+}
+
+function getLifecycleNeighbors(fuvar) {
+  if (!fuvar) {
+    return [];
+  }
+
+  const category = getFuvarCategoryFromFuvar(fuvar);
+  if (category === "belfold") {
+    const linkedExport = getLinkedExportFuvarForDomestic(fuvar);
+    const linkedImport = getLinkedImportFuvarForDomestic(fuvar);
+    return [linkedExport, linkedImport].filter(Boolean);
+  }
+
+  if (category === "export") {
+    const linkedDomesticId = fuvar.elofutasBelfoldFuvarId || "";
+    const linkedDomestic = findFuvarById(linkedDomesticId);
+    return linkedDomestic ? [linkedDomestic] : [];
+  }
+
+  if (category === "import") {
+    const linkedDomesticId = fuvar.utofutasBelfoldFuvarId || "";
+    const linkedDomestic = findFuvarById(linkedDomesticId);
+    return linkedDomestic ? [linkedDomestic] : [];
+  }
+
+  return [];
+}
+
+function buildFocusedLifecycleFuvarIdSet() {
+  const focusedFuvar = findFuvarById(focusedFuvarId);
+  if (!focusedFuvar) {
+    return new Set();
+  }
+
+  const visited = new Set();
+  const queue = [focusedFuvar];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || visited.has(current.id)) {
+      continue;
+    }
+
+    visited.add(current.id);
+    getLifecycleNeighbors(current).forEach((neighbor) => {
+      if (neighbor && !visited.has(neighbor.id)) {
+        queue.push(neighbor);
+      }
+    });
+  }
+
+  return visited;
+}
+
+function assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds) {
+  if (!assembly || !lifecycleFuvarIds || lifecycleFuvarIds.size === 0) {
+    return false;
+  }
+
+  return (assembly.fuvarBlocks || []).some((block) => {
+    return block?.fuvarId && lifecycleFuvarIds.has(block.fuvarId);
+  });
 }
 
 function isFinishedFuvarBlock(block) {
@@ -1462,11 +1601,14 @@ function buildAssemblies(soforok, vontatok, potkocsik) {
     });
 }
 
-function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik) {
+function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik, lifecycleFuvarIds = new Set()) {
   const row = document.createElement("div");
   row.className = "timeline-resource assembly-row";
   if (focusedAssemblyId && focusedAssemblyId === assembly.id) {
     row.classList.add("active");
+  }
+  if (assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds)) {
+    row.classList.add("lifecycle-focus");
   }
   row.dataset.assemblyId = assembly.id;
   row.setAttribute("role", "button");
@@ -1504,6 +1646,13 @@ function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik) {
 
     const div = document.createElement("div");
     div.className = "timeline-block fuvar assembly-block";
+    const blockFuvarId = visibleBlock?.fuvarId || "";
+    if (blockFuvarId && lifecycleFuvarIds.has(blockFuvarId)) {
+      div.classList.add("lifecycle-match");
+    }
+    if (blockFuvarId && focusedFuvarId && blockFuvarId === focusedFuvarId) {
+      div.classList.add("lifecycle-primary");
+    }
 
     const left = dateToPosition(visibleBlock.renderStart);
     const width = blockWidth(visibleBlock.renderStart, visibleBlock.renderEnd);
@@ -1528,12 +1677,17 @@ function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik) {
     const urgentHtml = visibleBlock.surgos
       ? '<span class="timeline-inline-urgent">SÜRGŐS</span>'
       : "";
+    const linkedFuvar = findFuvarByBlock(visibleBlock);
+    const transitRoleInfo = getDomesticTransitRoleInfo(linkedFuvar);
+    const transitRoleHtml = transitRoleInfo
+      ? `<span class="timeline-inline-transit-role ${transitRoleInfo.role}">${transitRoleInfo.label}</span>`
+      : "";
     const startText = formatCompactAssemblyTime(visibleBlock.start);
     const endText = formatCompactAssemblyTime(visibleBlock.end);
     const comboLine = `👤 ${soforName} | 🚛 ${assembly.vontato.rendszam} | 🚚 ${potkocsiRendszam}`;
 
     div.innerHTML = `
-      <div class="assembly-block-line-primary">${urgentHtml}<strong>${route.pickup} → ${route.dropoff}</strong><span class="timeline-compact-separator">•</span><span>${startText} → ${endText}</span>${proximityHintHtml}</div>
+      <div class="assembly-block-line-primary">${urgentHtml}${transitRoleHtml}<strong>${route.pickup} → ${route.dropoff}</strong><span class="timeline-compact-separator">•</span><span>${startText} → ${endText}</span>${proximityHintHtml}</div>
       <div class="assembly-block-line-secondary">${comboLine}</div>
     `;
 
@@ -1713,7 +1867,18 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
     return;
   }
 
-  visibleAssemblies.forEach((assembly) => {
-    renderAssemblyRow(container, assembly, soforok, vontatok, potkocsik);
+  const lifecycleFuvarIds = buildFocusedLifecycleFuvarIdSet();
+  const lifecycleMatches = lifecycleFuvarIds.size > 0
+    ? visibleAssemblies.filter((assembly) => assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds))
+    : [];
+  const lifecycleRemainder = lifecycleFuvarIds.size > 0
+    ? visibleAssemblies.filter((assembly) => !assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds))
+    : visibleAssemblies;
+  const orderedAssemblies = lifecycleFuvarIds.size > 0
+    ? [...lifecycleMatches, ...lifecycleRemainder]
+    : visibleAssemblies;
+
+  orderedAssemblies.forEach((assembly) => {
+    renderAssemblyRow(container, assembly, soforok, vontatok, potkocsik, lifecycleFuvarIds);
   });
 }

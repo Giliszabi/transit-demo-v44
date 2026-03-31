@@ -997,34 +997,43 @@ async function handleFuvarDropOnResource(targetType, targetId, explicitFuvarId =
 }
 
 // DRAG START – FUVAR KÁRTYÁK
+function applyFuvarDragListeners(card, fuvarId) {
+  card.setAttribute("draggable", "true");
+
+  card.addEventListener("dragstart", (event) => {
+    if (!fuvarId) {
+      return;
+    }
+
+    if (event.dataTransfer) {
+      event.dataTransfer.setData("application/x-transit-fuvar-id", fuvarId);
+      event.dataTransfer.setData("text/plain", fuvarId);
+      event.dataTransfer.effectAllowed = "copyMove";
+    }
+
+    dragState.kind = "fuvar";
+    dragState.fuvarId = fuvarId;
+    dragState.sourceType = null;
+    dragState.sourceId = null;
+    card.classList.add("dragging");
+  });
+
+  card.addEventListener("dragend", () => {
+    card.classList.remove("dragging");
+    resetDragState();
+    clearHighlights();
+  });
+}
+
 export function enableFuvarDrag() {
+  // Fuvar kártyák (.menu-card) – data-id attribútumot használnak
   document.querySelectorAll(".menu-card").forEach((card) => {
-    card.setAttribute("draggable", "true");
+    applyFuvarDragListeners(card, card.dataset.id);
+  });
 
-    card.addEventListener("dragstart", (event) => {
-      const fuvarId = card.dataset.id;
-      if (!fuvarId) {
-        return;
-      }
-
-      if (event.dataTransfer) {
-        event.dataTransfer.setData("application/x-transit-fuvar-id", fuvarId);
-        event.dataTransfer.setData("text/plain", fuvarId);
-        event.dataTransfer.effectAllowed = "copyMove";
-      }
-
-      dragState.kind = "fuvar";
-      dragState.fuvarId = fuvarId;
-      dragState.sourceType = null;
-      dragState.sourceId = null;
-      card.classList.add("dragging");
-    });
-
-    card.addEventListener("dragend", () => {
-      card.classList.remove("dragging");
-      resetDragState();
-      clearHighlights();
-    });
+  // Előfutás / utófutás relay kártyák (.domestic-relay-card) – data-fuvar-id attribútumot használnak
+  document.querySelectorAll(".domestic-relay-card[data-fuvar-id]").forEach((card) => {
+    applyFuvarDragListeners(card, card.dataset.fuvarId);
   });
 }
 
