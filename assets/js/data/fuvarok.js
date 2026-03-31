@@ -1,10 +1,10 @@
 import { DEMO_NEARBY_FREE_PAIR_SCENARIO } from "./demo-warning-scenario.js";
 import { FUVAROK_REAL } from "./fuvarok-real.js";
 
-// --- Páty ↔ Környe előfutás / utófutás auto-generáló ---
-// Előfutás: export ahol felrakás = Páty  →  feladat: Páty → Környe Telephely
-// Utófutás: import ahol lerakás = Páty   →  feladat: Környe Telephely → Páty
-function generatePatyRelayFuvarok(fuvarokList) {
+// --- Előfutás / utófutás auto-generáló ---
+// Előfutás: export feladat felrakási helye → Környe Telephely
+// Utófutás: Környe Telephely → import feladat lerakási helye
+function generateRelayFuvarok(fuvarokList) {
   const TRAVEL_MIN = 40;
   const DISTANCE_KM = 35;
 
@@ -14,19 +14,24 @@ function generatePatyRelayFuvarok(fuvarokList) {
     return d.toISOString().slice(0, 16);
   }
 
+  function isKornye(address) {
+    return String(address || "").toLowerCase().includes("kornye");
+  }
+
   const result = [];
   fuvarokList.forEach((fuvar) => {
     const felC = String(fuvar?.felrakas?.cim || "");
     const leC = String(fuvar?.lerakas?.cim || "");
 
-    if (fuvar.viszonylat === "export" && felC === "Páty") {
+    // ELŐFUTÁS: export feladat felrakási helye → Környe (csak ha nem Környé-ből indul)
+    if (fuvar.viszonylat === "export" && !isKornye(felC)) {
       const startIdo = fuvar.felrakas.ido;
       result.push({
         id: `ELO-${fuvar.id}`,
-        megnevezes: `Előfutás – Páty → Környe [${fuvar.id}]`,
+        megnevezes: `Előfutás – ${felC} → Környe [${fuvar.id}]`,
         viszonylat: "belfold",
         fixedDomestic: true,
-        felrakas: { cim: "Páty", ido: startIdo },
+        felrakas: { cim: felC, ido: startIdo },
         lerakas: { cim: "Környe, Telephely", ido: addMinutes(startIdo, TRAVEL_MIN) },
         tavolsag_km: DISTANCE_KM,
         adr: false,
@@ -35,15 +40,16 @@ function generatePatyRelayFuvarok(fuvarokList) {
       });
     }
 
-    if (fuvar.viszonylat === "import" && leC === "Páty") {
+    // UTÓFUTÁS: Környe → import feladat lerakási helye (csak ha nem Környé-be érkezik)
+    if (fuvar.viszonylat === "import" && !isKornye(leC)) {
       const endIdo = fuvar.lerakas.ido;
       result.push({
         id: `UTO-${fuvar.id}`,
-        megnevezes: `Utófutás – Környe → Páty [${fuvar.id}]`,
+        megnevezes: `Utófutás – Környe → ${leC} [${fuvar.id}]`,
         viszonylat: "belfold",
         fixedDomestic: true,
         felrakas: { cim: "Környe, Telephely", ido: addMinutes(endIdo, -TRAVEL_MIN) },
-        lerakas: { cim: "Páty", ido: endIdo },
+        lerakas: { cim: leC, ido: endIdo },
         tavolsag_km: DISTANCE_KM,
         adr: false,
         surgos: false,
@@ -231,8 +237,8 @@ export const FUVAROK = [
   },
   // --- Valós fuvarok (fuvarösszesítő_20260330150011.xlsx) ---
   ...FUVAROK_REAL,
-  // --- Auto-generált Páty előfutás / utófutás feladatok ---
-  ...generatePatyRelayFuvarok(FUVAROK_REAL)
+  // --- Auto-generált előfutás / utófutás feladatok (Környe elosztó) ---
+  ...generateRelayFuvarok(FUVAROK_REAL)
   /*
   ,{
     id: "F1",
