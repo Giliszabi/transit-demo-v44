@@ -7,6 +7,7 @@ import { SOFOROK } from "../data/soforok.js";
 import { VONTATOK } from "../data/vontatok.js";
 import { POTKOCSIK } from "../data/potkocsik.js";
 import { buildSoforMetaTooltip, renderSoforMetaBadges } from "./sofor-display-meta.js";
+import { getDomesticTransitRoleInfo } from "./transit-relations.js";
 
 // Matching integráció
 import { evaluateFuvarokForResource } from "./matching.js";
@@ -29,6 +30,26 @@ function getMatchGradePriority(matchGrade) {
   if (matchGrade === "bad") return 1;
   if (matchGrade === "warn") return 2;
   return 3;
+}
+
+function buildResourceMatchingContextHtml(fuvarList, selectedFuvarId) {
+  if (!selectedFuvarId) {
+    return "";
+  }
+
+  const selectedFuvar = fuvarList.find((item) => item.id === selectedFuvarId);
+  const transitRoleInfo = getDomesticTransitRoleInfo(selectedFuvar, fuvarList);
+  if (!transitRoleInfo) {
+    return "";
+  }
+
+  const roleLabel = transitRoleInfo.role === "elofutas" ? "Előfutás" : "Utófutás";
+  return `
+    <div class="resource-matching-context resource-matching-context-${transitRoleInfo.role}">
+      <div class="resource-matching-context-title">Aktív matching szerep: ${roleLabel}</div>
+      <div class="resource-matching-context-body">[${selectedFuvar.id}] ${selectedFuvar.megnevezes} • kapcsolt fuvar: [${transitRoleInfo.linkedFuvar.id}] ${transitRoleInfo.linkedFuvar.megnevezes}</div>
+    </div>
+  `;
 }
 
 // ======================================================================
@@ -209,6 +230,7 @@ export function renderResourcePanel(containerId, FUVAROK, onSelectResource, opti
     vontato: true,
     potkocsi: true
   };
+  const matchingContextHtml = buildResourceMatchingContextHtml(FUVAROK, options.selectedFuvarId);
 
   container.querySelectorAll(".resource-column[data-resource-type]").forEach((column) => {
     const type = column.dataset.resourceType;
@@ -218,6 +240,7 @@ export function renderResourcePanel(containerId, FUVAROK, onSelectResource, opti
   });
 
   container.innerHTML = `
+    ${matchingContextHtml}
     <div class="resource-columns">
 
       <details class="resource-column" data-resource-type="sofor" ${openState.sofor ? "open" : ""}>

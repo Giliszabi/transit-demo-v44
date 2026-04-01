@@ -22,7 +22,8 @@ const DEFAULT_FUVAR_FILTER_STATE = Object.freeze({
   surgos: false,
   spediccio: false,
   elapsed: false,
-  query: ""
+  query: "",
+  idScope: null
 });
 const BASE_CARD_COLUMN_OPTIONS = [
   { id: "route", label: "Útvonal" },
@@ -268,7 +269,10 @@ function normalizeFuvarFilterState(filter) {
     surgos: Boolean(filter.surgos),
     spediccio: Boolean(filter.spediccio),
     elapsed: Boolean(filter.elapsed),
-    query: String(filter.query || "")
+    query: String(filter.query || ""),
+    idScope: Array.isArray(filter.idScope) && filter.idScope.length > 0
+      ? [...new Set(filter.idScope.map((item) => String(item || "")).filter(Boolean))]
+      : null
   };
 }
 
@@ -300,6 +304,10 @@ function getFuvarAssignmentStatusKey(fuvar) {
 }
 
 function matchesUnifiedFuvarFilter(fuvar, filterState, options = {}) {
+  if (Array.isArray(filterState.idScope) && filterState.idScope.length > 0 && !filterState.idScope.includes(fuvar.id)) {
+    return false;
+  }
+
   if (filterState.category !== "all" && fuvar.kategoria !== filterState.category) {
     return false;
   }

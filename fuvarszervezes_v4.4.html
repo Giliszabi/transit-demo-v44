@@ -540,16 +540,6 @@
 
     <details class="panel-collapsible" open>
       <summary class="panel-summary">
-        <span class="panel-title">🚚 Kapcsolt belföldi szakaszok</span>
-        <span class="panel-toggle-icon" aria-hidden="true">▾</span>
-      </summary>
-      <div class="panel-content">
-        <div id="transit-task-board">Betöltés...</div>
-      </div>
-    </details>
-
-    <details class="panel-collapsible" open>
-      <summary class="panel-summary">
         <span class="panel-title">📋 Fuvarfeladat lista</span>
         <span class="panel-toggle-icon" aria-hidden="true">▾</span>
       </summary>
@@ -571,6 +561,34 @@
       </div>
     </div>
     <div id="resource-panel-container">Betöltés...</div>
+  </section>
+
+  <section class="panel dock-panel" id="panel-elofutas" data-panel-id="elofutas" data-panel-title="Előfutások">
+    <div class="panel-header-row">
+      <div class="panel-title">🚚 Előfutások</div>
+      <div class="panel-dock-toolbar">
+        <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
+        <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
+        <button type="button" class="panel-dock-btn" data-action="toggle-fullwidth">Teljes szélesség</button>
+        <button type="button" class="panel-dock-btn" data-action="undock">Külön ablak</button>
+        <button type="button" class="panel-dock-btn" data-action="redock">Visszadokkolás</button>
+      </div>
+    </div>
+    <div id="transit-task-board-elofutas">Betöltés...</div>
+  </section>
+
+  <section class="panel dock-panel" id="panel-utofutas" data-panel-id="utofutas" data-panel-title="Utófutások">
+    <div class="panel-header-row">
+      <div class="panel-title">🚛 Utófutások</div>
+      <div class="panel-dock-toolbar">
+        <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
+        <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
+        <button type="button" class="panel-dock-btn" data-action="toggle-fullwidth">Teljes szélesség</button>
+        <button type="button" class="panel-dock-btn" data-action="undock">Külön ablak</button>
+        <button type="button" class="panel-dock-btn" data-action="redock">Visszadokkolás</button>
+      </div>
+    </div>
+    <div id="transit-task-board-utofutas">Betöltés...</div>
   </section>
 
   <section class="panel dock-panel" id="panel-timeline" data-panel-id="timeline" data-panel-title="Erőforrás idővonal">
@@ -660,6 +678,7 @@ import {
   createDefaultFuvarFilterState
 } from "./assets/js/ui/fuvar-panel.js";
 import { renderTransitTaskBoard } from "./assets/js/ui/domestic-relay-panel.js";
+import { getDomesticTransitRoleInfo } from "./assets/js/ui/transit-relations.js";
 import { evaluateAllResources } from "./assets/js/ui/matching.js";
 import { setDispatchProfile as setMatchingDispatchProfile } from "./assets/js/ui/matching.js";
 import {
@@ -783,7 +802,7 @@ const RECOMMENDATION_ADDRESS_COORDS = {
   kornye: { lat: 47.5449, lng: 18.3188 }
 };
 
-const PANEL_IDS = ["fuvar", "resource", "timeline", "map"];
+const PANEL_IDS = ["fuvar", "resource", "elofutas", "utofutas", "timeline", "map"];
 const DOCK_LAYOUT_KEY = "transit.v44.dockLayout";
 const DOCK_PROFILES_KEY = "transit.v44.dockProfiles";
 const DOCK_CHANNEL_NAME = "transit.v44.dockLayout.channel";
@@ -799,14 +818,16 @@ const dockChannel = canBroadcast ? new BroadcastChannel(DOCK_CHANNEL_NAME) : nul
 
 const defaultDockLayout = {
   zones: {
-    left: ["fuvar", "resource"],
-    right: ["timeline", "map"],
+    left: ["fuvar", "resource", "elofutas"],
+    right: ["timeline", "map", "utofutas"],
     full: []
   },
   detached: [],
   homeZone: {
     fuvar: "left",
     resource: "left",
+    elofutas: "left",
+    utofutas: "right",
     timeline: "right",
     map: "right"
   }
@@ -876,7 +897,12 @@ function sanitizeLayout(raw) {
   const known = new Set([...left, ...right, ...full, ...detached]);
   PANEL_IDS.forEach((id) => {
     if (!known.has(id)) {
-      left.push(id);
+      const defaultZone = base.homeZone[id] === "right" ? "right" : "left";
+      if (defaultZone === "right") {
+        right.push(id);
+      } else {
+        left.push(id);
+      }
     }
   });
 
@@ -1751,6 +1777,18 @@ window.addEventListener("fuvar:focus", (event) => {
   selectedFuvarId = event?.detail?.fuvarId || null;
   syncResourceFocusFromFuvarSelection();
   updateAssemblyFocusIndicator();
+
+  // Ha belföldi (előfutás/utófutás) fuvar lett kijelölve az idővonalon →
+  // szűrjük le a fuvarlistát a kapcsolt export/import fuvar ID-jére
+  if (selectedFuvarId) {
+    const clickedFuvar = FUVAROK.find((f) => f.id === selectedFuvarId);
+    if (clickedFuvar?.kategoria === "belfold" || clickedFuvar?.viszonylat === "belfold") {
+      const roleInfo = getDomesticTransitRoleInfo(clickedFuvar, FUVAROK);
+      if (roleInfo?.linkedFuvar?.id) {
+        applyLinkedFuvarFocusFilter(roleInfo.linkedFuvar.id, { selectFuvar: false });
+      }
+    }
+  }
 });
 
 window.addEventListener("assembly:focus", (event) => {
@@ -1973,17 +2011,201 @@ function recommendationDistanceKm(addressA, addressB) {
   return R * c;
 }
 
-function isKornyeRecommendationAddress(address) {
-  return normalizeRecommendationText(address).includes("kornye");
-}
-
-function isHungarianRecommendationAddress(address) {
-  const normalized = normalizeRecommendationText(address);
-  return normalized.includes("magyarorszag") || normalized.includes("hungary") || normalized.includes("kornye");
-}
+const RECOMMENDATION_AVERAGE_SPEED_KMH = 62;
+const RECOMMENDATION_WAIT_PENALTY_PER_HOUR = 8;
+const RECOMMENDATION_ASSIGNED_PENALTY = 120;
+const RECOMMENDATION_FALLBACK_DISTANCE_KM = 400;
+const RECOMMENDATION_FALLBACK_TRANSIT_HOURS = 2;
 
 function isFullyAssignedFuvarForRecommendation(fuvar) {
   return Boolean(fuvar?.assignedSoforId && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId);
+}
+
+function getRecommendationFuvarCategory(fuvar) {
+  return fuvar?.kategoria || fuvar?.viszonylat || "";
+}
+
+function areRecommendationAddressesEquivalent(addressA, addressB) {
+  const normalizedA = normalizeRecommendationText(addressA);
+  const normalizedB = normalizeRecommendationText(addressB);
+  return Boolean(normalizedA) && normalizedA === normalizedB;
+}
+
+function estimateRecommendationTransitHours(fromAddress, toAddress) {
+  if (areRecommendationAddressesEquivalent(fromAddress, toAddress)) {
+    return 0;
+  }
+
+  const distance = recommendationDistanceKm(fromAddress, toAddress);
+  if (!Number.isFinite(distance)) {
+    return RECOMMENDATION_FALLBACK_TRANSIT_HOURS;
+  }
+
+  return distance / RECOMMENDATION_AVERAGE_SPEED_KMH;
+}
+
+function getRecommendationCategoryBonus(anchorCategory, candidateCategory) {
+  if (!anchorCategory || !candidateCategory) {
+    return 0;
+  }
+
+  if ((anchorCategory === "export" && candidateCategory === "import")
+    || (anchorCategory === "import" && candidateCategory === "export")) {
+    return 18;
+  }
+
+  if (anchorCategory !== candidateCategory) {
+    return 6;
+  }
+
+  return 0;
+}
+
+function buildRecommendationCandidateEntry(anchorFuvar, candidateFuvar, anchorEndMs, anchorDropAddress) {
+  const startMs = new Date(candidateFuvar?.felrakas?.ido || "").getTime();
+  if (!Number.isFinite(startMs)) {
+    return null;
+  }
+
+  const distance = recommendationDistanceKm(anchorDropAddress, candidateFuvar.felrakas.cim);
+  const transitHours = estimateRecommendationTransitHours(anchorDropAddress, candidateFuvar.felrakas.cim);
+  const transitMs = Math.round(transitHours * 3600 * 1000);
+  const arrivalMs = anchorEndMs + transitMs;
+  const slackMs = startMs - arrivalMs;
+  const actionable = !isFullyAssignedFuvarForRecommendation(candidateFuvar);
+  const reachable = slackMs >= 0;
+  const anchorCategory = getRecommendationFuvarCategory(anchorFuvar);
+  const candidateCategory = getRecommendationFuvarCategory(candidateFuvar);
+  const normalizedDistance = Number.isFinite(distance) ? distance : RECOMMENDATION_FALLBACK_DISTANCE_KM;
+  const waitHours = reachable ? slackMs / (1000 * 60 * 60) : 0;
+  const score = normalizedDistance
+    + (waitHours * RECOMMENDATION_WAIT_PENALTY_PER_HOUR)
+    + (actionable ? 0 : RECOMMENDATION_ASSIGNED_PENALTY)
+    - getRecommendationCategoryBonus(anchorCategory, candidateCategory);
+
+  return {
+    fuvar: candidateFuvar,
+    startMs,
+    distance,
+    transitHours,
+    arrivalMs,
+    slackMs,
+    actionable,
+    reachable,
+    score
+  };
+}
+
+function compareRecommendationEntries(left, right) {
+  if (left.reachable !== right.reachable) {
+    return left.reachable ? -1 : 1;
+  }
+
+  if (left.actionable !== right.actionable) {
+    return left.actionable ? -1 : 1;
+  }
+
+  if (left.score !== right.score) {
+    return left.score - right.score;
+  }
+
+  return left.startMs - right.startMs;
+}
+
+function formatRecommendationHours(hours) {
+  if (!Number.isFinite(hours)) {
+    return "n/a";
+  }
+
+  const rounded = Math.round(hours * 10) / 10;
+  const text = Number.isInteger(rounded)
+    ? String(rounded)
+    : String(rounded).replace(".", ",");
+
+  return `${text} óra`;
+}
+
+function formatRecommendationCategory(category) {
+  if (category === "export") {
+    return "export";
+  }
+
+  if (category === "import") {
+    return "import";
+  }
+
+  if (category === "belfold") {
+    return "belföld";
+  }
+
+  return category || "ismeretlen";
+}
+
+function collectLinkedFuvarChainIds(seedFuvarId) {
+  const collected = new Set();
+  const queue = [seedFuvarId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    if (!currentId || collected.has(currentId)) {
+      continue;
+    }
+
+    collected.add(currentId);
+    const fuvar = FUVAROK.find((item) => item.id === currentId);
+    if (!fuvar) {
+      continue;
+    }
+
+    const linkedIds = [
+      fuvar.elofutasExportFuvarId,
+      fuvar.kapcsoltExportFuvarId,
+      fuvar.utofutasImportFuvarId,
+      fuvar.kapcsoltImportFuvarId,
+      fuvar.elofutasBelfoldFuvarId,
+      fuvar.utofutasBelfoldFuvarId
+    ].filter(Boolean);
+
+    FUVAROK.forEach((candidate) => {
+      if (candidate?.elofutasExportFuvarId === currentId || candidate?.kapcsoltExportFuvarId === currentId) {
+        linkedIds.push(candidate.id);
+      }
+
+      if (candidate?.utofutasImportFuvarId === currentId || candidate?.kapcsoltImportFuvarId === currentId) {
+        linkedIds.push(candidate.id);
+      }
+
+      if (candidate?.elofutasBelfoldFuvarId === currentId || candidate?.utofutasBelfoldFuvarId === currentId) {
+        linkedIds.push(candidate.id);
+      }
+    });
+
+    linkedIds.forEach((linkedId) => {
+      if (!collected.has(linkedId)) {
+        queue.push(linkedId);
+      }
+    });
+  }
+
+  return Array.from(collected);
+}
+
+function buildRecommendationActionButtons(fuvar) {
+  if (!fuvar?.id) {
+    return "";
+  }
+
+  const chainIds = collectLinkedFuvarChainIds(fuvar.id);
+  const chainButton = chainIds.length > 1
+    ? '<button type="button" class="btn" data-action="focus-recommendation-chain">Kapcsolt lánc szűrése</button>'
+    : "";
+
+  return `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+      <button type="button" class="btn" data-action="focus-recommendation-fuvar">Ajánlott fuvar megnyitása</button>
+      ${chainButton}
+    </div>
+  `;
 }
 
 function getRecommendationAnchorFuvar() {
@@ -2008,55 +2230,34 @@ function getRecommendationAnchorFuvar() {
   return null;
 }
 
-function getNextDomesticRecommendation(anchorFuvar) {
+function getNextFuvarRecommendation(anchorFuvar) {
   if (!anchorFuvar?.lerakas?.cim || !anchorFuvar?.lerakas?.ido) {
     return null;
   }
 
   const anchorDropAddress = anchorFuvar.lerakas.cim;
-  const anchorInHungary = isHungarianRecommendationAddress(anchorDropAddress);
   const anchorEndMs = new Date(anchorFuvar.lerakas.ido).getTime();
   if (!Number.isFinite(anchorEndMs)) {
     return null;
   }
 
-  if (isKornyeRecommendationAddress(anchorDropAddress)) {
-    return { state: "hub" };
-  }
-
   const candidates = FUVAROK
     .filter((fuvar) => fuvar?.id !== anchorFuvar.id)
-    .filter((fuvar) => {
-      if (!anchorInHungary) {
-        return true;
-      }
-
-      return (fuvar?.kategoria || fuvar?.viszonylat) === "belfold";
-    })
-    .filter((fuvar) => !isFullyAssignedFuvarForRecommendation(fuvar))
     .filter((fuvar) => fuvar?.felrakas?.ido && fuvar?.felrakas?.cim)
-    .map((fuvar) => {
-      const startMs = new Date(fuvar.felrakas.ido).getTime();
-      const distance = recommendationDistanceKm(anchorDropAddress, fuvar.felrakas.cim);
-      return { fuvar, startMs, distance };
-    })
-    .filter((entry) => Number.isFinite(entry.startMs) && entry.startMs >= anchorEndMs)
-    .sort((left, right) => {
-      const leftDistance = Number.isFinite(left.distance) ? left.distance : Number.POSITIVE_INFINITY;
-      const rightDistance = Number.isFinite(right.distance) ? right.distance : Number.POSITIVE_INFINITY;
-
-      if (leftDistance !== rightDistance) {
-        return leftDistance - rightDistance;
-      }
-
-      return left.startMs - right.startMs;
-    });
+    .map((fuvar) => buildRecommendationCandidateEntry(anchorFuvar, fuvar, anchorEndMs, anchorDropAddress))
+    .filter(Boolean)
+    .sort(compareRecommendationEntries);
 
   if (candidates.length === 0) {
     return { state: "none" };
   }
 
-  return { state: "recommended", ...candidates[0] };
+  const bestReachable = candidates.find((entry) => entry.reachable) || null;
+  if (bestReachable) {
+    return { state: "recommended", ...bestReachable };
+  }
+
+  return { state: "unreachable", ...candidates[0] };
 }
 
 function updateNextFuvarRecommendation() {
@@ -2065,6 +2266,9 @@ function updateNextFuvarRecommendation() {
     return;
   }
 
+  host.dataset.recommendationFuvarId = "";
+  host.dataset.recommendationChainIds = "";
+
   const anchorFuvar = getRecommendationAnchorFuvar();
   if (!anchorFuvar) {
     host.className = "next-fuvar-recommendation";
@@ -2072,40 +2276,54 @@ function updateNextFuvarRecommendation() {
     return;
   }
 
-  const recommendation = getNextDomesticRecommendation(anchorFuvar);
+  const recommendation = getNextFuvarRecommendation(anchorFuvar);
   if (!recommendation) {
     host.className = "next-fuvar-recommendation";
     host.innerHTML = "";
     return;
   }
 
-  if (recommendation.state === "hub") {
-    host.className = "next-fuvar-recommendation active";
+  if (recommendation.state === "none") {
+    host.className = "next-fuvar-recommendation active warn";
     host.innerHTML = `
       <div class="title">Ajánlott következő fuvar</div>
-      <div>Az aktuális fuvar Környén ér véget, nincs kötelező további belföldi ajánlás.</div>
+      <div>Nincs olyan következő fuvar, amelyhez felrakási cím és időpont alapján érdemi ajánlat számolható.</div>
     `;
     return;
   }
 
-  if (recommendation.state === "none") {
-    host.className = "next-fuvar-recommendation active warn";
-    const anchorAddress = anchorFuvar?.lerakas?.cim || "";
-    const anchorInHungary = isHungarianRecommendationAddress(anchorAddress);
-    const warningText = anchorInHungary
-      ? "Nincs elérhető belföldi ajánlat a lerakási ponthoz. Várhatóan rezsi futás vissza Környére."
-      : "Nincs elérhető következő fuvar a lerakási ponthoz illeszkedve. Várhatóan üres továbbutazás szükséges.";
+  if (recommendation.state === "unreachable") {
+    const missingHours = Math.abs(recommendation.slackMs) / (1000 * 60 * 60);
+    const distanceLabel = Number.isFinite(recommendation.distance)
+      ? `${Math.round(recommendation.distance)} km`
+      : "n/a";
+    const startLabel = new Date(recommendation.fuvar.felrakas.ido).toLocaleString("hu-HU", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
 
+    host.className = "next-fuvar-recommendation active warn";
     host.innerHTML = `
       <div class="title">Ajánlott következő fuvar</div>
-      <div>${warningText}</div>
+      <div>Nincs időben elérhető következő fuvar a kijelölt lezárás után.</div>
+      <div><strong>${recommendation.fuvar.id}</strong> • ${recommendation.fuvar.megnevezes}</div>
+      <div>Felrakás: ${recommendation.fuvar.felrakas.cim}</div>
+      <div>Viszonylat: ${formatRecommendationCategory(getRecommendationFuvarCategory(recommendation.fuvar))}</div>
+      <div>Távolság: ${distanceLabel} • Átállás: ${formatRecommendationHours(recommendation.transitHours)} • Indulás: ${startLabel}</div>
+      <div>Hiányzó idő: ${formatRecommendationHours(missingHours)}</div>
+      ${buildRecommendationActionButtons(recommendation.fuvar)}
     `;
+    host.dataset.recommendationFuvarId = recommendation.fuvar.id;
+    host.dataset.recommendationChainIds = collectLinkedFuvarChainIds(recommendation.fuvar.id).join(",");
     return;
   }
 
   const distanceLabel = Number.isFinite(recommendation.distance)
     ? `${Math.round(recommendation.distance)} km`
     : "n/a";
+  const slackHours = Math.max(0, recommendation.slackMs) / (1000 * 60 * 60);
 
   const startLabel = new Date(recommendation.fuvar.felrakas.ido).toLocaleString("hu-HU", {
     month: "2-digit",
@@ -2119,8 +2337,13 @@ function updateNextFuvarRecommendation() {
     <div class="title">Ajánlott következő fuvar</div>
     <div><strong>${recommendation.fuvar.id}</strong> • ${recommendation.fuvar.megnevezes}</div>
     <div>Felrakás: ${recommendation.fuvar.felrakas.cim}</div>
-    <div>Távolság a jelenlegi lerakótól: ${distanceLabel} • Indulás: ${startLabel}</div>
+    <div>Viszonylat: ${formatRecommendationCategory(getRecommendationFuvarCategory(recommendation.fuvar))}</div>
+    <div>Távolság a jelenlegi lerakótól: ${distanceLabel} • Átállás: ${formatRecommendationHours(recommendation.transitHours)} • Puffer: ${formatRecommendationHours(slackHours)}</div>
+    <div>Indulás: ${startLabel}${recommendation.actionable ? "" : " • Már kiosztott jelölt"}</div>
+    ${buildRecommendationActionButtons(recommendation.fuvar)}
   `;
+  host.dataset.recommendationFuvarId = recommendation.fuvar.id;
+  host.dataset.recommendationChainIds = collectLinkedFuvarChainIds(recommendation.fuvar.id).join(",");
 }
 
 function createDefaultDispatchProfileState() {
@@ -2508,6 +2731,43 @@ function applyProgrammaticFuvarFilter(nextFilter) {
   refreshAllViews();
 }
 
+function applyLinkedFuvarFocusFilter(fuvarId, options = {}) {
+  if (!fuvarId) return;
+
+  const { selectFuvar = true } = options;
+  const nextFilter = { ...createDefaultFuvarFilterState(), query: fuvarId };
+  applyProgrammaticFuvarFilter(nextFilter);
+
+  if (selectFuvar) {
+    applyFuvarSelectionById(fuvarId);
+  }
+}
+
+function focusRecommendedFuvarById(fuvarId) {
+  if (!fuvarId) {
+    return;
+  }
+
+  const nextFilter = { ...createDefaultFuvarFilterState(), query: fuvarId };
+  applyProgrammaticFuvarFilter(nextFilter);
+  applyFuvarSelectionById(fuvarId);
+}
+
+function focusRecommendedFuvarChainById(fuvarId) {
+  if (!fuvarId) {
+    return;
+  }
+
+  const chainIds = collectLinkedFuvarChainIds(fuvarId);
+  const nextFilter = {
+    ...createDefaultFuvarFilterState(),
+    idScope: chainIds
+  };
+
+  applyProgrammaticFuvarFilter(nextFilter);
+  applyFuvarSelectionById(fuvarId);
+}
+
 /* ------------------------
    OLDAL BETÖLTÉSE
 ------------------------- */
@@ -2520,6 +2780,24 @@ window.addEventListener("DOMContentLoaded", async () => {
   localStorage.setItem(DOCK_PROFILES_KEY, JSON.stringify(dockProfilesState));
   activeUserId = dockProfilesState.activeUserId;
   const initialUserState = getActiveUserState();
+
+  document.getElementById("next-fuvar-recommendation")?.addEventListener("click", (event) => {
+    const fuvarActionTarget = event.target.closest('[data-action="focus-recommendation-fuvar"]');
+    const chainActionTarget = event.target.closest('[data-action="focus-recommendation-chain"]');
+    if (!fuvarActionTarget && !chainActionTarget) {
+      return;
+    }
+
+    const host = event.currentTarget;
+    const fuvarId = host?.dataset?.recommendationFuvarId || "";
+
+    if (chainActionTarget) {
+      focusRecommendedFuvarChainById(fuvarId);
+      return;
+    }
+
+    focusRecommendedFuvarById(fuvarId);
+  });
   activeViewId = initialUserState.lastUsedViewId || initialUserState.views[0].id;
   dockLayoutState = loadDockLayout();
 
@@ -2735,12 +3013,23 @@ function renderAssemblyOperationLog() {
     const spedicioMode = isSpedicioModeActive();
     const spedicioPartners = spedicioMode ? buildSpedicioPartnerResources(selectedFuvarId) : [];
 
-    if (document.getElementById("transit-task-board")) {
-      renderTransitTaskBoard("transit-task-board", {
+    if (document.getElementById("transit-task-board-elofutas")) {
+      renderTransitTaskBoard("transit-task-board-elofutas", {
+        role: "elofutas",
         hidden: spedicioMode,
         selectedFuvarId,
         onSelectFuvar: (fuvarId) => applyFuvarSelectionById(fuvarId),
-        onSelectLinkedFuvar: (fuvarId) => applyFuvarSelectionById(fuvarId)
+        onSelectLinkedFuvar: (fuvarId) => applyLinkedFuvarFocusFilter(fuvarId)
+      });
+    }
+
+    if (document.getElementById("transit-task-board-utofutas")) {
+      renderTransitTaskBoard("transit-task-board-utofutas", {
+        role: "utofutas",
+        hidden: spedicioMode,
+        selectedFuvarId,
+        onSelectFuvar: (fuvarId) => applyFuvarSelectionById(fuvarId),
+        onSelectLinkedFuvar: (fuvarId) => applyLinkedFuvarFocusFilter(fuvarId)
       });
     }
 
@@ -2763,7 +3052,8 @@ function renderAssemblyOperationLog() {
         renderResourcePanel("resource-panel-container", FUVAROK, onSelectResource, {
           soforok: visibleResources.soforok,
           vontatok: visibleResources.vontatok,
-          potkocsik: visibleResources.potkocsik
+          potkocsik: visibleResources.potkocsik,
+          selectedFuvarId
         });
       }
       enableResourceCardDrop();

@@ -1,3 +1,5 @@
+import { getDomesticTransitRoleInfo } from "./transit-relations.js";
+
 // =======================================================
 // TransIT v4.4 - MATCHING ENGINE (Bidirectional)
 // Sofőr / Vontató / Pótkocsi ↔ Fuvar
@@ -93,6 +95,18 @@ export function evaluateFuvarTags(fuvar) {
   }
 }
 
+function isDomesticTransitFuvar(fuvar) {
+  if (!fuvar) {
+    return false;
+  }
+
+  if (fuvar.kategoria === "belfold" || fuvar.viszonylat === "belfold") {
+    return true;
+  }
+
+  return Boolean(getDomesticTransitRoleInfo(fuvar));
+}
+
 // =======================================================
 // SOFŐR EVALUÁCIÓ
 // =======================================================
@@ -104,6 +118,7 @@ export function evaluateSoforForFuvar(sofor, fuvar) {
   const warnings = [];  // puha figyelmeztetések (profil-alapú)
   let suitable = true;
   const soforTipus = ensureResourceTipus(sofor, "belföldes");
+  const domesticEligibleFuvar = isDomesticTransitFuvar(fuvar);
 
   // ADR
   // safe-compliance profil: ha adrStrictness < 50%, ADR hiány csak figyelmeztetés
@@ -119,7 +134,7 @@ export function evaluateSoforForFuvar(sofor, fuvar) {
 
   // Belföldi vs nemzetközi
   // quick-flow profil: ha flexibility >= 70%, belföldes sofőr csak figyelmeztetés
-  if (fuvar.kategoria !== "belfold" && isDomesticOnlyTipus(soforTipus)) {
+  if (!domesticEligibleFuvar && isDomesticOnlyTipus(soforTipus)) {
     const isFlexible = profile?._profileId === "quick-flow" && profile.flexibility >= 70;
     if (isFlexible) {
       warnings.push(`⚠ Belföldes sofőr – rugalmas mód aktív (${profile.flexibility}%)`);
@@ -203,12 +218,13 @@ export function evaluateVontatoForFuvar(vontato, fuvar) {
   const reasons = [];
   let suitable = true;
   const vontatoTipus = ensureResourceTipus(vontato, "belföldi");
+  const domesticEligibleFuvar = isDomesticTransitFuvar(fuvar);
 
   // ADR → minden vontató alkalmas (kérésed szerint)
   // nincs ADR feltétel
 
   // Belföldi vs nemzetközi
-  if (fuvar.kategoria !== "belfold" && isDomesticOnlyTipus(vontatoTipus)) {
+  if (!domesticEligibleFuvar && isDomesticOnlyTipus(vontatoTipus)) {
     suitable = false;
     reasons.push("Belföldi vontató nem vihet nemzetközi fuvart");
   }
@@ -242,6 +258,7 @@ export function evaluatePotkocsiForFuvar(pk, fuvar) {
   const reasons = [];
   let suitable = true;
   const potkocsiTipus = ensureResourceTipus(pk, "belföldi");
+  const domesticEligibleFuvar = isDomesticTransitFuvar(fuvar);
 
   // ADR
   if (fuvar.adr && !pk.adr) {
@@ -250,7 +267,7 @@ export function evaluatePotkocsiForFuvar(pk, fuvar) {
   }
 
   // Belföldi vs nemzetközi
-  if (fuvar.kategoria !== "belfold" && isDomesticOnlyTipus(potkocsiTipus)) {
+  if (!domesticEligibleFuvar && isDomesticOnlyTipus(potkocsiTipus)) {
     suitable = false;
     reasons.push("Belföldi pótkocsi nem vihet nemzetközi fuvart");
   }

@@ -82,6 +82,9 @@ const KORNYE_HUB_ADDRESS = "Magyarország, Környe, Ipari Park";
 const AVERAGE_TRANSIT_SPEED_KMH = 62;
 const MIN_TRANSIT_HOURS = 0.5;
 const MAX_TRANSIT_HOURS = 14;
+const RECOMMENDATION_WAIT_PENALTY_PER_HOUR = 8;
+const RECOMMENDATION_ASSIGNED_PENALTY = 120;
+const RECOMMENDATION_FALLBACK_DISTANCE_KM = 400;
 const ELOFUTAS_LABEL = "Előfutás";
 const UTOFUTAS_LABEL = "Utófutás";
 const AUTO_DRIVER_STATE_LABELS = {
@@ -1698,7 +1701,71 @@ function isFullyAssignedFuvar(fuvar) {
   return Boolean(fuvar?.assignedSoforId && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId);
 }
 
-function findDomesticRecommendation(lastBlock, allFuvarok) {
+function getRecommendationCategoryBonus(anchorCategory, candidateCategory) {
+  if (!anchorCategory || !candidateCategory) {
+    return 0;
+  }
+
+  if ((anchorCategory === "export" && candidateCategory === "import")
+    || (anchorCategory === "import" && candidateCategory === "export")) {
+    return 18;
+  }
+
+  if (anchorCategory !== candidateCategory) {
+    return 6;
+  }
+
+  return 0;
+}
+
+function buildNextFuvarRecommendationEntry(anchorBlock, fuvar, anchorEndMs) {
+  const startMs = new Date(fuvar?.felrakas?.ido || "").getTime();
+  if (!Number.isFinite(startMs)) {
+    return null;
+  }
+
+  const distance = estimateAddressDistanceKm(anchorBlock.lerakasCim, fuvar.felrakas.cim);
+  const transitHours = estimateTransitDurationHours(anchorBlock.lerakasCim, fuvar.felrakas.cim);
+  const arrivalMs = anchorEndMs + Math.round(transitHours * 3600 * 1000);
+  const slackMs = startMs - arrivalMs;
+  const actionable = !isFullyAssignedFuvar(fuvar);
+  const reachable = slackMs >= 0;
+  const normalizedDistance = Number.isFinite(distance) ? distance : RECOMMENDATION_FALLBACK_DISTANCE_KM;
+  const waitHours = reachable ? slackMs / (1000 * 60 * 60) : 0;
+  const score = normalizedDistance
+    + (waitHours * RECOMMENDATION_WAIT_PENALTY_PER_HOUR)
+    + (actionable ? 0 : RECOMMENDATION_ASSIGNED_PENALTY)
+    - getRecommendationCategoryBonus(anchorBlock.kategoria, getFuvarCategoryFromFuvar(fuvar));
+
+  return {
+    fuvar,
+    startMs,
+    distance,
+    transitHours,
+    slackMs,
+    actionable,
+    reachable,
+    score
+  };
+}
+
+function compareRecommendationEntries(left, right) {
+  if (left.reachable !== right.reachable) {
+    return left.reachable ? -1 : 1;
+  }
+
+  if (left.actionable !== right.actionable) {
+    return left.actionable ? -1 : 1;
+  }
+
+  if (left.score !== right.score) {
+    return left.score - right.score;
+  }
+
+  return left.startMs - right.startMs;
+}
+
+function findNextFuvarRecommendation(lastBlock, allFuvarok) {
   if (!lastBlock?.end || !lastBlock?.lerakasCim) {
     return null;
   }
@@ -1710,27 +1777,12 @@ function findDomesticRecommendation(lastBlock, allFuvarok) {
 
   const candidates = allFuvarok
     .filter((fuvar) => fuvar?.id !== lastBlock.fuvarId)
-    .filter((fuvar) => getFuvarCategoryFromFuvar(fuvar) === "belfold")
-    .filter((fuvar) => !isFullyAssignedFuvar(fuvar))
     .filter((fuvar) => fuvar?.felrakas?.ido && fuvar?.felrakas?.cim)
-    .map((fuvar) => {
-      const startMs = new Date(fuvar.felrakas.ido).getTime();
-      const distance = estimateAddressDistanceKm(lastBlock.lerakasCim, fuvar.felrakas.cim);
-      return { fuvar, startMs, distance };
-    })
-    .filter((item) => Number.isFinite(item.startMs) && item.startMs >= lastEndMs)
-    .sort((left, right) => {
-      const leftDistance = Number.isFinite(left.distance) ? left.distance : Number.POSITIVE_INFINITY;
-      const rightDistance = Number.isFinite(right.distance) ? right.distance : Number.POSITIVE_INFINITY;
+    .map((fuvar) => buildNextFuvarRecommendationEntry(lastBlock, fuvar, lastEndMs))
+    .filter(Boolean)
+    .sort(compareRecommendationEntries);
 
-      if (leftDistance !== rightDistance) {
-        return leftDistance - rightDistance;
-      }
-
-      return left.startMs - right.startMs;
-    });
-
-  return candidates[0] || null;
+  return candidates.find((entry) => entry.reachable && entry.actionable) || null;
 }
 
 export function refreshAutoTransitBlocksForResource(resource, allFuvarok = FUVAROK) {
@@ -1880,7 +1932,7 @@ export function refreshAutoTransitBlocksForResource(resource, allFuvarok = FUVAR
   if (lastFuvar?.lerakasCim && !isKornyeAddress(lastFuvar.lerakasCim)) {
     const lastEndMs = new Date(lastFuvar.end).getTime();
     if (Number.isFinite(lastEndMs)) {
-      const recommendation = findDomesticRecommendation(lastFuvar, allFuvarok);
+      const recommendation = findNextFuvarRecommendation(lastFuvar, allFuvarok);
 
       if (!recommendation?.fuvar) {
         const returnHours = estimateTransitDurationHours(lastFuvar.lerakasCim, KORNYE_HUB_ADDRESS);
