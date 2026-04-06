@@ -2473,6 +2473,8 @@ function renderResourceRow(parent, r, type) {
   // Erőforrás név része
   const name = document.createElement("div");
   name.className = "timeline-resource-name";
+  name.tabIndex = 0;
+  name.setAttribute("role", "button");
 
   if (r.matchGrade === "ok") {
     name.classList.add("match-ok");
@@ -2484,6 +2486,27 @@ function renderResourceRow(parent, r, type) {
 
   name.dataset.resourceType = type;
   name.dataset.resourceId = r.id;
+
+  const dispatchResourceSelection = () => {
+    window.dispatchEvent(new CustomEvent("timeline:resource-selected", {
+      detail: {
+        type,
+        resourceId: r.id
+      }
+    }));
+  };
+
+  name.addEventListener("click", (event) => {
+    event.stopPropagation();
+    dispatchResourceSelection();
+  });
+
+  name.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      dispatchResourceSelection();
+    }
+  });
 
   const rowIcon = type === "sofor"
     ? "👤"

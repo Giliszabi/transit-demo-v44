@@ -591,13 +591,9 @@
     <div id="transit-task-board-utofutas">Betöltés...</div>
   </section>
 
-  <section class="panel dock-panel" id="panel-timeline" data-panel-id="timeline" data-panel-title="Erőforrás idővonal">
+  <section class="panel dock-panel" id="panel-assembly-timeline" data-panel-id="assembly-timeline" data-panel-title="Szerelvény idővonal">
     <div class="panel-header-row">
-      <div class="panel-title">⏱️ Erőforrás idővonal</div>
-      <div id="timeline-focus-indicator" class="timeline-focus-indicator">
-        <span id="timeline-focus-text" class="timeline-focus-text">Matching: nincs kijelölt fuvar</span>
-        <button id="timeline-focus-clear" type="button" class="timeline-focus-clear-btn" title="Kijelölés törlése" aria-label="Kijelölés törlése">x</button>
-      </div>
+      <div class="panel-title">🧩 Szerelvény idővonal</div>
       <div class="panel-dock-toolbar">
         <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
         <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
@@ -617,11 +613,27 @@
     <div id="next-fuvar-recommendation" class="next-fuvar-recommendation"></div>
     <div id="assembly-timeline-container">Betöltés...</div>
 
-    <div class="subpanel-title" style="margin:14px 0 8px;">Erőforrás idővonal</div>
-    <div id="timeline-container">Betöltés...</div>
-
     <div class="subpanel-title" style="margin:14px 0 8px;">Szerelvény műveleti napló</div>
     <div id="assembly-operation-log" class="assembly-operation-log"></div>
+  </section>
+
+  <section class="panel dock-panel" id="panel-timeline" data-panel-id="timeline" data-panel-title="Erőforrás idővonal">
+    <div class="panel-header-row">
+      <div class="panel-title">⏱️ Erőforrás idővonal</div>
+      <div id="timeline-focus-indicator" class="timeline-focus-indicator">
+        <span id="timeline-focus-text" class="timeline-focus-text">Matching: nincs kijelölt fuvar</span>
+        <button id="timeline-focus-clear" type="button" class="timeline-focus-clear-btn" title="Kijelölés törlése" aria-label="Kijelölés törlése">x</button>
+      </div>
+      <div class="panel-dock-toolbar">
+        <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
+        <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
+        <button type="button" class="panel-dock-btn" data-action="toggle-fullwidth">Teljes szélesség</button>
+        <button type="button" class="panel-dock-btn" data-action="undock">Külön ablak</button>
+        <button type="button" class="panel-dock-btn" data-action="redock">Visszadokkolás</button>
+      </div>
+    </div>
+
+    <div id="timeline-container">Betöltés...</div>
   </section>
 
   <section class="panel dock-panel" id="panel-map" data-panel-id="map" data-panel-title="Szerelvény térkép">
@@ -679,7 +691,7 @@ import {
 } from "./assets/js/ui/fuvar-panel.js";
 import { renderTransitTaskBoard } from "./assets/js/ui/domestic-relay-panel.js";
 import { getDomesticTransitRoleInfo } from "./assets/js/ui/transit-relations.js";
-import { evaluateAllResources } from "./assets/js/ui/matching.js";
+import { evaluateAllResources, evaluateFuvarokForResource } from "./assets/js/ui/matching.js";
 import { setDispatchProfile as setMatchingDispatchProfile } from "./assets/js/ui/matching.js";
 import {
   enableFuvarDrag,
@@ -693,6 +705,7 @@ let currentFuvarFilter = createDefaultFuvarFilterState();
 let previousFuvarFilterBeforeDropoffMode = null;
 let selectedFuvarId = null;
 let selectedAssemblyId = null;
+let selectedResourceFocus = null;
 let resourceFocusScope = null;
 let resourceFocusSource = "none";
 
@@ -802,7 +815,7 @@ const RECOMMENDATION_ADDRESS_COORDS = {
   kornye: { lat: 47.5449, lng: 18.3188 }
 };
 
-const PANEL_IDS = ["fuvar", "resource", "elofutas", "utofutas", "timeline", "map"];
+const PANEL_IDS = ["fuvar", "resource", "elofutas", "utofutas", "assembly-timeline", "timeline", "map"];
 const DOCK_LAYOUT_KEY = "transit.v44.dockLayout";
 const DOCK_PROFILES_KEY = "transit.v44.dockProfiles";
 const DOCK_CHANNEL_NAME = "transit.v44.dockLayout.channel";
@@ -819,7 +832,7 @@ const dockChannel = canBroadcast ? new BroadcastChannel(DOCK_CHANNEL_NAME) : nul
 const defaultDockLayout = {
   zones: {
     left: ["fuvar", "resource", "elofutas"],
-    right: ["timeline", "map", "utofutas"],
+    right: ["assembly-timeline", "timeline", "map", "utofutas"],
     full: []
   },
   detached: [],
@@ -828,6 +841,7 @@ const defaultDockLayout = {
     resource: "left",
     elofutas: "left",
     utofutas: "right",
+    "assembly-timeline": "right",
     timeline: "right",
     map: "right"
   }
@@ -1347,6 +1361,38 @@ function getPanelElement(panelId) {
   return document.getElementById(`panel-${panelId}`);
 }
 
+function ensureDockReorderButtons(panel) {
+  const toolbar = panel?.querySelector(".panel-dock-toolbar");
+  if (!toolbar) {
+    return;
+  }
+
+  if (!toolbar.querySelector('[data-action="move-up"]')) {
+    const moveUpBtn = document.createElement("button");
+    moveUpBtn.type = "button";
+    moveUpBtn.className = "panel-dock-btn";
+    moveUpBtn.dataset.action = "move-up";
+    moveUpBtn.textContent = "Feljebb";
+    toolbar.insertBefore(moveUpBtn, toolbar.firstChild);
+  }
+
+  if (!toolbar.querySelector('[data-action="move-down"]')) {
+    const moveDownBtn = document.createElement("button");
+    moveDownBtn.type = "button";
+    moveDownBtn.className = "panel-dock-btn";
+    moveDownBtn.dataset.action = "move-down";
+    moveDownBtn.textContent = "Lejjebb";
+    const fullwidthBtn = toolbar.querySelector('[data-action="toggle-fullwidth"]');
+    if (fullwidthBtn?.nextSibling) {
+      toolbar.insertBefore(moveDownBtn, fullwidthBtn.nextSibling);
+    } else if (fullwidthBtn) {
+      toolbar.appendChild(moveDownBtn);
+    } else {
+      toolbar.insertBefore(moveDownBtn, toolbar.firstChild?.nextSibling || null);
+    }
+  }
+}
+
 function openPanelPopup(panelId) {
   const url = new URL(window.location.href);
   url.searchParams.delete("panel");
@@ -1403,6 +1449,32 @@ function toggleFullwidthPanel(panelId, options = { broadcast: true }) {
   setDockLayout(next, options);
 }
 
+function movePanelOneStep(panelId, direction, options = { broadcast: true }) {
+  if (!PANEL_IDS.includes(panelId) || !["up", "down"].includes(direction)) {
+    return;
+  }
+
+  const next = cloneLayout(dockLayoutState);
+  const zone = ["left", "right", "full"].find((zoneName) => (next.zones[zoneName] || []).includes(panelId));
+  if (!zone) {
+    return;
+  }
+
+  const zoneList = next.zones[zone] || [];
+  const currentIndex = zoneList.indexOf(panelId);
+  if (currentIndex === -1) {
+    return;
+  }
+
+  const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+  if (targetIndex < 0 || targetIndex >= zoneList.length) {
+    return;
+  }
+
+  [zoneList[currentIndex], zoneList[targetIndex]] = [zoneList[targetIndex], zoneList[currentIndex]];
+  setDockLayout(next, options);
+}
+
 function resetViewToDefault(options = { broadcast: true }) {
   setDockLayout(cloneLayout(defaultDockLayout), options);
 }
@@ -1443,8 +1515,12 @@ function updatePanelButtons(panelId) {
     return;
   }
 
+  ensureDockReorderButtons(panel);
+
   const leftBtn = panel.querySelector('[data-action="dock-left"]');
   const rightBtn = panel.querySelector('[data-action="dock-right"]');
+  const moveUpBtn = panel.querySelector('[data-action="move-up"]');
+  const moveDownBtn = panel.querySelector('[data-action="move-down"]');
   const undockBtn = panel.querySelector('[data-action="undock"]');
   const redockBtn = panel.querySelector('[data-action="redock"]');
 
@@ -1457,6 +1533,11 @@ function updatePanelButtons(panelId) {
   const detached = dockLayoutState.detached.includes(panelId);
   const isFull = (dockLayoutState.zones.full || []).includes(panelId);
   const fullwidthBtn = panel.querySelector('[data-action="toggle-fullwidth"]');
+  const orderedZone = zone || (isFull ? "full" : null);
+  const zoneList = orderedZone ? (dockLayoutState.zones[orderedZone] || []) : [];
+  const zoneIndex = orderedZone ? zoneList.indexOf(panelId) : -1;
+  const canMoveUp = zoneIndex > 0;
+  const canMoveDown = zoneIndex >= 0 && zoneIndex < zoneList.length - 1;
 
   leftBtn?.classList.toggle("active-zone", zone === "left");
   rightBtn?.classList.toggle("active-zone", zone === "right");
@@ -1464,6 +1545,8 @@ function updatePanelButtons(panelId) {
   if (panelMode || detachedWindowMode) {
     if (leftBtn) leftBtn.style.display = "none";
     if (rightBtn) rightBtn.style.display = "none";
+    if (moveUpBtn) moveUpBtn.style.display = "none";
+    if (moveDownBtn) moveDownBtn.style.display = "none";
     if (fullwidthBtn) fullwidthBtn.style.display = "none";
     if (undockBtn) undockBtn.style.display = "none";
     if (redockBtn) redockBtn.style.display = "inline-flex";
@@ -1471,6 +1554,14 @@ function updatePanelButtons(panelId) {
   } else {
     if (leftBtn) leftBtn.style.display = "inline-flex";
     if (rightBtn) rightBtn.style.display = "inline-flex";
+    if (moveUpBtn) {
+      moveUpBtn.style.display = detached ? "none" : "inline-flex";
+      moveUpBtn.disabled = detached || !canMoveUp;
+    }
+    if (moveDownBtn) {
+      moveDownBtn.style.display = detached ? "none" : "inline-flex";
+      moveDownBtn.disabled = detached || !canMoveDown;
+    }
     if (fullwidthBtn) {
       fullwidthBtn.style.display = detached ? "none" : "inline-flex";
       fullwidthBtn.textContent = isFull ? "Fél képernyő" : "Teljes szélesség";
@@ -1595,6 +1686,16 @@ function bindDockToolbarActions() {
     if (!panel) {
       return;
     }
+
+    ensureDockReorderButtons(panel);
+
+    panel.querySelector('[data-action="move-up"]')?.addEventListener("click", () => {
+      movePanelOneStep(panelId, "up");
+    });
+
+    panel.querySelector('[data-action="move-down"]')?.addEventListener("click", () => {
+      movePanelOneStep(panelId, "down");
+    });
 
     panel.querySelector('[data-action="dock-left"]')?.addEventListener("click", () => {
       dockPanelToZone(panelId, "left");
@@ -2260,6 +2361,269 @@ function getNextFuvarRecommendation(anchorFuvar) {
   return { state: "unreachable", ...candidates[0] };
 }
 
+function getResourceByTypeAndId(type, resourceId) {
+  if (!resourceId) {
+    return null;
+  }
+
+  if (type === "sofor") {
+    return SOFOROK.find((item) => item.id === resourceId) || null;
+  }
+
+  if (type === "vontato") {
+    return VONTATOK.find((item) => item.id === resourceId) || null;
+  }
+
+  if (type === "potkocsi") {
+    return POTKOCSIK.find((item) => item.id === resourceId) || null;
+  }
+
+  return null;
+}
+
+function getResourceRecommendationLabel(type, resource) {
+  if (type === "sofor") {
+    return resource?.nev || resource?.id || "Sofőr";
+  }
+
+  if (type === "vontato" || type === "potkocsi") {
+    return resource?.rendszam || resource?.id || "Erőforrás";
+  }
+
+  return resource?.id || "Erőforrás";
+}
+
+function getResourceRecommendationTypeLabel(type) {
+  if (type === "sofor") return "sofőr";
+  if (type === "vontato") return "vontató";
+  if (type === "potkocsi") return "pótkocsi";
+  return "erőforrás";
+}
+
+function getResourcePreferredCategory(resource) {
+  const normalizedTipus = normalizeRecommendationText(resource?.tipus || "");
+  if (!normalizedTipus) {
+    return "";
+  }
+
+  if (normalizedTipus.includes("belfold")) {
+    return "belfold";
+  }
+
+  return "nemzetkozi";
+}
+
+function getResourceRecommendationAnchor(resource) {
+  const fuvarBlocks = (resource?.timeline || [])
+    .filter((block) => block?.type === "fuvar" && !block?.synthetic && block?.end)
+    .sort((left, right) => new Date(right.end) - new Date(left.end));
+
+  const latestFuvarBlock = fuvarBlocks[0] || null;
+  const anchorEndMs = latestFuvarBlock
+    ? new Date(latestFuvarBlock.end).getTime()
+    : Date.now();
+
+  const linkedFuvar = latestFuvarBlock?.fuvarId
+    ? FUVAROK.find((item) => item.id === latestFuvarBlock.fuvarId) || null
+    : null;
+
+  const anchorDropAddress = latestFuvarBlock?.lerakasCim
+    || linkedFuvar?.lerakas?.cim
+    || resource?.jelenlegi_pozicio?.hely
+    || "";
+
+  return {
+    anchorEndMs,
+    anchorDropAddress
+  };
+}
+
+function getResourceCategoryPenalty(resource, candidateCategory) {
+  const preferredCategory = getResourcePreferredCategory(resource);
+  if (!preferredCategory || !candidateCategory) {
+    return 0;
+  }
+
+  if (preferredCategory === "belfold" && candidateCategory !== "belfold") {
+    return 60;
+  }
+
+  if (preferredCategory === "nemzetkozi" && candidateCategory === "belfold") {
+    return 10;
+  }
+
+  return 0;
+}
+
+function buildResourceRecommendationEntry(resourceType, resource, matchingEntry, anchor) {
+  const fuvar = FUVAROK.find((item) => item.id === matchingEntry?.fuvarId) || null;
+  if (!fuvar?.felrakas?.ido || !fuvar?.felrakas?.cim) {
+    return null;
+  }
+
+  const startMs = new Date(fuvar.felrakas.ido).getTime();
+  if (!Number.isFinite(startMs)) {
+    return null;
+  }
+
+  const distance = recommendationDistanceKm(anchor.anchorDropAddress, fuvar.felrakas.cim);
+  const transitHours = estimateRecommendationTransitHours(anchor.anchorDropAddress, fuvar.felrakas.cim);
+  const transitMs = Math.round(transitHours * 3600 * 1000);
+  const arrivalMs = anchor.anchorEndMs + transitMs;
+  const slackMs = startMs - arrivalMs;
+  const reachable = slackMs >= 0;
+  const actionable = !isFullyAssignedFuvarForRecommendation(fuvar);
+  const normalizedDistance = Number.isFinite(distance) ? distance : RECOMMENDATION_FALLBACK_DISTANCE_KM;
+  const waitHours = reachable ? slackMs / (1000 * 60 * 60) : 0;
+  const missingHours = !reachable ? Math.abs(slackMs) / (1000 * 60 * 60) : 0;
+  const categoryPenalty = getResourceCategoryPenalty(resource, getRecommendationFuvarCategory(fuvar));
+  const warningPenalty = matchingEntry?.result?.grade === "warn" ? 22 : 0;
+  const mismatchPenalty = matchingEntry?.result?.suitable ? 0 : 240;
+
+  const score = normalizedDistance
+    + (waitHours * RECOMMENDATION_WAIT_PENALTY_PER_HOUR)
+    + (missingHours * 90)
+    + (actionable ? 0 : RECOMMENDATION_ASSIGNED_PENALTY)
+    + categoryPenalty
+    + warningPenalty
+    + mismatchPenalty;
+
+  return {
+    resourceType,
+    resource,
+    fuvar,
+    matchingResult: matchingEntry?.result || null,
+    startMs,
+    distance,
+    transitHours,
+    arrivalMs,
+    slackMs,
+    reachable,
+    actionable,
+    score
+  };
+}
+
+function compareResourceRecommendationEntries(left, right) {
+  if (left.reachable !== right.reachable) {
+    return left.reachable ? -1 : 1;
+  }
+
+  if (left.actionable !== right.actionable) {
+    return left.actionable ? -1 : 1;
+  }
+
+  if (left.score !== right.score) {
+    return left.score - right.score;
+  }
+
+  return left.startMs - right.startMs;
+}
+
+function getResourceFuvarRecommendation(type, resource) {
+  const anchor = getResourceRecommendationAnchor(resource);
+  const evaluations = evaluateFuvarokForResource(resource, FUVAROK, type);
+  const entries = evaluations
+    .map((entry) => buildResourceRecommendationEntry(type, resource, entry, anchor))
+    .filter(Boolean)
+    .sort(compareResourceRecommendationEntries);
+
+  if (entries.length === 0) {
+    return { state: "none" };
+  }
+
+  const suitableEntries = entries.filter((entry) => entry.matchingResult?.suitable);
+  if (suitableEntries.length === 0) {
+    return { state: "no-suitable", ...entries[0] };
+  }
+
+  const bestReachable = suitableEntries.find((entry) => entry.reachable) || null;
+  if (bestReachable) {
+    return { state: "recommended", ...bestReachable };
+  }
+
+  return { state: "unreachable", ...suitableEntries[0] };
+}
+
+function renderResourceRecommendation(host, recommendation) {
+  if (recommendation.state === "none") {
+    host.className = "next-fuvar-recommendation active warn";
+    host.innerHTML = `
+      <div class="title">Ajánlott fuvar a kijelölt erőforráshoz</div>
+      <div>Nincs olyan fuvar, amelyhez érdemi ajánlás számolható.</div>
+    `;
+    return;
+  }
+
+  const distanceLabel = Number.isFinite(recommendation.distance)
+    ? `${Math.round(recommendation.distance)} km`
+    : "n/a";
+  const slackHours = Math.max(0, recommendation.slackMs) / (1000 * 60 * 60);
+  const missingHours = Math.abs(recommendation.slackMs) / (1000 * 60 * 60);
+  const startLabel = new Date(recommendation.fuvar.felrakas.ido).toLocaleString("hu-HU", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+  const reasonList = Array.isArray(recommendation.matchingResult?.reasons)
+    ? recommendation.matchingResult.reasons
+    : [];
+  const reasonLine = reasonList.length > 0
+    ? `<div>Megjegyzés: ${reasonList.join(" • ")}</div>`
+    : "";
+  const resourceLabel = `${getResourceRecommendationTypeLabel(recommendation.resourceType)}: ${getResourceRecommendationLabel(recommendation.resourceType, recommendation.resource)}`;
+
+  if (recommendation.state === "no-suitable") {
+    host.className = "next-fuvar-recommendation active warn";
+    host.innerHTML = `
+      <div class="title">Ajánlott fuvar a kijelölt erőforráshoz</div>
+      <div><strong>Nincs teljesen alkalmas jelölt</strong>, de ez a legközelebbi opció:</div>
+      <div>${resourceLabel}</div>
+      <div><strong>${recommendation.fuvar.id}</strong> • ${recommendation.fuvar.megnevezes}</div>
+      <div>Viszonylat: ${formatRecommendationCategory(getRecommendationFuvarCategory(recommendation.fuvar))}</div>
+      <div>Távolság: ${distanceLabel} • Átállás: ${formatRecommendationHours(recommendation.transitHours)}</div>
+      <div>Indulás: ${startLabel}</div>
+      ${reasonLine}
+      ${buildRecommendationActionButtons(recommendation.fuvar)}
+    `;
+    host.dataset.recommendationFuvarId = recommendation.fuvar.id;
+    host.dataset.recommendationChainIds = collectLinkedFuvarChainIds(recommendation.fuvar.id).join(",");
+    return;
+  }
+
+  if (recommendation.state === "unreachable") {
+    host.className = "next-fuvar-recommendation active warn";
+    host.innerHTML = `
+      <div class="title">Ajánlott fuvar a kijelölt erőforráshoz</div>
+      <div>${resourceLabel}</div>
+      <div><strong>${recommendation.fuvar.id}</strong> • ${recommendation.fuvar.megnevezes}</div>
+      <div>Viszonylat: ${formatRecommendationCategory(getRecommendationFuvarCategory(recommendation.fuvar))}</div>
+      <div>Távolság: ${distanceLabel} • Átállás: ${formatRecommendationHours(recommendation.transitHours)}</div>
+      <div>Hiányzó idő: ${formatRecommendationHours(missingHours)} • Indulás: ${startLabel}</div>
+      ${reasonLine}
+      ${buildRecommendationActionButtons(recommendation.fuvar)}
+    `;
+    host.dataset.recommendationFuvarId = recommendation.fuvar.id;
+    host.dataset.recommendationChainIds = collectLinkedFuvarChainIds(recommendation.fuvar.id).join(",");
+    return;
+  }
+
+  host.className = "next-fuvar-recommendation active good";
+  host.innerHTML = `
+    <div class="title">Ajánlott fuvar a kijelölt erőforráshoz</div>
+    <div>${resourceLabel}</div>
+    <div><strong>${recommendation.fuvar.id}</strong> • ${recommendation.fuvar.megnevezes}</div>
+    <div>Viszonylat: ${formatRecommendationCategory(getRecommendationFuvarCategory(recommendation.fuvar))}</div>
+    <div>Távolság: ${distanceLabel} • Átállás: ${formatRecommendationHours(recommendation.transitHours)} • Puffer: ${formatRecommendationHours(slackHours)}</div>
+    <div>Indulás: ${startLabel}${recommendation.actionable ? "" : " • Már kiosztott jelölt"}</div>
+    ${reasonLine}
+    ${buildRecommendationActionButtons(recommendation.fuvar)}
+  `;
+  host.dataset.recommendationFuvarId = recommendation.fuvar.id;
+  host.dataset.recommendationChainIds = collectLinkedFuvarChainIds(recommendation.fuvar.id).join(",");
+}
+
 function updateNextFuvarRecommendation() {
   const host = document.getElementById("next-fuvar-recommendation");
   if (!host) {
@@ -2268,6 +2632,18 @@ function updateNextFuvarRecommendation() {
 
   host.dataset.recommendationFuvarId = "";
   host.dataset.recommendationChainIds = "";
+
+  if (selectedResourceFocus?.type && selectedResourceFocus?.id) {
+    const selectedResource = getResourceByTypeAndId(selectedResourceFocus.type, selectedResourceFocus.id);
+
+    if (selectedResource) {
+      const resourceRecommendation = getResourceFuvarRecommendation(selectedResourceFocus.type, selectedResource);
+      renderResourceRecommendation(host, resourceRecommendation);
+      return;
+    }
+
+    selectedResourceFocus = null;
+  }
 
   const anchorFuvar = getRecommendationAnchorFuvar();
   if (!anchorFuvar) {
@@ -2898,6 +3274,21 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  window.addEventListener("timeline:resource-selected", (event) => {
+    const type = event?.detail?.type;
+    const resourceId = event?.detail?.resourceId;
+    if (!type || !resourceId) {
+      return;
+    }
+
+    const resource = getResourceByTypeAndId(type, resourceId);
+    if (!resource) {
+      return;
+    }
+
+    onSelectResource(type, resource);
+  });
+
   refreshAllViews();
 
   // ESC GOMB KEZELÉSE – FUVAR KIJELÖLÉS TÖRLÉSE
@@ -2911,7 +3302,11 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 
 function onSelectResource(type, resource) {
-  document.querySelectorAll(".resource-card.selected").forEach((node) => node.classList.remove("selected"));
+  selectedResourceFocus = { type, id: resource.id };
+
+  document
+    .querySelectorAll(".resource-card.selected, .timeline-resource.selected, .timeline-resource-name.selected")
+    .forEach((node) => node.classList.remove("selected"));
 
   const card = document.querySelector(`.resource-card[data-type="${type}"][data-id="${resource.id}"]`);
   if (card) {
@@ -2921,18 +3316,17 @@ function onSelectResource(type, resource) {
   const nameEl = document.querySelector(
     `.timeline-resource-name[data-resource-type="${type}"][data-resource-id="${resource.id}"]`
   );
-  if (!nameEl) {
-    return;
+
+  if (nameEl) {
+    nameEl.classList.add("selected");
+    const timelineRow = nameEl.closest(".timeline-resource");
+    if (timelineRow) {
+      timelineRow.classList.add("selected");
+      timelineRow.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   }
 
-  const timelineRow = nameEl.closest(".timeline-resource");
-  if (!timelineRow) {
-    return;
-  }
-
-  timelineRow.classList.add("selected");
-  timelineRow.scrollIntoView({ behavior: "smooth", block: "center" });
-  setTimeout(() => timelineRow.classList.remove("selected"), 1200);
+  updateNextFuvarRecommendation();
 }
 
 function formatOperationDetails(entry) {
