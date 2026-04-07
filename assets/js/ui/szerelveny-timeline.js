@@ -23,6 +23,9 @@ let transientHandlersBound = false;
 let focusedFuvarId = null;
 let focusedAssemblyId = null;
 let assemblyDropoffVehiclesFilterActive = false;
+let assemblyViewMode = "timeline";
+let assemblyOnlyJaratFilterActive = false;
+const expandedAssemblyIds = new Set();
 let activeAssemblyHoverTooltip = null;
 const IMPORT_LINK_WINDOW_HOURS = 4;
 const IMPORT_LINK_WINDOW_MS = IMPORT_LINK_WINDOW_HOURS * 3600 * 1000;
@@ -1770,6 +1773,22 @@ function renderAssemblyPager(container, containerId, soforok, vontatok, potkocsi
   dropoffBtn.textContent = `Lerakó autók (${dropoffView.totalMatched})`;
   dropoffBtn.classList.toggle("active", assemblyDropoffVehiclesFilterActive);
 
+  const viewModeBtn = document.createElement("button");
+  viewModeBtn.className = "btn timeline-nav-btn timeline-nav-toggle";
+  viewModeBtn.type = "button";
+  viewModeBtn.setAttribute("aria-pressed", String(assemblyViewMode === "list"));
+  viewModeBtn.textContent = assemblyViewMode === "list"
+    ? "Nézet: Lista"
+    : "Nézet: Idővonal";
+  viewModeBtn.classList.toggle("active", assemblyViewMode === "list");
+
+  const jaratOnlyBtn = document.createElement("button");
+  jaratOnlyBtn.className = "btn timeline-nav-btn timeline-nav-toggle";
+  jaratOnlyBtn.type = "button";
+  jaratOnlyBtn.setAttribute("aria-pressed", String(assemblyOnlyJaratFilterActive));
+  jaratOnlyBtn.textContent = "Csak járatok";
+  jaratOnlyBtn.classList.toggle("active", assemblyOnlyJaratFilterActive);
+
   prevBtn.addEventListener("click", () => {
     assemblyTimelineOffsetHours -= TIMELINE_HOURS;
     renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocsik);
@@ -1785,11 +1804,276 @@ function renderAssemblyPager(container, containerId, soforok, vontatok, potkocsi
     renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocsik);
   });
 
+  viewModeBtn.addEventListener("click", () => {
+    assemblyViewMode = assemblyViewMode === "timeline" ? "list" : "timeline";
+    renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocsik);
+  });
+
+  jaratOnlyBtn.addEventListener("click", () => {
+    assemblyOnlyJaratFilterActive = !assemblyOnlyJaratFilterActive;
+    renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocsik);
+  });
+
   nav.appendChild(prevBtn);
   nav.appendChild(label);
   nav.appendChild(nextBtn);
   nav.appendChild(dropoffBtn);
+  nav.appendChild(viewModeBtn);
+  nav.appendChild(jaratOnlyBtn);
   container.appendChild(nav);
+}
+
+function getAssemblyJaratSnapshot(assembly) {
+  const completedJaratInfo = buildAssemblyCompletedJaratInfo(assembly?.fuvarBlocks || []);
+  const jaratIds = completedJaratInfo.summaries.map((summary) => summary.jaratId);
+
+  return {
+    completedJaratInfo,
+    jaratIds,
+    hasCompletedJarat: jaratIds.length > 0
+  };
+}
+
+function assemblyHasCompletedJarat(assembly) {
+  return getAssemblyJaratSnapshot(assembly).hasCompletedJarat;
+}
+
+function buildAssemblyListMetrics(assembly) {
+  const fuvarBlocks = (assembly?.fuvarBlocks || []).filter((block) => block?.type === "fuvar");
+  const ordered = fuvarBlocks
+    .slice()
+    .sort((left, right) => new Date(left.start) - new Date(right.start));
+
+  const totalKm = ordered.reduce((sum, block) => {
+    const value = getAssemblyBlockDistanceKm(block);
+    return Number.isFinite(value) ? sum + value : sum;
+  }, 0);
+
+  const first = ordered[0] || null;
+  const last = ordered[ordered.length - 1] || null;
+
+  return {
+    fuvarCount: ordered.length,
+    totalKm,
+    first,
+    last,
+    ordered
+  };
+}
+
+function buildAssemblyTaskGroups(orderedBlocks, jaratSnapshot) {
+  const completedGroupsById = new Map();
+  const pendingItems = [];
+  const byBlock = jaratSnapshot?.completedJaratInfo?.byBlock || new Map();
+
+  orderedBlocks.forEach((block) => {
+    const jaratMeta = byBlock.get(block) || null;
+    if (!jaratMeta?.jaratId) {
+      pendingItems.push(block);
+      return;
+    }
+
+    if (!completedGroupsById.has(jaratMeta.jaratId)) {
+      completedGroupsById.set(jaratMeta.jaratId, []);
+    }
+
+    completedGroupsById.get(jaratMeta.jaratId).push(block);
+  });
+
+  const completedGroups = Array.from(completedGroupsById.entries()).map(([jaratId, items]) => {
+    return {
+      key: jaratId,
+      title: `${jaratId} járat`,
+      state: "done",
+      items
+    };
+  });
+
+  if (pendingItems.length > 0) {
+    completedGroups.push({
+      key: "pending",
+      title: "Szerelvény feladatok (még nem lezárt járat)",
+      state: "pending",
+      items: pendingItems
+    });
+  }
+
+  return completedGroups;
+}
+
+function renderAssemblyListRow(parent, assembly, lifecycleFuvarIds = new Set()) {
+  const row = document.createElement("article");
+  row.className = "assembly-list-row";
+  row.dataset.assemblyId = assembly.id;
+  row.setAttribute("role", "button");
+  row.setAttribute("tabindex", "0");
+
+  if (focusedAssemblyId && focusedAssemblyId === assembly.id) {
+    row.classList.add("active");
+  }
+  if (assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds)) {
+    row.classList.add("lifecycle-focus");
+  }
+
+  const soforName = assembly.sofor?.nev || "nincs";
+  const potkocsiRendszam = assembly.potkocsi?.rendszam || "nincs";
+  const metrics = buildAssemblyListMetrics(assembly);
+  const jaratSnapshot = getAssemblyJaratSnapshot(assembly);
+  const taskGroups = buildAssemblyTaskGroups(metrics.ordered, jaratSnapshot);
+  const isExpanded = expandedAssemblyIds.has(assembly.id);
+
+  row.classList.toggle("is-jarat", jaratSnapshot.hasCompletedJarat);
+  row.classList.toggle("is-not-jarat", !jaratSnapshot.hasCompletedJarat);
+
+  const fromAddress = metrics.first?.felrakasCim || "-";
+  const toAddress = metrics.last?.lerakasCim || "-";
+  const fromText = metrics.first ? formatDate(metrics.first.start) : "-";
+  const toText = metrics.last ? formatDate(metrics.last.end) : "-";
+  const totalKmLabel = metrics.totalKm > 0
+    ? `${Math.round(metrics.totalKm)} km`
+    : "n/a";
+
+  const jaratBadgeHtml = jaratSnapshot.hasCompletedJarat
+    ? `<span class="assembly-list-jarat-state done">Járatként értelmezve (${jaratSnapshot.jaratIds.length})</span>`
+    : '<span class="assembly-list-jarat-state pending">Még nincs lezárt járat</span>';
+
+  const jaratIdBadgesHtml = jaratSnapshot.hasCompletedJarat
+    ? `<div class="assembly-list-jarat-badges">${jaratSnapshot.jaratIds.map((jaratId) => `<span class="timeline-jarat-badge">${escapeHtml(jaratId)}</span>`).join("")}</div>`
+    : "";
+
+  const taskGroupsHtml = taskGroups.length > 0
+    ? taskGroups.map((group) => {
+      const itemsHtml = group.items.map((block) => {
+        const linkedFuvar = findFuvarByBlock(block);
+        const route = getAssemblyRouteForBlock(block);
+        const timeRange = `${formatDate(block.start)} → ${formatDate(block.end)}`;
+        const category = linkedFuvar?.kategoria || linkedFuvar?.viszonylat || block?.kategoria || "-";
+        const distanceKm = getAssemblyBlockDistanceKm(block);
+        const distanceLabel = Number.isFinite(distanceKm) ? `${Math.round(distanceKm)} km` : "n/a";
+        const title = linkedFuvar?.id || block?.fuvarId || block?.label || "Fuvar";
+
+        return `
+          <li class="assembly-task-item">
+            <div class="assembly-task-item-head">
+              <strong>${escapeHtml(title)}</strong>
+              <span class="assembly-task-chip">${escapeHtml(category)}</span>
+            </div>
+            <div class="assembly-task-item-route">${escapeHtml(route.pickup)} → ${escapeHtml(route.dropoff)}</div>
+            <div class="assembly-task-item-meta"><span>${escapeHtml(timeRange)}</span><span>•</span><span>${distanceLabel}</span></div>
+          </li>
+        `;
+      }).join("");
+
+      return `
+        <section class="assembly-task-group ${group.state}">
+          <div class="assembly-task-group-title">${escapeHtml(group.title)} (${group.items.length})</div>
+          <ul class="assembly-task-list">${itemsHtml}</ul>
+        </section>
+      `;
+    }).join("")
+    : '<div class="assembly-task-empty">Nincs fuvarfeladat ehhez a szerelvényhez az aktuális nézetben.</div>';
+
+  row.innerHTML = `
+    <header class="assembly-list-head">
+      <div class="assembly-list-main-wrap">
+        <button type="button" class="assembly-list-toggle" aria-expanded="${String(isExpanded)}" aria-label="Fuvarfeladatok lenyitása">
+          <span class="assembly-list-toggle-icon ${isExpanded ? "open" : ""}">▼</span>
+        </button>
+        <div class="assembly-list-main">🚛 ${escapeHtml(assembly.vontato.rendszam)}</div>
+      </div>
+      ${jaratBadgeHtml}
+    </header>
+    <div class="assembly-list-info-grid">
+      <div class="assembly-list-info-box assembly-list-meta">👤 Sofőr: ${escapeHtml(soforName)}<span>•</span>🚚 Pótkocsi: ${escapeHtml(potkocsiRendszam)}</div>
+      <div class="assembly-list-info-box assembly-list-route"><strong>${escapeHtml(fromAddress)}</strong><span>→</span><strong>${escapeHtml(toAddress)}</strong></div>
+      <div class="assembly-list-info-box assembly-list-stats">
+        <span>Fuvarok: ${metrics.fuvarCount}</span>
+        <span>Össztáv: ${totalKmLabel}</span>
+        <span>Időablak: ${escapeHtml(fromText)} → ${escapeHtml(toText)}</span>
+      </div>
+    </div>
+    ${jaratIdBadgesHtml}
+    <div class="assembly-task-details ${isExpanded ? "open" : ""}">${taskGroupsHtml}</div>
+  `;
+
+  const toggleBtn = row.querySelector(".assembly-list-toggle");
+  toggleBtn?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (expandedAssemblyIds.has(assembly.id)) {
+      expandedAssemblyIds.delete(assembly.id);
+    } else {
+      expandedAssemblyIds.add(assembly.id);
+    }
+    rerenderCurrentAssemblyTimeline();
+  });
+
+  const emitFocus = () => {
+    window.dispatchEvent(new CustomEvent("assembly:focus", {
+      detail: { assemblyId: assembly.id }
+    }));
+  };
+
+  row.addEventListener("click", emitFocus);
+  row.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      emitFocus();
+    }
+  });
+
+  parent.appendChild(row);
+}
+
+function renderAssemblyListView(parent, assemblies, lifecycleFuvarIds) {
+  const listHost = document.createElement("section");
+  listHost.className = "assembly-list-view";
+
+  const completed = [];
+  const pending = [];
+
+  assemblies.forEach((assembly) => {
+    const snapshot = getAssemblyJaratSnapshot(assembly);
+    if (snapshot.hasCompletedJarat) {
+      completed.push(assembly);
+      return;
+    }
+
+    pending.push(assembly);
+  });
+
+  const renderSection = (title, items, stateClass) => {
+    if (items.length === 0) {
+      return;
+    }
+
+    const section = document.createElement("section");
+    section.className = `assembly-list-section ${stateClass}`;
+
+    const heading = document.createElement("h3");
+    heading.className = "assembly-list-section-title";
+    heading.textContent = `${title} (${items.length})`;
+    section.appendChild(heading);
+
+    items.forEach((assembly) => {
+      renderAssemblyListRow(section, assembly, lifecycleFuvarIds);
+    });
+
+    listHost.appendChild(section);
+  };
+
+  renderSection("Járatként értelmezett szerelvények", completed, "done");
+  renderSection("Még nem lezárt szerelvények", pending, "pending");
+
+  if (!listHost.hasChildNodes()) {
+    const empty = document.createElement("div");
+    empty.className = "assembly-empty-state";
+    empty.textContent = "Nincs megjeleníthető szerelvény listanézetben.";
+    parent.appendChild(empty);
+    return;
+  }
+
+  parent.appendChild(listHost);
 }
 
 export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocsik, options = {}) {
@@ -1822,7 +2106,9 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
   const dropoffView = buildAssemblyDropoffView(spedicioOnlyAssemblies);
 
   renderAssemblyPager(container, containerId, soforok, vontatok, potkocsik, dropoffView);
-  renderTimeScale(container);
+  if (assemblyViewMode === "timeline") {
+    renderTimeScale(container);
+  }
 
   if (spedicioOnlyAssemblies.length === 0) {
     const empty = document.createElement("div");
@@ -1859,6 +2145,10 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
       .map(({ assembly }) => assembly)
     : spedicioOnlyAssemblies;
 
+  const filteredAssemblies = assemblyOnlyJaratFilterActive
+    ? visibleAssemblies.filter((assembly) => assemblyHasCompletedJarat(assembly))
+    : visibleAssemblies;
+
   if (assemblyDropoffVehiclesFilterActive && visibleAssemblies.length === 0) {
     const info = document.createElement("div");
     info.className = "timeline-filter-empty";
@@ -1867,16 +2157,29 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
     return;
   }
 
+  if (assemblyOnlyJaratFilterActive && filteredAssemblies.length === 0) {
+    const info = document.createElement("div");
+    info.className = "timeline-filter-empty";
+    info.textContent = "Nincs megjeleníthető járatként értelmezett szerelvény az aktuális szűrők mellett.";
+    container.appendChild(info);
+    return;
+  }
+
   const lifecycleFuvarIds = buildFocusedLifecycleFuvarIdSet();
   const lifecycleMatches = lifecycleFuvarIds.size > 0
-    ? visibleAssemblies.filter((assembly) => assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds))
+    ? filteredAssemblies.filter((assembly) => assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds))
     : [];
   const lifecycleRemainder = lifecycleFuvarIds.size > 0
-    ? visibleAssemblies.filter((assembly) => !assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds))
-    : visibleAssemblies;
+    ? filteredAssemblies.filter((assembly) => !assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds))
+    : filteredAssemblies;
   const orderedAssemblies = lifecycleFuvarIds.size > 0
     ? [...lifecycleMatches, ...lifecycleRemainder]
-    : visibleAssemblies;
+    : filteredAssemblies;
+
+  if (assemblyViewMode === "list") {
+    renderAssemblyListView(container, orderedAssemblies, lifecycleFuvarIds);
+    return;
+  }
 
   orderedAssemblies.forEach((assembly) => {
     renderAssemblyRow(container, assembly, soforok, vontatok, potkocsik, lifecycleFuvarIds);
