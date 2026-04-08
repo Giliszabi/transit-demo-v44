@@ -639,25 +639,33 @@
 }
 
 .assembly-op-form {
-  height: 64px;
+  width: min(560px, 100%);
+  max-height: min(82vh, 720px);
+  overflow: auto;
 }
 
 .assembly-op-meta {
   font-size: 12px;
-  top: 8px;
-  height: 48px;
-  display: grid;
-  grid-template-rows: 22px 18px;
-  row-gap: 2px;
-  padding: 4px 7px;
+  color: #a9bfce;
+}
+
 .assembly-op-list {
   max-height: 210px;
-.assembly-block-line-primary,
-.assembly-block-line-secondary {
-  white-space: nowrap;
+  overflow: auto;
   border: 1px solid #2f3d4e;
   border-radius: 8px;
   background: #121923;
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.assembly-block-line-primary,
+.assembly-block-line-secondary {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .assembly-block-line-primary {
   display: flex;
@@ -678,8 +686,6 @@
   font-size: 10px;
   opacity: 0.88;
   line-height: 1.15;
-}
-  padding: 8px;
 }
 
 .assembly-op-list-item {
