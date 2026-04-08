@@ -959,9 +959,9 @@
   border: 1px solid #3b4b5a;
   background: #17202b;
   color: #d7e6f2;
-  border-radius: 7px;
-  width: 26px;
-  height: 24px;
+  border-radius: 9px;
+  width: 34px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -975,10 +975,15 @@
 }
 
 .assembly-list-toggle-icon {
-  font-size: 11px;
+  font-size: 15px;
   line-height: 1;
   transform: rotate(-90deg);
   transition: transform 0.16s ease;
+}
+
+.assembly-list-row.expanded {
+  padding: 12px;
+  gap: 9px;
 }
 
 .assembly-list-toggle-icon.open {
@@ -1107,10 +1112,14 @@
   border: 1px solid #3a4f64;
   border-radius: 9px;
   background: linear-gradient(180deg, #1b2a3a, #172333);
-  padding: 8px 9px;
-  display: grid;
-  gap: 5px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  min-height: 38px;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .assembly-task-group.done .assembly-task-item {
@@ -1121,11 +1130,10 @@
   border-color: rgba(255, 193, 79, 0.42);
 }
 
-.assembly-task-item-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+.assembly-task-id {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #f3f8fd;
 }
 
 .assembly-task-chip {
@@ -1137,20 +1145,36 @@
   background: rgba(79, 195, 247, 0.2);
   color: #dff3ff;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.assembly-task-item-route {
+.assembly-task-route-inline {
+  min-width: 120px;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 12px;
   color: #e7eff8;
 }
 
-.assembly-task-item-meta {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
+.assembly-task-time {
+  flex: 0 1 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 11px;
   color: #a8bfd3;
+}
+
+.assembly-task-dot {
+  flex-shrink: 0;
+  color: #7892a8;
+}
+
+.assembly-task-distance {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #d9e7f2;
+  font-weight: 700;
 }
 
 .assembly-task-empty {

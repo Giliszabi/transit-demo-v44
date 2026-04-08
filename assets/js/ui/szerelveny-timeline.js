@@ -1921,6 +1921,7 @@ function renderAssemblyListRow(parent, assembly, lifecycleFuvarIds = new Set()) 
   const jaratSnapshot = getAssemblyJaratSnapshot(assembly);
   const taskGroups = buildAssemblyTaskGroups(metrics.ordered, jaratSnapshot);
   const isExpanded = expandedAssemblyIds.has(assembly.id);
+  row.classList.toggle("expanded", isExpanded);
 
   row.classList.toggle("is-jarat", jaratSnapshot.hasCompletedJarat);
   row.classList.toggle("is-not-jarat", !jaratSnapshot.hasCompletedJarat);
@@ -1954,12 +1955,13 @@ function renderAssemblyListRow(parent, assembly, lifecycleFuvarIds = new Set()) 
 
         return `
           <li class="assembly-task-item">
-            <div class="assembly-task-item-head">
-              <strong>${escapeHtml(title)}</strong>
-              <span class="assembly-task-chip">${escapeHtml(category)}</span>
-            </div>
-            <div class="assembly-task-item-route">${escapeHtml(route.pickup)} → ${escapeHtml(route.dropoff)}</div>
-            <div class="assembly-task-item-meta"><span>${escapeHtml(timeRange)}</span><span>•</span><span>${distanceLabel}</span></div>
+            <strong class="assembly-task-id">${escapeHtml(title)}</strong>
+            <span class="assembly-task-chip">${escapeHtml(category)}</span>
+            <span class="assembly-task-route-inline">${escapeHtml(route.pickup)} → ${escapeHtml(route.dropoff)}</span>
+            <span class="assembly-task-dot">•</span>
+            <span class="assembly-task-time">${escapeHtml(timeRange)}</span>
+            <span class="assembly-task-dot">•</span>
+            <span class="assembly-task-distance">${distanceLabel}</span>
           </li>
         `;
       }).join("");
