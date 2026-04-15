@@ -14,7 +14,7 @@ import { getFuvarTagMeta, getCategoryPalette } from "./colors.js";
 import { enableFuvarDrag } from "./dragdrop.js";
 import { getDomesticTransitRoleInfo } from "./transit-relations.js";
 
-const FILTERS = ["all", "adr", "surgos", "belfold", "export", "import", "spediccio"];
+const FILTERS = ["all", "adr", "surgos", "belfold", "export", "import", "elofutas", "utofutas", "spediccio"];
 const DEFAULT_FUVAR_FILTER_STATE = Object.freeze({
   category: "all",
   assignment: "all",
@@ -247,7 +247,7 @@ function normalizeFuvarFilterState(filter) {
   if (typeof filter === "string") {
     const base = createDefaultFuvarFilterState();
 
-    if (["belfold", "export", "import", "spediccio"].includes(filter)) {
+    if (["belfold", "export", "import", "elofutas", "utofutas", "spediccio"].includes(filter)) {
       base.category = filter === "spediccio" ? "all" : filter;
       if (filter === "spediccio") {
         base.spediccio = true;
@@ -264,7 +264,7 @@ function normalizeFuvarFilterState(filter) {
   }
 
   return {
-    category: ["all", "belfold", "export", "import"].includes(filter.category) ? filter.category : "all",
+    category: ["all", "belfold", "export", "import", "elofutas", "utofutas"].includes(filter.category) ? filter.category : "all",
     assignment: ["all", "ready", "planning", "unassigned"].includes(filter.assignment) ? filter.assignment : "all",
     adr: Boolean(filter.adr),
     surgos: Boolean(filter.surgos),
@@ -337,8 +337,15 @@ function matchesUnifiedFuvarFilter(fuvar, filterState, options = {}) {
     return false;
   }
 
-  if (filterState.category !== "all" && fuvar.kategoria !== filterState.category) {
-    return false;
+  if (filterState.category !== "all") {
+    if (filterState.category === "elofutas" || filterState.category === "utofutas") {
+      const transitRoleInfo = getDomesticTransitRoleInfo(fuvar);
+      if (transitRoleInfo?.role !== filterState.category) {
+        return false;
+      }
+    } else if (fuvar.kategoria !== filterState.category) {
+      return false;
+    }
   }
 
   if (filterState.assignment !== "all" && getFuvarAssignmentStatusKey(fuvar) !== filterState.assignment) {
@@ -2045,6 +2052,8 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
           <option value="belfold">Belföld</option>
           <option value="export">Export</option>
           <option value="import">Import</option>
+          <option value="elofutas">Előfutás</option>
+          <option value="utofutas">Utófutás</option>
         </select>
       </label>
       <label class="fuvar-filter-field">
