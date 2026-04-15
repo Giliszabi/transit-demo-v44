@@ -22,6 +22,7 @@ const DEFAULT_FUVAR_FILTER_STATE = Object.freeze({
   surgos: false,
   spediccio: false,
   elapsed: false,
+  dayOffset: null,
   query: "",
   idScope: null
 });
@@ -269,6 +270,9 @@ function normalizeFuvarFilterState(filter) {
     surgos: Boolean(filter.surgos),
     spediccio: Boolean(filter.spediccio),
     elapsed: Boolean(filter.elapsed),
+    dayOffset: Number.isInteger(filter.dayOffset) && filter.dayOffset >= 0 && filter.dayOffset <= 2
+      ? filter.dayOffset
+      : null,
     query: String(filter.query || ""),
     idScope: Array.isArray(filter.idScope) && filter.idScope.length > 0
       ? [...new Set(filter.idScope.map((item) => String(item || "")).filter(Boolean))]
@@ -289,6 +293,31 @@ function isElapsedFuvar(fuvar, timelineReferenceDate) {
   }
 
   return delivery < reference;
+}
+
+function getDayReferenceBase(referenceDate) {
+  const base = referenceDate ? new Date(referenceDate) : new Date();
+  if (!Number.isFinite(base.getTime())) {
+    return new Date();
+  }
+  return base;
+}
+
+function isSameCalendarDay(leftDate, rightDate) {
+  return leftDate.getFullYear() === rightDate.getFullYear()
+    && leftDate.getMonth() === rightDate.getMonth()
+    && leftDate.getDate() === rightDate.getDate();
+}
+
+function isFuvarPickupOnDayOffset(fuvar, dayOffset, referenceDate) {
+  const pickupMs = new Date(fuvar?.felrakas?.ido || "").getTime();
+  if (!Number.isFinite(pickupMs)) {
+    return false;
+  }
+
+  const base = getDayReferenceBase(referenceDate);
+  const target = new Date(base.getFullYear(), base.getMonth(), base.getDate() + dayOffset);
+  return isSameCalendarDay(new Date(pickupMs), target);
 }
 
 function getFuvarAssignmentStatusKey(fuvar) {
@@ -329,6 +358,10 @@ function matchesUnifiedFuvarFilter(fuvar, filterState, options = {}) {
   }
 
   if (filterState.elapsed && !isElapsedFuvar(fuvar, options.timelineReferenceDate)) {
+    return false;
+  }
+
+  if (filterState.dayOffset !== null && !isFuvarPickupOnDayOffset(fuvar, filterState.dayOffset, options.timelineReferenceDate)) {
     return false;
   }
 
@@ -915,6 +948,12 @@ function getQuickFilterPreviewState(filterState, key) {
     return preview;
   }
 
+  if (key === "today" || key === "tomorrow" || key === "day2") {
+    const targetOffset = key === "today" ? 0 : key === "tomorrow" ? 1 : 2;
+    preview.dayOffset = targetOffset;
+    return preview;
+  }
+
   preview[key] = true;
   return preview;
 }
@@ -1007,6 +1046,9 @@ function syncUnifiedFilterControls(container, filterState, options = {}) {
     const colorMeta = getQuickFilterColorMeta(key);
     if (key === "ready" || key === "planning") {
       node.classList.toggle("active", filterState.assignment === key);
+    } else if (key === "today" || key === "tomorrow" || key === "day2") {
+      const targetOffset = key === "today" ? 0 : key === "tomorrow" ? 1 : 2;
+      node.classList.toggle("active", filterState.dayOffset === targetOffset);
     } else {
       node.classList.toggle("active", Boolean(filterState[key]));
     }
@@ -1887,6 +1929,9 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
       <button class="btn fuvar-filter-toggle fuvar-filter-ready" type="button" data-toggle="ready"><span class="fuvar-filter-toggle-label">Kész</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
       <button class="btn fuvar-filter-toggle fuvar-filter-planning" type="button" data-toggle="planning"><span class="fuvar-filter-toggle-label">Tervezés alatt</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
       <button class="btn fuvar-filter-toggle fuvar-filter-spediccio" type="button" data-toggle="spediccio"><span class="fuvar-filter-toggle-label">Spedicció</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
+      <button class="btn fuvar-filter-toggle" type="button" data-toggle="today"><span class="fuvar-filter-toggle-label">Ma</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
+      <button class="btn fuvar-filter-toggle" type="button" data-toggle="tomorrow"><span class="fuvar-filter-toggle-label">Holnap</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
+      <button class="btn fuvar-filter-toggle" type="button" data-toggle="day2"><span class="fuvar-filter-toggle-label">Holnapután</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
       <button class="btn fuvar-filter-reset" type="button" data-action="reset">Szűrők törlése</button>
     </div>
   `;
@@ -1921,6 +1966,9 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
 
       if (key === "ready" || key === "planning") {
         filterState.assignment = filterState.assignment === key ? "all" : key;
+      } else if (key === "today" || key === "tomorrow" || key === "day2") {
+        const targetOffset = key === "today" ? 0 : key === "tomorrow" ? 1 : 2;
+        filterState.dayOffset = filterState.dayOffset === targetOffset ? null : targetOffset;
       } else {
         filterState[key] = !filterState[key];
       }
