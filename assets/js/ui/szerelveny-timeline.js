@@ -26,6 +26,12 @@ let assemblyDropoffVehiclesFilterActive = false;
 let assemblyViewMode = "timeline";
 let assemblyOnlyJaratFilterActive = false;
 const expandedAssemblyIds = new Set();
+const ASSEMBLY_VIEW_MODES = ["timeline", "jarat", "list"];
+const ASSEMBLY_VIEW_MODE_LABELS = {
+  timeline: "Idővonal",
+  jarat: "Járat idővonal",
+  list: "Lista"
+};
 let activeAssemblyHoverTooltip = null;
 const IMPORT_LINK_WINDOW_HOURS = 4;
 const IMPORT_LINK_WINDOW_MS = IMPORT_LINK_WINDOW_HOURS * 3600 * 1000;
@@ -366,47 +372,101 @@ function isAssemblyKornyeAddress(address) {
   return normalizeSearchText(address).includes("kornye");
 }
 
-function buildAssemblyCompletedJaratInfo(fuvarBlocks) {
-  const byBlock = new Map();
-  const summaries = [];
+function getAssemblyBlockPickupAddress(block) {
+  const linkedFuvar = findFuvarByBlock(block);
+  return block?.felrakasCim || linkedFuvar?.felrakas?.cim || "";
+}
+
+function getAssemblyBlockDropoffAddress(block) {
+  const linkedFuvar = findFuvarByBlock(block);
+  return block?.lerakasCim || linkedFuvar?.lerakas?.cim || "";
+}
+
+function isAssemblyFuvarBlock(block) {
+  return block?.type === "fuvar";
+}
+
+function buildAssemblyJaratSegments(fuvarBlocks) {
   const ordered = (fuvarBlocks || [])
-    .filter((block) => block?.type === "fuvar")
+    .filter((block) => isAssemblyFuvarBlock(block))
+    .slice()
     .sort((left, right) => new Date(left.start) - new Date(right.start));
 
-  let segment = [];
+  const segments = [];
+  let activeSegment = null;
   let jaratCounter = 0;
 
-  const flush = () => {
-    segment = [];
-  };
-
   ordered.forEach((block) => {
-    segment.push(block);
+    const pickupAddress = getAssemblyBlockPickupAddress(block);
+    const dropoffAddress = getAssemblyBlockDropoffAddress(block);
 
-    const dropoffAddress = block?.lerakasCim || "";
-    if (!isAssemblyKornyeAddress(dropoffAddress)) {
+    if (!activeSegment) {
+      if (!isAssemblyKornyeAddress(pickupAddress)) {
+        return;
+      }
+
+      jaratCounter += 1;
+      activeSegment = {
+        jaratId: `JR-${jaratCounter}`,
+        status: "nyitott",
+        start: block.start,
+        end: block.end,
+        blocks: [block]
+      };
+
+      if (isAssemblyKornyeAddress(dropoffAddress)) {
+        activeSegment.status = "lezart";
+        segments.push(activeSegment);
+        activeSegment = null;
+      }
+
       return;
     }
 
-    jaratCounter += 1;
-    const jaratId = `JR-${jaratCounter}`;
+    activeSegment.blocks.push(block);
+    activeSegment.end = block.end;
 
-    segment.forEach((segmentBlock) => {
-      byBlock.set(segmentBlock, { jaratId });
+    if (isAssemblyKornyeAddress(dropoffAddress)) {
+      activeSegment.status = "lezart";
+      segments.push(activeSegment);
+      activeSegment = null;
+    }
+  });
+
+  if (activeSegment) {
+    segments.push(activeSegment);
+  }
+
+  return segments;
+}
+
+function buildAssemblyCompletedJaratInfo(fuvarBlocks) {
+  const byBlock = new Map();
+  const summaries = [];
+  const segments = buildAssemblyJaratSegments(fuvarBlocks);
+
+  segments.forEach((segment) => {
+    if (segment.status !== "lezart") {
+      return;
+    }
+
+    segment.blocks.forEach((segmentBlock) => {
+      byBlock.set(segmentBlock, { jaratId: segment.jaratId });
     });
 
     summaries.push({
-      jaratId,
-      blockCount: segment.length,
-      end: block.end
+      jaratId: segment.jaratId,
+      blockCount: segment.blocks.length,
+      end: segment.end,
+      start: segment.start,
+      status: segment.status
     });
-
-    flush();
   });
 
   return {
     byBlock,
-    summaries
+    summaries,
+    segments
   };
 }
 
@@ -1776,11 +1836,9 @@ function renderAssemblyPager(container, containerId, soforok, vontatok, potkocsi
   const viewModeBtn = document.createElement("button");
   viewModeBtn.className = "btn timeline-nav-btn timeline-nav-toggle";
   viewModeBtn.type = "button";
-  viewModeBtn.setAttribute("aria-pressed", String(assemblyViewMode === "list"));
-  viewModeBtn.textContent = assemblyViewMode === "list"
-    ? "Nézet: Lista"
-    : "Nézet: Idővonal";
-  viewModeBtn.classList.toggle("active", assemblyViewMode === "list");
+  viewModeBtn.setAttribute("aria-pressed", String(assemblyViewMode !== "timeline"));
+  viewModeBtn.textContent = `Nézet: ${ASSEMBLY_VIEW_MODE_LABELS[assemblyViewMode] || "Idővonal"}`;
+  viewModeBtn.classList.toggle("active", assemblyViewMode !== "timeline");
 
   const jaratOnlyBtn = document.createElement("button");
   jaratOnlyBtn.className = "btn timeline-nav-btn timeline-nav-toggle";
@@ -1805,7 +1863,9 @@ function renderAssemblyPager(container, containerId, soforok, vontatok, potkocsi
   });
 
   viewModeBtn.addEventListener("click", () => {
-    assemblyViewMode = assemblyViewMode === "timeline" ? "list" : "timeline";
+    const modeIndex = ASSEMBLY_VIEW_MODES.indexOf(assemblyViewMode);
+    const nextMode = ASSEMBLY_VIEW_MODES[(modeIndex + 1) % ASSEMBLY_VIEW_MODES.length];
+    assemblyViewMode = nextMode;
     renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocsik);
   });
 
@@ -1818,8 +1878,8 @@ function renderAssemblyPager(container, containerId, soforok, vontatok, potkocsi
   if (assemblyDropoffVehiclesFilterActive) {
     activeFilters.push(`Lerakó autók (${dropoffView.totalMatched})`);
   }
-  if (assemblyViewMode === "list") {
-    activeFilters.push("Nézet: Lista");
+  if (assemblyViewMode !== "timeline") {
+    activeFilters.push(`Nézet: ${ASSEMBLY_VIEW_MODE_LABELS[assemblyViewMode] || assemblyViewMode}`);
   }
   if (assemblyOnlyJaratFilterActive) {
     activeFilters.push("Csak járatok");
@@ -1845,7 +1905,8 @@ function renderAssemblyPager(container, containerId, soforok, vontatok, potkocsi
 
 function getAssemblyJaratSnapshot(assembly) {
   const completedJaratInfo = buildAssemblyCompletedJaratInfo(assembly?.fuvarBlocks || []);
-  const jaratIds = completedJaratInfo.summaries.map((summary) => summary.jaratId);
+  const closedSummaries = completedJaratInfo.summaries.filter((summary) => summary.status === "lezart");
+  const jaratIds = closedSummaries.map((summary) => summary.jaratId);
 
   return {
     completedJaratInfo,
@@ -2098,6 +2159,264 @@ function renderAssemblyListView(parent, assemblies, lifecycleFuvarIds) {
   parent.appendChild(listHost);
 }
 
+function getAssemblyTimelineResourceEvents(assembly, startMs, endMs) {
+  const resources = [
+    { kind: "sofor", label: "Sofőr", resource: assembly.sofor },
+    { kind: "vontato", label: "Vontató", resource: assembly.vontato },
+    { kind: "potkocsi", label: "Pótkocsi", resource: assembly.potkocsi }
+  ];
+
+  const events = [];
+
+  resources.forEach(({ kind, label, resource }) => {
+    (resource?.timeline || []).forEach((block) => {
+      if (!block || block.type === "fuvar") {
+        return;
+      }
+
+      if (block.synthetic && !block.autoDriverState) {
+        return;
+      }
+
+      const eventStartMs = new Date(block.start).getTime();
+      const eventEndMs = new Date(block.end).getTime();
+      if (!Number.isFinite(eventStartMs) || !Number.isFinite(eventEndMs)) {
+        return;
+      }
+
+      if (eventEndMs < startMs || eventStartMs > endMs) {
+        return;
+      }
+
+      events.push({
+        ...block,
+        eventSourceKind: kind,
+        eventSourceLabel: label,
+        eventSourceId: resource?.id || ""
+      });
+    });
+  });
+
+  const deduped = new Map();
+  events.forEach((eventBlock) => {
+    const key = [
+      eventBlock.type,
+      eventBlock.start,
+      eventBlock.end,
+      eventBlock.eventSourceKind,
+      eventBlock.eventSourceId,
+      eventBlock.label || ""
+    ].join("|");
+
+    if (!deduped.has(key)) {
+      deduped.set(key, eventBlock);
+    }
+  });
+
+  return Array.from(deduped.values()).sort((left, right) => {
+    return new Date(left.start) - new Date(right.start);
+  });
+}
+
+function getAssemblyJaratOperationEvents(segment) {
+  if (!segment || !Array.isArray(segment.blocks) || segment.blocks.length === 0) {
+    return [];
+  }
+
+  const fuvarIds = new Set(
+    segment.blocks
+      .map((block) => block?.fuvarId)
+      .filter(Boolean)
+  );
+
+  if (fuvarIds.size === 0) {
+    return [];
+  }
+
+  const startMs = new Date(segment.start).getTime();
+  const endMs = new Date(segment.end).getTime();
+  const events = [];
+
+  FUVAROK.forEach((fuvar) => {
+    if (!fuvarIds.has(fuvar.id)) {
+      return;
+    }
+
+    const operations = Array.isArray(fuvar.resourceOperations) ? fuvar.resourceOperations : [];
+    operations.forEach((operation) => {
+      const opMs = new Date(operation?.at || "").getTime();
+      if (Number.isFinite(opMs) && (opMs < startMs || opMs > endMs)) {
+        return;
+      }
+
+      events.push({
+        id: operation?.id || `${fuvar.id}-${operation?.type || "op"}`,
+        at: Number.isFinite(opMs) ? operation.at : segment.start,
+        type: operation?.type || "muvelet",
+        typeLabel: formatOperationTypeLabel(operation?.type || ""),
+        fuvarId: fuvar.id,
+        location: operation?.location || ""
+      });
+    });
+  });
+
+  const deduped = new Map();
+  events.forEach((eventItem) => {
+    const key = `${eventItem.id}|${eventItem.at}|${eventItem.type}`;
+    if (!deduped.has(key)) {
+      deduped.set(key, eventItem);
+    }
+  });
+
+  return Array.from(deduped.values()).sort((left, right) => new Date(left.at) - new Date(right.at));
+}
+
+function buildJaratEventTooltip(block) {
+  const lines = [
+    `${block?.eventSourceLabel || "Erőforrás"}: ${block?.label || block?.type || "esemény"}`,
+    `${formatDate(block.start)} → ${formatDate(block.end)}`
+  ];
+
+  if (block?.eventSourceId) {
+    lines.push(`Erőforrás: ${block.eventSourceId}`);
+  }
+
+  return lines.join("\n");
+}
+
+function renderAssemblyJaratTimelineRow(parent, assembly, segment, lifecycleFuvarIds = new Set()) {
+  const row = document.createElement("div");
+  row.className = "timeline-resource assembly-row jarat-row";
+  row.dataset.assemblyId = assembly.id;
+  row.dataset.jaratId = segment.jaratId;
+  if (segment.status !== "lezart") {
+    row.classList.add("jarat-row-open");
+  }
+
+  const soforName = assembly.sofor?.nev || "nincs";
+  const potkocsiRendszam = assembly.potkocsi?.rendszam || "nincs";
+
+  const name = document.createElement("div");
+  name.className = "timeline-resource-name assembly-resource-name";
+  name.innerHTML = `
+    <div class="assembly-main">🧭 ${segment.jaratId} • 🚛 ${assembly.vontato.rendszam}</div>
+    <div class="assembly-meta">${segment.status === "lezart" ? "Lezárt járat" : "Nyitott kör"} • ${formatDate(segment.start)} → ${formatDate(segment.end)}</div>
+    <div class="assembly-meta">👤 Sofőr: ${soforName} • 🚚 Pótkocsi: ${potkocsiRendszam}</div>
+  `;
+
+  const bar = document.createElement("div");
+  bar.className = "timeline-bar assembly-bar jarat-bar";
+  bar.style.width = TIMELINE_WIDTH + "px";
+  bar.style.position = "relative";
+
+  const segmentStartMs = new Date(segment.start).getTime();
+  const segmentEndMs = new Date(segment.end).getTime();
+
+  segment.blocks.forEach((block) => {
+    const visibleBlock = clipBlockToWindow(block);
+    if (!visibleBlock) {
+      return;
+    }
+
+    const div = document.createElement("div");
+    div.className = "timeline-block fuvar assembly-block jarat-main-block";
+    if (visibleBlock?.fuvarId && lifecycleFuvarIds.has(visibleBlock.fuvarId)) {
+      div.classList.add("lifecycle-match");
+    }
+
+    const left = dateToPosition(visibleBlock.renderStart);
+    const width = blockWidth(visibleBlock.renderStart, visibleBlock.renderEnd);
+    div.style.left = left + "px";
+    div.style.width = width + "px";
+
+    if (visibleBlock.kategoria) {
+      const palette = getCategoryPalette(visibleBlock.kategoria);
+      div.style.setProperty("--timeline-block-bg", palette.border);
+      div.style.setProperty("--timeline-block-border", palette.borderStrong);
+      div.style.setProperty("--timeline-block-glow", palette.glow);
+      div.style.setProperty("--timeline-block-accent", palette.accent);
+    }
+
+    const route = getAssemblyRouteForBlock(visibleBlock);
+    div.innerHTML = `<div class="assembly-block-line-primary"><strong>${route.pickup} → ${route.dropoff}</strong><span class="timeline-compact-separator">•</span><span>${formatCompactAssemblyTime(visibleBlock.start)} → ${formatCompactAssemblyTime(visibleBlock.end)}</span></div>`;
+    div.title = buildAssemblyBlockTooltip(visibleBlock, { jaratId: segment.jaratId });
+    bindAssemblyBlockHoverTooltip(div, div.title);
+    bar.appendChild(div);
+  });
+
+  const resourceEvents = getAssemblyTimelineResourceEvents(assembly, segmentStartMs, segmentEndMs);
+  resourceEvents.forEach((eventBlock) => {
+    const visibleEvent = clipBlockToWindow(eventBlock);
+    if (!visibleEvent) {
+      return;
+    }
+
+    const eventDiv = document.createElement("div");
+    eventDiv.className = `timeline-block ${visibleEvent.type || "allas"} jarat-event-block`;
+
+    const left = dateToPosition(visibleEvent.renderStart);
+    const width = blockWidth(visibleEvent.renderStart, visibleEvent.renderEnd);
+    eventDiv.style.left = left + "px";
+    eventDiv.style.width = width + "px";
+    eventDiv.textContent = `${visibleEvent.eventSourceLabel}: ${visibleEvent.label || visibleEvent.type || "esemény"}`;
+
+    const tooltip = buildJaratEventTooltip(visibleEvent);
+    eventDiv.title = tooltip;
+    bindAssemblyBlockHoverTooltip(eventDiv, tooltip);
+    bar.appendChild(eventDiv);
+  });
+
+  const operationEvents = getAssemblyJaratOperationEvents(segment);
+  operationEvents.forEach((operation) => {
+    const marker = document.createElement("button");
+    marker.type = "button";
+    marker.className = "jarat-op-marker";
+
+    const left = dateToPosition(operation.at);
+    marker.style.left = left + "px";
+    marker.title = `${operation.typeLabel} • ${operation.fuvarId}${operation.location ? ` • ${operation.location}` : ""}`;
+    marker.setAttribute("aria-label", marker.title);
+    marker.textContent = "⚡";
+    bindAssemblyBlockHoverTooltip(marker, marker.title);
+    bar.appendChild(marker);
+  });
+
+  row.appendChild(name);
+  row.appendChild(bar);
+  parent.appendChild(row);
+}
+
+function renderAssemblyJaratTimelineView(parent, assemblies, lifecycleFuvarIds) {
+  const allRows = [];
+
+  assemblies.forEach((assembly) => {
+    const segments = buildAssemblyJaratSegments(assembly.fuvarBlocks || []);
+    segments.forEach((segment) => {
+      if (assemblyOnlyJaratFilterActive && segment.status !== "lezart") {
+        return;
+      }
+
+      allRows.push({ assembly, segment });
+    });
+  });
+
+  allRows.sort((left, right) => {
+    return new Date(left.segment.start) - new Date(right.segment.start);
+  });
+
+  if (allRows.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "assembly-empty-state";
+    empty.textContent = "Nincs megjeleníthető járat az aktuális szűrők és időablak mellett.";
+    parent.appendChild(empty);
+    return;
+  }
+
+  allRows.forEach(({ assembly, segment }) => {
+    renderAssemblyJaratTimelineRow(parent, assembly, segment, lifecycleFuvarIds);
+  });
+}
+
 export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocsik, options = {}) {
   const container = document.getElementById(containerId);
   if (!container) {
@@ -2128,7 +2447,7 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
   const dropoffView = buildAssemblyDropoffView(spedicioOnlyAssemblies);
 
   renderAssemblyPager(container, containerId, soforok, vontatok, potkocsik, dropoffView);
-  if (assemblyViewMode === "timeline") {
+  if (assemblyViewMode === "timeline" || assemblyViewMode === "jarat") {
     renderTimeScale(container);
   }
 
@@ -2200,6 +2519,11 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
 
   if (assemblyViewMode === "list") {
     renderAssemblyListView(container, orderedAssemblies, lifecycleFuvarIds);
+    return;
+  }
+
+  if (assemblyViewMode === "jarat") {
+    renderAssemblyJaratTimelineView(container, orderedAssemblies, lifecycleFuvarIds);
     return;
   }
 
