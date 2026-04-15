@@ -5,7 +5,7 @@
 import { FUVAROK } from "../data/fuvarok.js";
 import { SPEDICIO_PARTNER_NAMES } from "../data/spedicio-partners.js";
 import { formatDate } from "../utils.js";
-import { evaluateFuvarTags, evaluateAllResources } from "./matching.js";
+import { evaluateFuvarTags, evaluateAllResources, evaluateFuvarokForResource } from "./matching.js";
 import { SOFOROK } from "../data/soforok.js";
 import { VONTATOK } from "../data/vontatok.js";
 import { POTKOCSIK } from "../data/potkocsik.js";
@@ -925,6 +925,143 @@ function getFocusedAssemblyDropoffAddress() {
   }
 
   return selectedVontato?.jelenlegi_pozicio?.hely || "";
+}
+
+function getRecommendationResourceByScope(scope) {
+  if (!scope?.type || !scope?.id) {
+    return null;
+  }
+
+  if (scope.type === "sofor") {
+    return SOFOROK.find((item) => item.id === scope.id) || null;
+  }
+
+  if (scope.type === "vontato") {
+    return VONTATOK.find((item) => item.id === scope.id) || null;
+  }
+
+  if (scope.type === "potkocsi") {
+    return POTKOCSIK.find((item) => item.id === scope.id) || null;
+  }
+
+  return null;
+}
+
+function getRecommendationAnchorForResource(resource) {
+  const fuvarBlocks = (resource?.timeline || [])
+    .filter((block) => block?.type === "fuvar" && !block?.synthetic)
+    .sort((left, right) => new Date(right.end || right.start) - new Date(left.end || left.start));
+
+  const latestBlock = fuvarBlocks[0] || null;
+  const linkedFuvar = latestBlock?.fuvarId
+    ? FUVAROK.find((item) => item.id === latestBlock.fuvarId) || null
+    : null;
+
+  return {
+    anchorEndMs: Number.isFinite(new Date(latestBlock?.end || latestBlock?.start || "").getTime())
+      ? new Date(latestBlock.end || latestBlock.start).getTime()
+      : Date.now(),
+    anchorDropAddress: latestBlock?.lerakasCim
+      || linkedFuvar?.lerakas?.cim
+      || resource?.jelenlegi_pozicio?.hely
+      || ""
+  };
+}
+
+function estimateResourceTransitHours(anchorDropAddress, pickupAddress) {
+  if (!anchorDropAddress || !pickupAddress) {
+    return 3;
+  }
+
+  const roadKm = getRoadDistanceKm(anchorDropAddress, pickupAddress, { prime: true });
+  if (!Number.isFinite(roadKm)) {
+    return 3;
+  }
+
+  return Math.max(0.5, roadKm / 67);
+}
+
+function buildResourceRecommendationOrderMap(resourceScope, fuvarList) {
+  const resource = getRecommendationResourceByScope(resourceScope);
+  if (!resource || !resourceScope?.type || !Array.isArray(fuvarList) || fuvarList.length === 0) {
+    return null;
+  }
+
+  const matchingResults = evaluateFuvarokForResource(resource, fuvarList, resourceScope.type);
+  const matchingByFuvarId = new Map(
+    matchingResults.map((entry) => [entry.fuvarId, entry.result || null])
+  );
+  const anchor = getRecommendationAnchorForResource(resource);
+  const orderMap = new Map();
+
+  fuvarList.forEach((fuvar) => {
+    const match = matchingByFuvarId.get(fuvar.id);
+    const pickupMs = new Date(fuvar?.felrakas?.ido || "").getTime();
+    const transitHours = estimateResourceTransitHours(anchor.anchorDropAddress, fuvar?.felrakas?.cim || "");
+    const arrivalMs = anchor.anchorEndMs + Math.round(transitHours * 3600 * 1000);
+    const slackMs = Number.isFinite(pickupMs) ? (pickupMs - arrivalMs) : Number.NEGATIVE_INFINITY;
+    const reachable = slackMs >= 0;
+    const actionable = !hasFullAssignment(fuvar);
+    const roadKm = getRoadDistanceKm(anchor.anchorDropAddress, fuvar?.felrakas?.cim || "", { prime: true });
+    const normalizedDistance = Number.isFinite(roadKm) ? roadKm : 450;
+    const waitHours = reachable ? (slackMs / (1000 * 60 * 60)) : 0;
+    const missingHours = reachable ? 0 : (Math.abs(slackMs) / (1000 * 60 * 60));
+    const gradePenalty = match?.grade === "warn" ? 24 : match?.grade === "bad" ? 80 : 0;
+    const mismatchPenalty = match?.suitable ? 0 : 260;
+    const assignedPenalty = actionable ? 0 : 120;
+
+    const score = normalizedDistance
+      + (waitHours * 6)
+      + (missingHours * 95)
+      + gradePenalty
+      + mismatchPenalty
+      + assignedPenalty;
+
+    orderMap.set(fuvar.id, {
+      score,
+      suitable: Boolean(match?.suitable),
+      reachable,
+      actionable,
+      pickupMs: Number.isFinite(pickupMs) ? pickupMs : Number.POSITIVE_INFINITY
+    });
+  });
+
+  return orderMap;
+}
+
+function compareByResourceRecommendation(leftFuvar, rightFuvar, orderMap) {
+  const left = orderMap?.get(leftFuvar.id) || null;
+  const right = orderMap?.get(rightFuvar.id) || null;
+
+  if (!left && !right) {
+    return 0;
+  }
+
+  if (!left) {
+    return 1;
+  }
+
+  if (!right) {
+    return -1;
+  }
+
+  if (left.suitable !== right.suitable) {
+    return left.suitable ? -1 : 1;
+  }
+
+  if (left.reachable !== right.reachable) {
+    return left.reachable ? -1 : 1;
+  }
+
+  if (left.actionable !== right.actionable) {
+    return left.actionable ? -1 : 1;
+  }
+
+  if (left.score !== right.score) {
+    return left.score - right.score;
+  }
+
+  return left.pickupMs - right.pickupMs;
 }
 
 function renderAssemblyDistanceTag(fuvar, assemblyDropoffAddress) {
@@ -2114,8 +2251,19 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     });
   });
 
+  const recommendationOrderMap = buildResourceRecommendationOrderMap(
+    options.recommendationResource,
+    rowModels.map((model) => model.fuvar)
+  );
+
+  if (recommendationOrderMap) {
+    rowModels.sort((left, right) => {
+      return compareByResourceRecommendation(left.fuvar, right.fuvar, recommendationOrderMap);
+    });
+  }
+
   const isAssemblyDistanceSort = currentFuvarSort.columnId === "assemblyDistance";
-  if (currentFuvarSort.columnId && (effectiveColumns.includes(currentFuvarSort.columnId) || isAssemblyDistanceSort)) {
+  if (!recommendationOrderMap && currentFuvarSort.columnId && (effectiveColumns.includes(currentFuvarSort.columnId) || isAssemblyDistanceSort)) {
     const sortMeta = isAssemblyDistanceSort ? { sortType: "number" } : getColumnMeta(currentFuvarSort.columnId);
 
     rowModels.sort((left, right) => {

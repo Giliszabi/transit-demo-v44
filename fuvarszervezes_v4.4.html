@@ -3309,12 +3309,28 @@ function updateFuvarCardsByCurrentFilter() {
     return;
   }
 
-  renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, {
-    visibleColumns: getActiveFuvarColumns(),
-    timelineReferenceDate: getTimelineFilterReferenceDate()
-  });
+  renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, getFuvarCardRenderOptions());
   enableFuvarDrag();
   restoreSelectedFuvarCard();
+}
+
+function getActiveRecommendationResourceScope() {
+  if (!selectedResourceFocus?.type || !selectedResourceFocus?.id) {
+    return null;
+  }
+
+  return {
+    type: selectedResourceFocus.type,
+    id: selectedResourceFocus.id
+  };
+}
+
+function getFuvarCardRenderOptions() {
+  return {
+    visibleColumns: getActiveFuvarColumns(),
+    timelineReferenceDate: getTimelineFilterReferenceDate(),
+    recommendationResource: getActiveRecommendationResourceScope()
+  };
 }
 
 function isSpedicioModeActive() {
@@ -3439,10 +3455,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // ALAPÉRTELMEZETT FUVARLISTA
   if (document.getElementById("fuvar-list")) {
-    renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, {
-      visibleColumns: getActiveFuvarColumns(),
-      timelineReferenceDate: getTimelineFilterReferenceDate()
-    });
+    renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, getFuvarCardRenderOptions());
     enableFuvarDrag();
   }
 
@@ -3561,6 +3574,7 @@ function onSelectResource(type, resource) {
     }
   }
 
+  updateFuvarCardsByCurrentFilter();
   updateNextFuvarRecommendation();
 }
 
@@ -3663,10 +3677,7 @@ function renderAssemblyOperationLog() {
     }
 
     if (document.getElementById("fuvar-list")) {
-      renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, {
-        visibleColumns: getActiveFuvarColumns(),
-        timelineReferenceDate: getTimelineFilterReferenceDate()
-      });
+      renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, getFuvarCardRenderOptions());
       enableFuvarDrag();
       restoreSelectedFuvarCard();
     }
