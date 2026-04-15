@@ -123,142 +123,53 @@ function generateRelayFuvarok(fuvarokList) {
 }
 
 export const FUVAROK = [
-  {
-    id: "F7",
-    megnevezes: "Demo export – Tatabánya → Milano",
-    viszonylat: "export",
-    felrakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-03-30T07:30" },
-    lerakas: { cim: "Milano, Hub Nord", ido: "2026-03-30T19:30" },
-    tavolsag_km: 920,
-    adr: false,
-    surgos: false
-  },
-  {
-    id: "F8",
-    megnevezes: "Demo import – Milano → Győr",
-    viszonylat: "import",
-    felrakas: { cim: "Milano, Hub Nord", ido: "2026-03-30T05:30" },
-    lerakas: { cim: "Magyarország, Győr, Átrakó terminál", ido: "2026-03-30T13:00" },
-    tavolsag_km: 930,
-    adr: false,
-    surgos: false
-  },
-  {
-    id: "F10",
-    megnevezes: "Teszt export – Környe → Lübeck",
-    viszonylat: "export",
-    felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-03-30T10:00" },
-    lerakas: { cim: "Lübeck, Germany, Hafen-Terminal", ido: "2026-03-30T23:00" },
-    tavolsag_km: 1080,
-    adr: false,
-    surgos: false
-  },
-  {
-    id: "F11",
-    megnevezes: "Teszt import – Hamburg → Környe",
-    viszonylat: "import",
-    felrakas: { cim: "Hamburg, Germany, Logistics Dock", ido: "2026-03-31T00:00" },
-    lerakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-03-31T05:30" },
-    tavolsag_km: 1060,
-    adr: false,
-    surgos: false
-  },
-  {
-    id: "F12",
-    megnevezes: "Belföldi teszt – Környe → Esztergom",
-    viszonylat: "belfold",
-    fixedDomestic: true,
-    felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-03-30T06:30" },
-    lerakas: { cim: "Magyarország, Esztergom, Ipari Park", ido: "2026-03-30T08:00" },
-    tavolsag_km: 46,
-    adr: false,
-    surgos: false
-  },
-  {
-    id: "F13",
-    megnevezes: "Demo export – Győr → Hamburg",
-    viszonylat: "export",
-    felrakas: { cim: "Magyarország, Győr, Átrakó terminál", ido: "2026-03-30T06:00" },
-    lerakas: { cim: "Hamburg, Germany, Logistics Dock", ido: "2026-03-30T17:30" },
-    tavolsag_km: 1110,
-    adr: false,
-    surgos: false
-  },
-  {
-    id: "F14",
-    megnevezes: "Demo import – Hamburg → Környe",
-    viszonylat: "import",
-    felrakas: { cim: "Hamburg, Germany, Logistics Dock", ido: "2026-03-30T19:00" },
-    lerakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-03-30T23:45" },
-    tavolsag_km: 1080,
-    adr: false,
-    surgos: true
-  },
-  {
-    id: "F15",
-    megnevezes: "Demo belföldi opció – Debrecen → Környe",
-    viszonylat: "belfold",
-    fixedDomestic: true,
-    felrakas: { cim: "Magyarország, Debrecen, Logisztikai Központ", ido: "2026-03-30T14:00" },
-    lerakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-03-30T19:00" },
-    tavolsag_km: 270,
-    adr: false,
-    surgos: false
-  },
-  {
-    id: "F16",
-    megnevezes: "Demo belföldi opció – Debrecen → Szeged",
-    viszonylat: "belfold",
-    fixedDomestic: true,
-    felrakas: { cim: "Magyarország, Debrecen, Logisztikai Központ", ido: "2026-03-30T14:20" },
-    lerakas: { cim: "Magyarország, Szeged, Ipari Park", ido: "2026-03-30T20:20" },
-    tavolsag_km: 240,
-    adr: false,
-    surgos: false
-  },
-  {
-    id: "F17",
-    megnevezes: "Demo import – Milano → Tatabánya",
-    viszonylat: "import",
-    felrakas: { cim: "Milano, Hub Nord", ido: "2026-03-30T09:00" },
-    lerakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-03-30T22:30" },
-    tavolsag_km: 930,
-    adr: false,
-    surgos: false
-  },
-  {
-    id: "F18",
-    megnevezes: "Demo belföldi – Tatabánya → Vác",
-    viszonylat: "belfold",
-    fixedDomestic: true,
-    felrakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-03-30T09:00" },
-    lerakas: { cim: "Magyarország, Vác, Ipari Park", ido: "2026-03-30T11:30" },
-    tavolsag_km: 85,
-    adr: false,
-    surgos: false
-  },
-  {
-    id: "F20",
-    megnevezes: "Demo belföldi – Győr → Budapest",
-    viszonylat: "belfold",
-    fixedDomestic: true,
-    felrakas: { cim: "Magyarország, Győr, Átrakó terminál", ido: "2026-03-30T13:45" },
-    lerakas: { cim: "Magyarország, Budapest, Logisztikai Park", ido: "2026-03-30T16:15" },
-    tavolsag_km: 125,
-    adr: false,
-    surgos: false
-  },
-  {
-    id: "F21",
-    megnevezes: "Demo belföldi – Környe → Környe",
-    viszonylat: "belfold",
-    fixedDomestic: true,
-    felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-03-30T16:30" },
-    lerakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-03-30T18:00" },
-    tavolsag_km: 22,
-    adr: false,
-    surgos: false
-  },
+  // ═══ EXPORT fuvarok (30 db) ═══
+  { id: "EX-001", megnevezes: "Export – Környe → München", viszonylat: "export", felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-13T06:00" }, lerakas: { cim: "München, Logistik Hub", ido: "2026-04-13T16:00" }, tavolsag_km: 540, adr: false, surgos: false },
+  { id: "EX-002", megnevezes: "Export – Tatabánya → Milano", viszonylat: "export", felrakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-04-13T07:30" }, lerakas: { cim: "Milano, Hub Nord", ido: "2026-04-13T19:30" }, tavolsag_km: 920, adr: false, surgos: false },
+  { id: "EX-003", megnevezes: "Export – Győr → Hamburg", viszonylat: "export", felrakas: { cim: "Magyarország, Győr, Átrakó terminál", ido: "2026-04-13T05:00" }, lerakas: { cim: "Hamburg, Logistics Dock", ido: "2026-04-13T17:30" }, tavolsag_km: 1110, adr: false, surgos: true },
+  { id: "EX-004", megnevezes: "Export – Környe → Wien", viszonylat: "export", felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-13T08:00" }, lerakas: { cim: "Wien, Freudenau Terminal", ido: "2026-04-13T12:00" }, tavolsag_km: 220, adr: false, surgos: false },
+  { id: "EX-005", megnevezes: "Export – Budapest → Praha", viszonylat: "export", felrakas: { cim: "Magyarország, Budapest, BILK Terminál", ido: "2026-04-13T10:00" }, lerakas: { cim: "Praha, CTPark", ido: "2026-04-13T18:00" }, tavolsag_km: 530, adr: true, surgos: false },
+  { id: "EX-006", megnevezes: "Export – Környe → Lübeck", viszonylat: "export", felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-13T14:00" }, lerakas: { cim: "Lübeck, Hafen-Terminal", ido: "2026-04-14T03:00" }, tavolsag_km: 1080, adr: false, surgos: false },
+  { id: "EX-007", megnevezes: "Export – Tatabánya → Wien", viszonylat: "export", felrakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-04-13T16:00" }, lerakas: { cim: "Wien, Freudenau Terminal", ido: "2026-04-13T20:00" }, tavolsag_km: 200, adr: false, surgos: false },
+  { id: "EX-008", megnevezes: "Export – Budapest → Milano (ADR)", viszonylat: "export", felrakas: { cim: "Magyarország, Budapest, BILK Terminál", ido: "2026-04-13T20:00" }, lerakas: { cim: "Milano, Hub Nord", ido: "2026-04-14T08:00" }, tavolsag_km: 960, adr: true, surgos: false },
+  { id: "EX-009", megnevezes: "Export – Környe → Rotterdam", viszonylat: "export", felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-13T22:00" }, lerakas: { cim: "Rotterdam, ECT Delta", ido: "2026-04-14T12:00" }, tavolsag_km: 1280, adr: false, surgos: true },
+  { id: "EX-010", megnevezes: "Export – Győr → Stuttgart", viszonylat: "export", felrakas: { cim: "Magyarország, Győr, Átrakó terminál", ido: "2026-04-14T04:00" }, lerakas: { cim: "Stuttgart, Logistikzentrum", ido: "2026-04-14T14:00" }, tavolsag_km: 680, adr: false, surgos: false },
+  { id: "EX-011", megnevezes: "Export – Tatabánya → München (ADR)", viszonylat: "export", felrakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-04-14T06:00" }, lerakas: { cim: "München, Logistik Hub", ido: "2026-04-14T14:30" }, tavolsag_km: 520, adr: true, surgos: false },
+  { id: "EX-012", megnevezes: "Export – Környe → Düsseldorf", viszonylat: "export", felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-14T08:00" }, lerakas: { cim: "Düsseldorf, LogPort", ido: "2026-04-14T20:00" }, tavolsag_km: 1010, adr: false, surgos: false },
+  { id: "EX-013", megnevezes: "Export – Budapest → Bratislava", viszonylat: "export", felrakas: { cim: "Magyarország, Budapest, BILK Terminál", ido: "2026-04-14T10:00" }, lerakas: { cim: "Bratislava, D1 Park", ido: "2026-04-14T13:00" }, tavolsag_km: 200, adr: false, surgos: false },
+  { id: "EX-014", megnevezes: "Export – Győr → Hamburg", viszonylat: "export", felrakas: { cim: "Magyarország, Győr, Átrakó terminál", ido: "2026-04-14T14:00" }, lerakas: { cim: "Hamburg, Logistics Dock", ido: "2026-04-15T02:00" }, tavolsag_km: 1110, adr: false, surgos: false },
+  { id: "EX-015", megnevezes: "Export – Környe → Milano", viszonylat: "export", felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-14T16:00" }, lerakas: { cim: "Milano, Hub Nord", ido: "2026-04-15T04:00" }, tavolsag_km: 920, adr: false, surgos: true },
+  { id: "EX-016", megnevezes: "Export – Tatabánya → Praha", viszonylat: "export", felrakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-04-14T18:00" }, lerakas: { cim: "Praha, CTPark", ido: "2026-04-15T01:00" }, tavolsag_km: 480, adr: false, surgos: false },
+  { id: "EX-017", megnevezes: "Export – Budapest → Wien", viszonylat: "export", felrakas: { cim: "Magyarország, Budapest, BILK Terminál", ido: "2026-04-14T20:00" }, lerakas: { cim: "Wien, Freudenau Terminal", ido: "2026-04-14T23:30" }, tavolsag_km: 240, adr: false, surgos: false },
+  { id: "EX-018", megnevezes: "Export – Környe → Hamburg (ADR)", viszonylat: "export", felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-15T02:00" }, lerakas: { cim: "Hamburg, Logistics Dock", ido: "2026-04-15T14:00" }, tavolsag_km: 1090, adr: true, surgos: false },
+  { id: "EX-019", megnevezes: "Export – Győr → München", viszonylat: "export", felrakas: { cim: "Magyarország, Győr, Átrakó terminál", ido: "2026-04-15T06:00" }, lerakas: { cim: "München, Logistik Hub", ido: "2026-04-15T12:00" }, tavolsag_km: 440, adr: false, surgos: false },
+  { id: "EX-020", megnevezes: "Export – Tatabánya → Rotterdam", viszonylat: "export", felrakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-04-15T08:00" }, lerakas: { cim: "Rotterdam, ECT Delta", ido: "2026-04-15T22:00" }, tavolsag_km: 1300, adr: false, surgos: true },
+
+  // ═══ IMPORT fuvarok (15 db) ═══
+  { id: "IM-001", megnevezes: "Import – Milano → Környe", viszonylat: "import", felrakas: { cim: "Milano, Hub Nord", ido: "2026-04-13T04:00" }, lerakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-13T16:00" }, tavolsag_km: 920, adr: false, surgos: false },
+  { id: "IM-002", megnevezes: "Import – Hamburg → Budapest", viszonylat: "import", felrakas: { cim: "Hamburg, Logistics Dock", ido: "2026-04-13T06:00" }, lerakas: { cim: "Magyarország, Budapest, BILK Terminál", ido: "2026-04-13T18:00" }, tavolsag_km: 1100, adr: false, surgos: false },
+  { id: "IM-003", megnevezes: "Import – Wien → Győr (ADR)", viszonylat: "import", felrakas: { cim: "Wien, Freudenau Terminal", ido: "2026-04-13T09:00" }, lerakas: { cim: "Magyarország, Győr, Átrakó terminál", ido: "2026-04-13T12:30" }, tavolsag_km: 120, adr: true, surgos: false },
+  { id: "IM-004", megnevezes: "Import – Rotterdam → Környe", viszonylat: "import", felrakas: { cim: "Rotterdam, ECT Delta", ido: "2026-04-13T12:00" }, lerakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-14T02:00" }, tavolsag_km: 1280, adr: false, surgos: true },
+  { id: "IM-005", megnevezes: "Import – München → Tatabánya", viszonylat: "import", felrakas: { cim: "München, Logistik Hub", ido: "2026-04-13T18:00" }, lerakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-04-14T02:30" }, tavolsag_km: 520, adr: false, surgos: false },
+  { id: "IM-006", megnevezes: "Import – Hamburg → Környe", viszonylat: "import", felrakas: { cim: "Hamburg, Logistics Dock", ido: "2026-04-13T22:00" }, lerakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-14T10:00" }, tavolsag_km: 1080, adr: false, surgos: false },
+  { id: "IM-007", megnevezes: "Import – Praha → Budapest", viszonylat: "import", felrakas: { cim: "Praha, CTPark", ido: "2026-04-14T05:00" }, lerakas: { cim: "Magyarország, Budapest, BILK Terminál", ido: "2026-04-14T12:00" }, tavolsag_km: 530, adr: false, surgos: false },
+  { id: "IM-008", megnevezes: "Import – Milano → Győr (ADR)", viszonylat: "import", felrakas: { cim: "Milano, Hub Nord", ido: "2026-04-14T08:00" }, lerakas: { cim: "Magyarország, Győr, Átrakó terminál", ido: "2026-04-14T18:30" }, tavolsag_km: 850, adr: true, surgos: false },
+  { id: "IM-009", megnevezes: "Import – Düsseldorf → Környe", viszonylat: "import", felrakas: { cim: "Düsseldorf, LogPort", ido: "2026-04-14T10:00" }, lerakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-14T22:00" }, tavolsag_km: 1010, adr: false, surgos: false },
+  { id: "IM-010", megnevezes: "Import – Wien → Tatabánya", viszonylat: "import", felrakas: { cim: "Wien, Freudenau Terminal", ido: "2026-04-14T16:00" }, lerakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-04-14T19:30" }, tavolsag_km: 200, adr: false, surgos: false },
+  { id: "IM-011", megnevezes: "Import – Hamburg → Budapest", viszonylat: "import", felrakas: { cim: "Hamburg, Logistics Dock", ido: "2026-04-14T20:00" }, lerakas: { cim: "Magyarország, Budapest, BILK Terminál", ido: "2026-04-15T08:00" }, tavolsag_km: 1100, adr: false, surgos: true },
+  { id: "IM-012", megnevezes: "Import – München → Környe (ADR)", viszonylat: "import", felrakas: { cim: "München, Logistik Hub", ido: "2026-04-15T04:00" }, lerakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-15T12:00" }, tavolsag_km: 540, adr: true, surgos: false },
+  { id: "IM-013", megnevezes: "Import – Rotterdam → Győr", viszonylat: "import", felrakas: { cim: "Rotterdam, ECT Delta", ido: "2026-04-15T06:00" }, lerakas: { cim: "Magyarország, Győr, Átrakó terminál", ido: "2026-04-15T20:00" }, tavolsag_km: 1250, adr: false, surgos: false },
+  { id: "IM-014", megnevezes: "Import – Bratislava → Budapest", viszonylat: "import", felrakas: { cim: "Bratislava, D1 Park", ido: "2026-04-15T08:00" }, lerakas: { cim: "Magyarország, Budapest, BILK Terminál", ido: "2026-04-15T11:00" }, tavolsag_km: 200, adr: false, surgos: false },
+  { id: "IM-015", megnevezes: "Import – Stuttgart → Tatabánya", viszonylat: "import", felrakas: { cim: "Stuttgart, Logistikzentrum", ido: "2026-04-15T10:00" }, lerakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-04-15T20:00" }, tavolsag_km: 680, adr: false, surgos: false },
+
+  // ═══ BELFÖLDI fuvarok (5 db) ═══
+  { id: "BF-001", megnevezes: "Belföldi – Környe → Esztergom", viszonylat: "belfold", fixedDomestic: true, felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-13T06:30" }, lerakas: { cim: "Magyarország, Esztergom, Ipari Park", ido: "2026-04-13T08:00" }, tavolsag_km: 46, adr: false, surgos: false },
+  { id: "BF-002", megnevezes: "Belföldi – Debrecen → Budapest", viszonylat: "belfold", fixedDomestic: true, felrakas: { cim: "Magyarország, Debrecen, Logisztikai Központ", ido: "2026-04-14T08:00" }, lerakas: { cim: "Magyarország, Budapest, BILK Terminál", ido: "2026-04-14T12:00" }, tavolsag_km: 230, adr: false, surgos: false },
+  { id: "BF-003", megnevezes: "Belföldi – Győr → Környe", viszonylat: "belfold", fixedDomestic: true, felrakas: { cim: "Magyarország, Győr, Átrakó terminál", ido: "2026-04-13T14:00" }, lerakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-13T15:30" }, tavolsag_km: 80, adr: false, surgos: false },
+  { id: "BF-004", megnevezes: "Belföldi – Budapest → Tatabánya (ADR)", viszonylat: "belfold", fixedDomestic: true, felrakas: { cim: "Magyarország, Budapest, BILK Terminál", ido: "2026-04-14T15:00" }, lerakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-04-14T17:00" }, tavolsag_km: 75, adr: true, surgos: false },
+  { id: "BF-005", megnevezes: "Belföldi – Tatabánya → Győr", viszonylat: "belfold", fixedDomestic: true, felrakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-04-15T09:00" }, lerakas: { cim: "Magyarország, Győr, Átrakó terminál", ido: "2026-04-15T11:00" }, tavolsag_km: 95, adr: false, surgos: false },
+
+  // ═══ DEMO SCENARIO fuvarok ═══
   {
     id: DEMO_NEARBY_FREE_PAIR_SCENARIO.cargoFuvarId,
     megnevezes: "Demo rakott vontató – Budapest → Győr",

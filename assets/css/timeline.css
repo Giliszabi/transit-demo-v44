@@ -270,6 +270,7 @@
 .timeline-resource.match-bad {
   border-color: #ff3b30;
   box-shadow: inset 0 0 0 1px rgba(255, 59, 48, 0.2);
+  opacity: 0.4;
 }
 
 .timeline-resource.match-warn {
@@ -350,6 +351,7 @@
   position: relative;
   background: #121316;
   min-width: max-content;
+  overflow: hidden;
 }
 
 /* Blokkok */
