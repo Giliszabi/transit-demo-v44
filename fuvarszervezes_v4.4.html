@@ -454,6 +454,70 @@
       gap: 3px;
     }
 
+    .gear-settings-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .gear-settings-wrapper > summary {
+      list-style: none;
+      cursor: pointer;
+      user-select: none;
+      border: 1px solid rgba(79, 195, 247, 0.4);
+      background: rgba(79, 195, 247, 0.1);
+      color: #dff3ff;
+      border-radius: 9px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .gear-settings-wrapper > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .gear-settings-wrapper[open] > summary {
+      border-color: rgba(79, 195, 247, 0.62);
+      background: rgba(79, 195, 247, 0.2);
+    }
+
+    .gear-settings-panel {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      z-index: 40;
+      width: min(940px, 92vw);
+      border: 1px solid #2e2f33;
+      border-radius: 12px;
+      background: #17181c;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+      padding: 10px;
+      max-height: 72vh;
+      overflow: auto;
+    }
+
+    .gear-settings-panel > div {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .gear-settings-panel .dispatch-profile-panel {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .gear-settings-separator {
+      width: 100%;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.12);
+      margin: 8px 0;
+    }
+
     body.popup-panel-mode header {
       display: none;
     }
@@ -483,33 +547,40 @@
     Sofőr • Vontató • Pótkocsi – idő + hely + relevancia illesztés
   </p>
   <div id="layout-profile-bar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
-    <label style="display:inline-flex;align-items:center;gap:6px;">
-      <span style="font-size:12px;opacity:0.8;">Felhasználó</span>
-      <select id="layout-user-select" class="btn" style="height:32px;padding:6px 12px;"></select>
-    </label>
-    <button id="layout-user-add" type="button" class="btn" style="height:32px;">+ Felhasználó</button>
-    <label style="display:inline-flex;align-items:center;gap:6px;">
-      <span style="font-size:12px;opacity:0.8;">Nézet</span>
-      <select id="layout-view-select" class="btn" style="height:32px;padding:6px 12px;"></select>
-    </label>
-    <button id="layout-view-new" type="button" class="btn" style="height:32px;">Nézet mentése újként</button>
-    <button id="layout-view-save" type="button" class="btn" style="height:32px;">Aktuális mentése</button>
-    <button id="layout-view-rename" type="button" class="btn" style="height:32px;">Átnevezés</button>
-    <button id="layout-view-delete" type="button" class="btn" style="height:32px;">Törlés</button>
-    <button id="layout-view-reset" type="button" class="btn" style="height:32px;border-color:rgba(255,183,77,0.5);background:rgba(255,183,77,0.1);color:#ffe0a0;">Alapértelmezett nézet</button>
-    <details id="layout-columns-details" style="position:relative;">
-      <summary class="btn" style="height:32px;display:inline-flex;align-items:center;list-style:none;cursor:pointer;font-size:14px;">Kártya oszlopok</summary>
-      <div style="position:absolute;z-index:30;min-width:240px;max-width:320px;max-height:320px;overflow:auto;padding:10px;border:1px solid #2e2f33;border-radius:10px;background:#17181c;box-shadow:0 8px 24px rgba(0,0,0,0.35);">
-        <div style="display:flex;gap:6px;margin-bottom:8px;">
-          <button id="layout-columns-all" type="button" class="btn" style="height:28px;font-size:12px;">Összes</button>
-          <button id="layout-columns-default" type="button" class="btn" style="height:28px;font-size:12px;">Alap</button>
+    <details class="gear-settings-wrapper">
+      <summary title="Beállítások">⚙ Beállítások</summary>
+      <div class="gear-settings-panel">
+        <div id="layout-settings-panel-body">
+          <label style="display:inline-flex;align-items:center;gap:6px;">
+            <span style="font-size:12px;opacity:0.8;">Felhasználó</span>
+            <select id="layout-user-select" class="btn" style="height:32px;padding:6px 12px;"></select>
+          </label>
+          <button id="layout-user-add" type="button" class="btn" style="height:32px;">+ Felhasználó</button>
+          <label style="display:inline-flex;align-items:center;gap:6px;">
+            <span style="font-size:12px;opacity:0.8;">Nézet</span>
+            <select id="layout-view-select" class="btn" style="height:32px;padding:6px 12px;"></select>
+          </label>
+          <button id="layout-view-new" type="button" class="btn" style="height:32px;">Nézet mentése újként</button>
+          <button id="layout-view-save" type="button" class="btn" style="height:32px;">Aktuális mentése</button>
+          <button id="layout-view-rename" type="button" class="btn" style="height:32px;">Átnevezés</button>
+          <button id="layout-view-delete" type="button" class="btn" style="height:32px;">Törlés</button>
+          <button id="layout-view-reset" type="button" class="btn" style="height:32px;border-color:rgba(255,183,77,0.5);background:rgba(255,183,77,0.1);color:#ffe0a0;">Alapértelmezett nézet</button>
+          <details id="layout-columns-details" style="position:relative;">
+            <summary class="btn" style="height:32px;display:inline-flex;align-items:center;list-style:none;cursor:pointer;font-size:14px;">Kártya oszlopok</summary>
+            <div style="position:absolute;z-index:30;min-width:240px;max-width:320px;max-height:320px;overflow:auto;padding:10px;border:1px solid #2e2f33;border-radius:10px;background:#17181c;box-shadow:0 8px 24px rgba(0,0,0,0.35);">
+              <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <button id="layout-columns-all" type="button" class="btn" style="height:28px;font-size:12px;">Összes</button>
+                <button id="layout-columns-default" type="button" class="btn" style="height:28px;font-size:12px;">Alap</button>
+              </div>
+              <div id="layout-columns-list" style="display:grid;gap:6px;"></div>
+            </div>
+          </details>
+          <button id="layout-view-export" type="button" class="btn" style="height:32px;min-width:32px;padding:0 10px;" title="Nézetek exportja fájlba" aria-label="Nézetek exportja fájlba">↓</button>
+          <button id="layout-view-import" type="button" class="btn" style="height:32px;min-width:32px;padding:0 10px;" title="Nézetek importja fájlból" aria-label="Nézetek importja fájlból">↑</button>
+          <input id="layout-view-import-input" type="file" accept="application/json" style="display:none;" />
         </div>
-        <div id="layout-columns-list" style="display:grid;gap:6px;"></div>
       </div>
     </details>
-    <button id="layout-view-export" type="button" class="btn" style="height:32px;min-width:32px;padding:0 10px;" title="Nézetek exportja fájlba" aria-label="Nézetek exportja fájlba">↓</button>
-    <button id="layout-view-import" type="button" class="btn" style="height:32px;min-width:32px;padding:0 10px;" title="Nézetek importja fájlból" aria-label="Nézetek importja fájlból">↑</button>
-    <input id="layout-view-import-input" type="file" accept="application/json" style="display:none;" />
   </div>
 </header>
 
@@ -2841,6 +2912,29 @@ function buildDispatchSummaryHtml() {
   `;
 }
 
+function mountDispatchProfileIntoSettingsPanel() {
+  const profilePanel = document.getElementById("dispatch-profile-panel");
+  const settingsPanelBody = document.getElementById("layout-settings-panel-body");
+
+  if (!profilePanel || !settingsPanelBody) {
+    return;
+  }
+
+  if (profilePanel.parentElement === settingsPanelBody) {
+    return;
+  }
+
+  let separator = document.getElementById("layout-settings-profile-separator");
+  if (!separator) {
+    separator = document.createElement("div");
+    separator.id = "layout-settings-profile-separator";
+    separator.className = "gear-settings-separator";
+    settingsPanelBody.appendChild(separator);
+  }
+
+  settingsPanelBody.appendChild(profilePanel);
+}
+
 function renderDispatchProfilePanel() {
   const host = document.getElementById("dispatch-profile-panel");
   if (!host) {
@@ -2990,6 +3084,8 @@ function renderDispatchProfilePanel() {
     input.addEventListener("change", applyValue);
     input.addEventListener("blur", applyValue);
   });
+
+  mountDispatchProfileIntoSettingsPanel();
 }
 
 function updateAssemblyFocusIndicator() {
