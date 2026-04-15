@@ -111,6 +111,18 @@
   opacity: 0.95;
 }
 
+.assembly-filter-active-badge {
+  margin-left: 8px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 183, 77, 0.56);
+  background: rgba(255, 183, 77, 0.16);
+  color: #ffe8bf;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .timeline-timescale {
   position: sticky !important;
   top: var(--timeline-nav-height);

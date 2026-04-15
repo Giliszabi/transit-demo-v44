@@ -1814,12 +1814,32 @@ function renderAssemblyPager(container, containerId, soforok, vontatok, potkocsi
     renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocsik);
   });
 
+  const activeFilters = [];
+  if (assemblyDropoffVehiclesFilterActive) {
+    activeFilters.push(`Lerakó autók (${dropoffView.totalMatched})`);
+  }
+  if (assemblyViewMode === "list") {
+    activeFilters.push("Nézet: Lista");
+  }
+  if (assemblyOnlyJaratFilterActive) {
+    activeFilters.push("Csak járatok");
+  }
+
+  const activeBadge = document.createElement("div");
+  activeBadge.className = "assembly-filter-active-badge";
+  if (activeFilters.length === 0) {
+    activeBadge.textContent = "Aktív szűrő: nincs";
+  } else {
+    activeBadge.textContent = `Aktív szűrő: ${activeFilters.join(" • ")}`;
+  }
+
   nav.appendChild(prevBtn);
   nav.appendChild(label);
   nav.appendChild(nextBtn);
   nav.appendChild(dropoffBtn);
   nav.appendChild(viewModeBtn);
   nav.appendChild(jaratOnlyBtn);
+  nav.appendChild(activeBadge);
   container.appendChild(nav);
 }
 
