@@ -386,17 +386,96 @@ function isAssemblyFuvarBlock(block) {
   return block?.type === "fuvar";
 }
 
-function buildAssemblyJaratSegments(fuvarBlocks) {
+function getAssemblyEmptyReturnArrivalEvents(assembly) {
+  if (!assembly?.sofor || !assembly?.vontato || assembly?.potkocsi) {
+    return [];
+  }
+
+  return (assembly.vontato?.timeline || [])
+    .filter((block) => {
+      if (!block || block.type !== "rezsifutas") {
+        return false;
+      }
+
+      if (!block.autoReturnToHub) {
+        return false;
+      }
+
+      const returnAddress = block?.toAddress || block?.lerakasCim || "";
+      if (!isAssemblyKornyeAddress(returnAddress)) {
+        return false;
+      }
+
+      // Üres visszaérkezésnek tekintjük, ha nincs hozzárendelt következő fuvar.
+      return !block?.targetFuvarId;
+    })
+    .map((block) => {
+      return {
+        ...block,
+        __eventTime: new Date(block.end).getTime()
+      };
+    })
+    .filter((block) => Number.isFinite(block.__eventTime))
+    .sort((left, right) => left.__eventTime - right.__eventTime);
+}
+
+function buildAssemblyJaratSegments(fuvarBlocks, assembly = null) {
   const ordered = (fuvarBlocks || [])
     .filter((block) => isAssemblyFuvarBlock(block))
     .slice()
     .sort((left, right) => new Date(left.start) - new Date(right.start));
+  const emptyReturnEvents = getAssemblyEmptyReturnArrivalEvents(assembly);
+
+  const timelineEvents = [
+    ...ordered.map((block) => {
+      return {
+        kind: "fuvar",
+        time: new Date(block.start).getTime(),
+        block
+      };
+    }),
+    ...emptyReturnEvents.map((block) => {
+      return {
+        kind: "emptyReturn",
+        time: block.__eventTime,
+        block
+      };
+    })
+  ]
+    .filter((eventItem) => Number.isFinite(eventItem.time))
+    .sort((left, right) => {
+      if (left.time !== right.time) {
+        return left.time - right.time;
+      }
+
+      if (left.kind === right.kind) {
+        return 0;
+      }
+
+      // Azonos időpontnál először zárjon az üres visszaérkezés, majd induljon új fuvar.
+      return left.kind === "emptyReturn" ? -1 : 1;
+    });
 
   const segments = [];
   let activeSegment = null;
   let jaratCounter = 0;
 
-  ordered.forEach((block) => {
+  timelineEvents.forEach((eventItem) => {
+    if (eventItem.kind === "emptyReturn") {
+      if (!activeSegment) {
+        return;
+      }
+
+      activeSegment.status = "lezart";
+      activeSegment.end = eventItem.block.end;
+      activeSegment.closedBy = "ures-visszaerkezes";
+      activeSegment.closingEvent = eventItem.block;
+      segments.push(activeSegment);
+      activeSegment = null;
+      return;
+    }
+
+    const block = eventItem.block;
     const pickupAddress = getAssemblyBlockPickupAddress(block);
     const dropoffAddress = getAssemblyBlockDropoffAddress(block);
 
@@ -416,6 +495,7 @@ function buildAssemblyJaratSegments(fuvarBlocks) {
 
       if (isAssemblyKornyeAddress(dropoffAddress)) {
         activeSegment.status = "lezart";
+        activeSegment.closedBy = "kornye-lerakas";
         segments.push(activeSegment);
         activeSegment = null;
       }
@@ -428,6 +508,7 @@ function buildAssemblyJaratSegments(fuvarBlocks) {
 
     if (isAssemblyKornyeAddress(dropoffAddress)) {
       activeSegment.status = "lezart";
+      activeSegment.closedBy = "kornye-lerakas";
       segments.push(activeSegment);
       activeSegment = null;
     }
@@ -440,10 +521,10 @@ function buildAssemblyJaratSegments(fuvarBlocks) {
   return segments;
 }
 
-function buildAssemblyCompletedJaratInfo(fuvarBlocks) {
+function buildAssemblyCompletedJaratInfo(fuvarBlocks, assembly = null) {
   const byBlock = new Map();
   const summaries = [];
-  const segments = buildAssemblyJaratSegments(fuvarBlocks);
+  const segments = buildAssemblyJaratSegments(fuvarBlocks, assembly);
 
   segments.forEach((segment) => {
     if (segment.status !== "lezart") {
@@ -459,7 +540,8 @@ function buildAssemblyCompletedJaratInfo(fuvarBlocks) {
       blockCount: segment.blocks.length,
       end: segment.end,
       start: segment.start,
-      status: segment.status
+      status: segment.status,
+      closedBy: segment.closedBy || "kornye-lerakas"
     });
   });
 
@@ -1697,7 +1779,7 @@ function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik, lifec
 
   let visibleBlocks = 0;
   const focusedImportFuvar = getFocusedImportFuvar();
-  const completedJaratInfo = buildAssemblyCompletedJaratInfo(assembly.fuvarBlocks || []);
+  const completedJaratInfo = buildAssemblyCompletedJaratInfo(assembly.fuvarBlocks || [], assembly);
 
   assembly.fuvarBlocks.forEach((block) => {
     const visibleBlock = clipBlockToWindow(block);
@@ -1904,7 +1986,7 @@ function renderAssemblyPager(container, containerId, soforok, vontatok, potkocsi
 }
 
 function getAssemblyJaratSnapshot(assembly) {
-  const completedJaratInfo = buildAssemblyCompletedJaratInfo(assembly?.fuvarBlocks || []);
+  const completedJaratInfo = buildAssemblyCompletedJaratInfo(assembly?.fuvarBlocks || [], assembly);
   const closedSummaries = completedJaratInfo.summaries.filter((summary) => summary.status === "lezart");
   const jaratIds = closedSummaries.map((summary) => summary.jaratId);
 
@@ -2390,7 +2472,7 @@ function renderAssemblyJaratTimelineView(parent, assemblies, lifecycleFuvarIds) 
   const allRows = [];
 
   assemblies.forEach((assembly) => {
-    const segments = buildAssemblyJaratSegments(assembly.fuvarBlocks || []);
+    const segments = buildAssemblyJaratSegments(assembly.fuvarBlocks || [], assembly);
     segments.forEach((segment) => {
       if (assemblyOnlyJaratFilterActive && segment.status !== "lezart") {
         return;
