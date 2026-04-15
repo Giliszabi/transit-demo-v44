@@ -518,6 +518,130 @@
       margin: 8px 0;
     }
 
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .app-sidebar {
+      width: 6px;
+      min-width: 6px;
+      background: #13141a;
+      border-right: 1px solid #2a2b30;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      gap: 0;
+      z-index: 100;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+      transition: width 0.15s ease;
+      cursor: pointer;
+    }
+
+    .app-sidebar.open {
+      width: 200px;
+      cursor: default;
+      padding: 12px 0;
+      gap: 4px;
+    }
+
+    .sidebar-toggle {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: none;
+      color: #8ea0b3;
+      cursor: pointer;
+      font-size: 18px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 8px;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+
+    .app-sidebar.open .sidebar-toggle {
+      display: flex;
+    }
+
+    .sidebar-toggle:hover {
+      background: rgba(79, 195, 247, 0.1);
+      color: #dfe8ef;
+    }
+
+    .sidebar-logo {
+      font-weight: 800;
+      font-size: 14px;
+      margin-bottom: 20px;
+      color: #4fc3f7;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+
+    .app-sidebar:not(.open) .sidebar-logo {
+      display: none;
+      opacity: 0;
+      width: 0;
+      overflow: hidden;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: calc(100% - 8px);
+      padding: 10px 14px;
+      margin: 0 4px;
+      color: #8ea0b3;
+      cursor: pointer;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .sidebar-item:hover {
+      background: rgba(79, 195, 247, 0.08);
+      color: #dfe8ef;
+    }
+
+    .sidebar-item.active {
+      background: rgba(79, 195, 247, 0.14);
+      color: #4fc3f7;
+      font-weight: 600;
+    }
+
+    .sidebar-abbr {
+      display: none;
+    }
+
+    .sidebar-label {
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .app-sidebar:not(.open) .sidebar-item {
+      display: none;
+    }
+
+    .app-sidebar:not(.open):hover {
+      background: #1a1b22;
+      width: 8px;
+    }
+
+    .app-main {
+      flex: 1;
+      min-width: 0;
+      overflow-x: hidden;
+    }
+
     body.popup-panel-mode header {
       display: none;
     }
@@ -540,6 +664,21 @@
 </head>
 
 <body>
+
+<div class="app-layout">
+<nav class="app-sidebar" id="app-sidebar">
+  <button class="sidebar-toggle" id="sidebar-toggle" title="Menü">☰</button>
+  <div class="sidebar-logo">TransIT</div>
+  <a class="sidebar-item active" data-page="fuvarszervezes" href="fuvarszervezes_v4.4.html" title="Fuvarszervezés">
+    <span class="sidebar-abbr">F</span>
+    <span class="sidebar-label">Fuvarszervezés</span>
+  </a>
+  <a class="sidebar-item" data-page="menetiranyitas" href="menetiranyitas.html" title="Menetirányítás">
+    <span class="sidebar-abbr">M</span>
+    <span class="sidebar-label">Menetirányítás</span>
+  </a>
+</nav>
+<main class="app-main" id="page-fuvarszervezes">
 
 <header class="panel">
   <div class="panel-title">🚛 Fuvarszervezés v4.4 (Advanced)</div>
@@ -723,6 +862,9 @@
     <div id="dispatch-profile-panel" class="dispatch-profile-panel"></div>
   </section>
 
+</div>
+
+</main>
 </div>
 
 <!-- ====================================== -->
@@ -3244,6 +3386,7 @@ function focusRecommendedFuvarChainById(fuvarId) {
    OLDAL BETÖLTÉSE
 ------------------------- */
 window.addEventListener("DOMContentLoaded", async () => {
+  initSidebarNavigation();
   dispatchProfileState = loadDispatchProfileState();
   syncDispatchProfileToModules();
 
@@ -3620,6 +3763,28 @@ function onSelectFuvar(results, options = { broadcast: true }) {
 ========================================================== */
 function clearFuvarSelection() {
   applyFuvarSelectionById(null, { broadcast: true });
+}
+
+function initSidebarNavigation() {
+  const sidebar = document.getElementById("app-sidebar");
+  const sidebarToggle = document.getElementById("sidebar-toggle");
+
+  if (!sidebar) {
+    return;
+  }
+
+  sidebar.addEventListener("click", () => {
+    if (!sidebar.classList.contains("open")) {
+      sidebar.classList.add("open");
+    }
+  });
+
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener("click", (event) => {
+      event.stopPropagation();
+      sidebar.classList.toggle("open");
+    });
+  }
 }
 
 </script>
