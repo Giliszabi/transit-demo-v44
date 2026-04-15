@@ -38,7 +38,7 @@ export function createScenarioTimelineBlock({
   };
 }
 
-const scenarioBase = roundUpToQuarterHour(new Date());
+const scenarioBase = roundUpToQuarterHour(new Date(2026, 3, 13, 11, 0));
 
 export const DEMO_NEARBY_FREE_PAIR_SCENARIO = {
   cargoFuvarId: "F22",
