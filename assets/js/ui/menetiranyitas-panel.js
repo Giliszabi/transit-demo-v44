@@ -578,11 +578,12 @@ function buildDriverProfiles(now) {
   return SOFOROK.map((driver, index) => {
     const eligibility = eligibilityIndex.get(driver.id) || null;
     driver.dispatchEligibility = eligibility;
-    return buildDriverProfile(driver, index, now, eligibility);
+    const exportAssignments = resolveExportAssignmentsForDriver(driver);
+    return buildDriverProfile(driver, index, now, eligibility, exportAssignments);
   });
 }
 
-function buildDriverProfile(driver, index, now, eligibility) {
+function buildDriverProfile(driver, index, now, eligibility, exportAssignments = []) {
   const currentBlock = findCurrentBlock(driver.timeline || [], now);
   const seedBase = makeSeed(`${driver.id}|${driver.nev}`);
   const timeBucket = Math.floor(now.getTime() / (15 * 60 * 1000));
@@ -599,10 +600,13 @@ function buildDriverProfile(driver, index, now, eligibility) {
   const recommendedStops = buildRestRecommendations(driver, metrics, seed);
   const compatibility = evaluateFuvarCompatibility(activeFuvar, metrics, eta, risk, seed, now);
   const strip = buildTachoStrip(statusKey, metrics, risk, now);
+  const primaryExportAssignment = exportAssignments[0] || null;
 
   return {
     driver,
     eligibility,
+    exportAssignments,
+    primaryExportAssignment,
     status: {
       key: statusKey,
       ...STATUS_META[statusKey]
@@ -617,6 +621,25 @@ function buildDriverProfile(driver, index, now, eligibility) {
     compatibility,
     strip
   };
+}
+
+function resolveExportAssignmentsForDriver(driver) {
+  const assignments = appState.generatedPlanning?.exportAssignments;
+  if (!Array.isArray(assignments) || !assignments.length || !driver) {
+    return [];
+  }
+
+  const driverKey = normalizePlanningKey(driver.nev || driver.name || driver.id);
+  const vehiclePlateKey = normalizePlanningKey(driver.dedicatedVehiclePlate || "");
+  const linkedVehiclePlateKey = normalizePlanningKey(resolveRigForDriver(driver)?.vontato?.rendszam || "");
+
+  return assignments.filter((assignment) => {
+    const assignmentVehicleKey = normalizePlanningKey(assignment.vehiclePlate || "");
+    const driverMatch = (assignment.driverNames || []).some((name) => normalizePlanningKey(name) === driverKey);
+    const vehicleMatch = Boolean(assignmentVehicleKey)
+      && (assignmentVehicleKey === vehiclePlateKey || assignmentVehicleKey === linkedVehiclePlateKey);
+    return driverMatch || vehicleMatch;
+  });
 }
 
 function findCurrentBlock(timeline, now) {
@@ -1306,16 +1329,22 @@ function renderDriverStateList(profiles, selectedDriverId) {
 
   container.innerHTML = ordered
     .map((profile) => {
+      const eligibility = profile.eligibility;
       const selectedClass = profile.driver.id === selectedDriverId ? "selected" : "";
       const rigLabel = profile.rig.vontato
         ? `${profile.rig.vontato.rendszam} + ${profile.rig.potkocsi?.rendszam || "-"}`
         : "nincs kapcsolt rig";
+      const primaryExportAssignment = profile.primaryExportAssignment;
       const eligibilityBadge = eligibility?.canStart
         ? `Indítható • ${eligibility.compatibleJobIds.length} fuvar`
         : `Blokkolt • ${(eligibility?.reasons || []).slice(0, 1).map((item) => item.message).join(" ") || "nincs kompatibilis fuvar"}`;
       const firstStartLabel = eligibility?.firstPossibleStartAt
         ? formatDateTimeCompact(eligibility.firstPossibleStartAt)
         : "-";
+      const exportSummary = primaryExportAssignment
+        ? `${primaryExportAssignment.vehiclePlate || "-"} • ${primaryExportAssignment.workPatternCode || "-"}`
+        : "nincs Export kiosztás";
+      const exportNote = primaryExportAssignment?.plannerNote || primaryExportAssignment?.dispatchNote || "nincs megjegyzés";
 
       return `
         <article
@@ -1342,6 +1371,12 @@ function renderDriverStateList(profiles, selectedDriverId) {
           </div>
           <div class="driver-state-meta">
             🚦 Első lehetséges indulás: ${escapeHtml(firstStartLabel)}
+          </div>
+          <div class="driver-state-meta export-assignment-meta">
+            📤 Export: ${escapeHtml(exportSummary)}
+          </div>
+          <div class="driver-state-meta export-assignment-note">
+            📝 ${escapeHtml(exportNote)}
           </div>
           <div class="driver-state-meta">
             🚛 Rig: ${escapeHtml(rigLabel)}
@@ -1558,7 +1593,38 @@ function renderInsightsPanel(profile) {
     ? `+${formatDuration(profile.eta.etaCorrectionMin)} late risk`
     : "on-time";
 
+  const exportAssignmentList = (profile.exportAssignments || [])
+    .map((assignment) => {
+      const note = assignment.plannerNote || assignment.dispatchNote || "nincs megjegyzés";
+      return `
+        <li>
+          <strong>${escapeHtml(assignment.vehiclePlate || "-")}</strong>
+          <span>Munkarend: ${escapeHtml(assignment.workPatternCode || "-")}</span>
+          <span>${escapeHtml(note)}</span>
+        </li>
+      `;
+    })
+    .join("");
+
+  const exportAssignmentBlock = profile.exportAssignments?.length
+    ? `
+      <article class="insight-card">
+        <h4>Export napi kiosztás a sofőrhöz</h4>
+        <p class="insight-subline">Az Excel EXPORT lap betöltött, sofőrhöz rendelt sorai.</p>
+        <ul class="insight-list export-assignment-list">
+          ${exportAssignmentList}
+        </ul>
+      </article>
+    `
+    : `
+      <article class="insight-card">
+        <h4>Export napi kiosztás a sofőrhöz</h4>
+        <div class="empty-message">Ehhez a sofőrhöz nincs betöltött Export sor az effektív napon.</div>
+      </article>
+    `;
+
   container.innerHTML = `
+    ${exportAssignmentBlock}
     <article class="insight-card">
       <h4>3) AI predikciós események</h4>
       <ul class="insight-list prediction-list">
@@ -1946,6 +2012,15 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function normalizePlanningKey(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 function resolveSeverityByRemaining(remainingMin, redThreshold, yellowThreshold) {
