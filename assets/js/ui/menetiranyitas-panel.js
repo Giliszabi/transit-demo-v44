@@ -228,11 +228,17 @@ async function initMenetiranyitasPanel() {
   });
 
   const driverList = document.getElementById("driver-state-list");
+  const exportDriverList = document.getElementById("export-driver-list");
   const alertsList = document.getElementById("monitor-alerts-list");
 
   if (driverList) {
     driverList.addEventListener("click", onDriverListClick);
     driverList.addEventListener("keydown", onDriverListKeydown);
+  }
+
+  if (exportDriverList) {
+    exportDriverList.addEventListener("click", onDriverListClick);
+    exportDriverList.addEventListener("keydown", onDriverListKeydown);
   }
 
   if (alertsList) {
@@ -478,6 +484,7 @@ function refreshDashboard(options = {}) {
 
   renderKpiStrip(profiles);
   renderPlanningContextStrip();
+  renderExportDriverList(profiles, appState.selectedDriverId);
   renderDriverStateList(profiles, appState.selectedDriverId);
   renderMainPanel(selectedProfile, now);
   renderInsightsPanel(selectedProfile);
@@ -1397,6 +1404,50 @@ function renderDriverStateList(profiles, selectedDriverId) {
         minute: "2-digit"
       });
     }
+    })
+    .join("");
+}
+
+function renderExportDriverList(profiles, selectedDriverId) {
+  const container = document.getElementById("export-driver-list");
+  if (!container) {
+    return;
+  }
+
+  const exportProfiles = profiles
+    .filter((profile) => profile.exportAssignments?.length)
+    .sort((left, right) => right.exportAssignments.length - left.exportAssignments.length);
+
+  if (!exportProfiles.length) {
+    container.innerHTML = '<div class="empty-message">Az effektív Export napon nincs sofőrhöz köthető kiosztási sor.</div>';
+    return;
+  }
+
+  container.innerHTML = exportProfiles
+    .map((profile) => {
+      const selectedClass = profile.driver.id === selectedDriverId ? "selected" : "";
+      const assignments = profile.exportAssignments || [];
+      const primaryAssignment = assignments[0] || null;
+      const note = primaryAssignment?.plannerNote || primaryAssignment?.dispatchNote || "nincs megjegyzés";
+
+      return `
+        <article
+          class="export-driver-card ${selectedClass}"
+          data-driver-id="${escapeHtml(profile.driver.id)}"
+          role="button"
+          tabindex="0"
+          aria-label="Export sofőr kiválasztása: ${escapeHtml(profile.driver.nev)}"
+        >
+          <div class="export-driver-top">
+            <strong>${escapeHtml(profile.driver.nev)}</strong>
+            <span class="export-driver-count">${assignments.length} sor</span>
+          </div>
+          <div class="export-driver-route">
+            🚛 ${escapeHtml(primaryAssignment?.vehiclePlate || "-")} • ${escapeHtml(primaryAssignment?.workPatternCode || "-")}
+          </div>
+          <div class="export-driver-note">📝 ${escapeHtml(note)}</div>
+        </article>
+      `;
     })
     .join("");
 }

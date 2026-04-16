@@ -374,6 +374,65 @@ body.monitor-page::before {
   padding-right: 3px;
 }
 
+.export-driver-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.export-driver-card {
+  border: 1px solid rgba(255, 189, 89, 0.28);
+  border-radius: 10px;
+  padding: 10px;
+  background: linear-gradient(165deg, rgba(49, 38, 18, 0.55), rgba(24, 32, 45, 0.95));
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.export-driver-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 189, 89, 0.66);
+}
+
+.export-driver-card.selected {
+  box-shadow: 0 0 0 2px rgba(255, 189, 89, 0.34);
+  border-color: rgba(255, 189, 89, 0.84);
+}
+
+.export-driver-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.export-driver-top strong {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.export-driver-count {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 189, 89, 0.36);
+  background: rgba(255, 189, 89, 0.14);
+  color: #ffe6b5;
+  font-size: 11px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.export-driver-route,
+.export-driver-note {
+  font-size: 12px;
+  color: #f4e7cd;
+}
+
+.export-driver-note {
+  color: #d9c8aa;
+  margin-top: 4px;
+}
+
 .driver-state-card {
   border: 1px solid rgba(126, 156, 181, 0.28);
   border-radius: 10px;
