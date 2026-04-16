@@ -177,6 +177,100 @@ body.monitor-page::before {
   margin-bottom: 14px;
 }
 
+.planning-context-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.planning-context-card {
+  border: 1px solid var(--monitor-border);
+  border-radius: 12px;
+  background: linear-gradient(155deg, rgba(17, 33, 47, 0.96), rgba(10, 22, 33, 0.98));
+  box-shadow: 0 10px 24px var(--monitor-shadow);
+  padding: 14px 16px;
+}
+
+.planning-context-card-wide {
+  position: relative;
+  overflow: hidden;
+}
+
+.planning-context-card-wide::after {
+  content: "";
+  position: absolute;
+  inset: auto -30px -40px auto;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(42, 215, 244, 0.22), transparent 70%);
+  pointer-events: none;
+}
+
+.planning-context-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--monitor-muted);
+  margin-bottom: 8px;
+}
+
+.planning-context-headline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.planning-context-value {
+  font-family: "Space Grotesk", "IBM Plex Sans", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+  margin-bottom: 6px;
+}
+
+.planning-context-note {
+  font-size: 12px;
+  color: var(--monitor-muted);
+}
+
+.planning-context-meta-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.planning-context-chip,
+.planning-context-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.planning-context-chip {
+  border: 1px solid rgba(120, 159, 186, 0.34);
+  background: rgba(20, 39, 57, 0.82);
+  color: var(--monitor-text);
+}
+
+.planning-context-pill.success {
+  border: 1px solid rgba(89, 212, 148, 0.44);
+  background: rgba(89, 212, 148, 0.16);
+  color: #d5ffe7;
+}
+
+.planning-context-pill.warning {
+  border: 1px solid rgba(255, 189, 89, 0.46);
+  background: rgba(255, 189, 89, 0.18);
+  color: #ffe6b5;
+}
+
 .kpi-card {
   border: 1px solid var(--monitor-border);
   border-radius: 12px;
@@ -858,6 +952,10 @@ body.monitor-page::before {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .planning-context-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .monitor-dock-layout {
     grid-template-columns: minmax(320px, 1fr);
   }
@@ -888,6 +986,10 @@ body.monitor-page::before {
   }
 
   .monitor-kpi-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .planning-context-strip {
     grid-template-columns: 1fr;
   }
 

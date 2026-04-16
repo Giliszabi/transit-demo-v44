@@ -477,6 +477,7 @@ function refreshDashboard(options = {}) {
   const selectedProfile = getSelectedProfile();
 
   renderKpiStrip(profiles);
+  renderPlanningContextStrip();
   renderDriverStateList(profiles, appState.selectedDriverId);
   renderMainPanel(selectedProfile, now);
   renderInsightsPanel(selectedProfile);
@@ -1215,6 +1216,84 @@ function renderKpiStrip(profiles) {
       <div class="kpi-note">diszpécseri beavatkozásra jelölt</div>
     </article>
   `;
+}
+
+function renderPlanningContextStrip() {
+  const container = document.getElementById("planning-context-strip");
+  if (!container) {
+    return;
+  }
+
+  const planning = appState.generatedPlanning;
+  if (!planning?.loaded) {
+    container.innerHTML = "";
+    container.hidden = true;
+    return;
+  }
+
+  const planningContext = planning.planningContext || {};
+  const importReport = planning.importReport || {};
+  const rosterMeta = planning.rosterMeta || {};
+  const requestedDate = formatDateOnlyLabel(planningContext.planningDate);
+  const effectiveExportDate = formatDateOnlyLabel(planningContext.effectiveExportDate);
+  const effectiveRosterDate = formatDateOnlyLabel(rosterMeta.effectiveRosterDate);
+  const exportAssignmentCount = Array.isArray(planning.exportAssignments)
+    ? planning.exportAssignments.length
+    : Number(importReport.exportAssignments || 0);
+  const rosterAssignmentCount = Array.isArray(planning.rosterAssignments)
+    ? planning.rosterAssignments.length
+    : Number(importReport.rosterAssignments || 0);
+  const driverCount = Number(importReport.drivers || planning.drivers?.length || 0);
+  const vehicleCount = Number(importReport.vehicles || planning.vehicles?.length || 0);
+  const fallbackPill = planningContext.exportFallbackUsed
+    ? '<span class="planning-context-pill warning">EXPORT fallback aktív</span>'
+    : '<span class="planning-context-pill success">EXPORT fallback nélkül</span>';
+
+  container.hidden = false;
+  container.innerHTML = `
+    <article class="planning-context-card planning-context-card-wide">
+      <div class="planning-context-label">Excel planning állapot</div>
+      <div class="planning-context-headline">${fallbackPill}</div>
+      <div class="planning-context-meta-row">
+        <span class="planning-context-chip">Kért nap: ${escapeHtml(requestedDate)}</span>
+        <span class="planning-context-chip">Effektív EXPORT: ${escapeHtml(effectiveExportDate)}</span>
+        <span class="planning-context-chip">Effektív roster: ${escapeHtml(effectiveRosterDate)}</span>
+      </div>
+    </article>
+    <article class="planning-context-card">
+      <div class="planning-context-label">Importált kiosztás</div>
+      <div class="planning-context-value">${exportAssignmentCount}</div>
+      <div class="planning-context-note">EXPORT assignment sor</div>
+    </article>
+    <article class="planning-context-card">
+      <div class="planning-context-label">Roster hozzárendelés</div>
+      <div class="planning-context-value">${rosterAssignmentCount}</div>
+      <div class="planning-context-note">Munkabeosztásból betöltve</div>
+    </article>
+    <article class="planning-context-card">
+      <div class="planning-context-label">Erőforrás készlet</div>
+      <div class="planning-context-value">${driverCount} sofőr • ${vehicleCount} vontató</div>
+      <div class="planning-context-note">generated planning állapot</div>
+    </article>
+  `;
+}
+
+function formatDateOnlyLabel(dateLike) {
+  const value = String(dateLike || "").slice(0, 10);
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(`${value}T00:00:00`);
+  if (!Number.isFinite(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("hu-HU", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
 }
 
 function renderDriverStateList(profiles, selectedDriverId) {
