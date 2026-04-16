@@ -179,6 +179,13 @@ const REST_POINT_ICONS = {
 const appState = {
   profiles: [],
   alerts: [],
+  exportFilters: {
+    driverQuery: "",
+    vehicleQuery: "",
+    jobQuery: "",
+    workPattern: "all",
+    matchRule: "all"
+  },
   selectedDriverId: null,
   selectedExportDate: null,
   refreshTimerId: null,
@@ -234,6 +241,7 @@ async function initMenetiranyitasPanel() {
   const driverList = document.getElementById("driver-state-list");
   const exportDriverList = document.getElementById("export-driver-list");
   const exportDateSwitcher = document.getElementById("export-date-switcher");
+  const exportTableFilters = document.getElementById("export-table-filters");
   const exportTableContainer = document.getElementById("export-table-container");
   const alertsList = document.getElementById("monitor-alerts-list");
 
@@ -250,6 +258,11 @@ async function initMenetiranyitasPanel() {
   if (exportTableContainer) {
     exportTableContainer.addEventListener("click", onDriverListClick);
     exportTableContainer.addEventListener("keydown", onDriverListKeydown);
+  }
+
+  if (exportTableFilters) {
+    exportTableFilters.addEventListener("input", onExportTableFiltersChanged);
+    exportTableFilters.addEventListener("change", onExportTableFiltersChanged);
   }
 
   if (exportDateSwitcher) {
@@ -503,6 +516,7 @@ function refreshDashboard(options = {}) {
   renderKpiStrip(profiles);
   renderPlanningContextStrip();
   renderExportDateSwitcher();
+  renderExportTableFilters(profiles);
   renderExportTable(profiles, appState.selectedDriverId);
   renderExportDriverList(profiles, appState.selectedDriverId);
   renderDriverStateList(profiles, appState.selectedDriverId);
@@ -716,6 +730,168 @@ function getExportAssignmentsForDate(exportDate) {
   const normalizedDate = String(exportDate || "").slice(0, 10);
   return (appState.generatedPlanning?.exportAssignments || []).filter((assignment) => {
     return String(assignment.exportDate || "").slice(0, 10) === normalizedDate;
+  });
+}
+
+function resolveAssignmentDriverMatch(assignment, profiles) {
+  const assignmentVehicleKey = normalizePlanningKey(assignment.vehiclePlate || "");
+  const assignmentDriverKeys = new Set((assignment.driverNames || []).map((name) => normalizePlanningKey(name)).filter(Boolean));
+  const matchedProfiles = [];
+
+  profiles.forEach((profile) => {
+    const driverKey = normalizePlanningKey(profile.driver.nev || profile.driver.name || profile.driver.id);
+    const dedicatedVehicleKey = normalizePlanningKey(profile.driver.dedicatedVehiclePlate || "");
+    const linkedVehicleKey = normalizePlanningKey(profile.rig.vontato?.rendszam || "");
+    const byName = assignmentDriverKeys.has(driverKey);
+    const byVehicle = Boolean(assignmentVehicleKey)
+      && (assignmentVehicleKey === dedicatedVehicleKey || assignmentVehicleKey === linkedVehicleKey);
+
+    if (!byName && !byVehicle) {
+      return;
+    }
+
+    matchedProfiles.push({
+      id: profile.driver.id,
+      name: profile.driver.nev,
+      byName,
+      byVehicle
+    });
+  });
+
+  let matchRule = "none";
+  let matchLabel = "Nincs párosítás";
+  let confidenceTone = "low";
+
+  if (matchedProfiles.length === 1) {
+    const match = matchedProfiles[0];
+    if (match.byName && match.byVehicle) {
+      matchRule = "both";
+      matchLabel = "Név + rendszám";
+      confidenceTone = "high";
+    } else if (match.byName) {
+      matchRule = "name";
+      matchLabel = "Csak név";
+      confidenceTone = "medium";
+    } else {
+      matchRule = "vehicle";
+      matchLabel = "Csak rendszám";
+      confidenceTone = "medium";
+    }
+  } else if (matchedProfiles.length > 1) {
+    const allByName = matchedProfiles.every((match) => match.byName && !match.byVehicle);
+    const allByVehicle = matchedProfiles.every((match) => match.byVehicle && !match.byName);
+    matchRule = "multi";
+    confidenceTone = "low";
+    if (allByName) {
+      matchLabel = "Több jelölt név alapján";
+    } else if (allByVehicle) {
+      matchLabel = "Több jelölt rendszám alapján";
+    } else {
+      matchLabel = "Több vegyes jelölt";
+    }
+  }
+
+  return {
+    matchedProfiles,
+    primaryProfile: matchedProfiles.length === 1 ? matchedProfiles[0] : null,
+    matchRule,
+    matchLabel,
+    confidenceTone,
+    matchedDriverLabel: matchedProfiles.length
+      ? matchedProfiles.map((match) => match.name).join(", ")
+      : "nincs felismert sofőr"
+  };
+}
+
+function renderExportTableFilters(profiles) {
+  const container = document.getElementById("export-table-filters");
+  if (!container) {
+    return;
+  }
+
+  const assignments = getExportAssignmentsForDate(getSelectedExportDate());
+  if (!assignments.length) {
+    container.innerHTML = "";
+    container.hidden = true;
+    return;
+  }
+
+  const workPatterns = [...new Set(assignments.map((assignment) => assignment.originalWorkPatternCode || assignment.workPatternCode).filter(Boolean))].sort();
+  const workPatternOptions = workPatterns
+    .map((value) => `<option value="${escapeHtml(value)}"${appState.exportFilters.workPattern === value ? " selected" : ""}>${escapeHtml(value)}</option>`)
+    .join("");
+
+  container.hidden = false;
+  container.innerHTML = `
+    <div class="export-filter-grid">
+      <label class="export-filter-field">
+        <span>Sofőr kereső</span>
+        <input type="search" value="${escapeHtml(appState.exportFilters.driverQuery)}" data-export-filter="driverQuery" placeholder="név vagy részlet" />
+      </label>
+      <label class="export-filter-field">
+        <span>Vontató</span>
+        <input type="search" value="${escapeHtml(appState.exportFilters.vehicleQuery)}" data-export-filter="vehicleQuery" placeholder="rendszám" />
+      </label>
+      <label class="export-filter-field">
+        <span>SZF-SZÁM</span>
+        <input type="search" value="${escapeHtml(appState.exportFilters.jobQuery)}" data-export-filter="jobQuery" placeholder="fuvarszám" />
+      </label>
+      <label class="export-filter-field">
+        <span>MI neve</span>
+        <select data-export-filter="workPattern">
+          <option value="all">Összes</option>
+          ${workPatternOptions}
+        </select>
+      </label>
+      <label class="export-filter-field">
+        <span>Párosítás</span>
+        <select data-export-filter="matchRule">
+          <option value="all"${appState.exportFilters.matchRule === "all" ? " selected" : ""}>Összes</option>
+          <option value="both"${appState.exportFilters.matchRule === "both" ? " selected" : ""}>Név + rendszám</option>
+          <option value="name"${appState.exportFilters.matchRule === "name" ? " selected" : ""}>Csak név</option>
+          <option value="vehicle"${appState.exportFilters.matchRule === "vehicle" ? " selected" : ""}>Csak rendszám</option>
+          <option value="multi"${appState.exportFilters.matchRule === "multi" ? " selected" : ""}>Több jelölt</option>
+          <option value="none"${appState.exportFilters.matchRule === "none" ? " selected" : ""}>Nincs párosítás</option>
+        </select>
+      </label>
+    </div>
+  `;
+}
+
+function applyExportTableFilters(rows) {
+  const driverQuery = normalizePlanningKey(appState.exportFilters.driverQuery);
+  const vehicleQuery = normalizePlanningKey(appState.exportFilters.vehicleQuery);
+  const jobQuery = normalizePlanningKey(appState.exportFilters.jobQuery);
+  const workPattern = appState.exportFilters.workPattern;
+  const matchRule = appState.exportFilters.matchRule;
+
+  return rows.filter(({ assignment, match }) => {
+    const driverText = normalizePlanningKey((assignment.driverNames || []).join(" "));
+    const vehicleText = normalizePlanningKey(assignment.vehiclePlate || "");
+    const jobText = normalizePlanningKey(assignment.jobId || "");
+    const workPatternText = String(assignment.originalWorkPatternCode || assignment.workPatternCode || "");
+
+    if (driverQuery && !driverText.includes(driverQuery) && !normalizePlanningKey(match.matchedDriverLabel).includes(driverQuery)) {
+      return false;
+    }
+
+    if (vehicleQuery && !vehicleText.includes(vehicleQuery)) {
+      return false;
+    }
+
+    if (jobQuery && !jobText.includes(jobQuery)) {
+      return false;
+    }
+
+    if (workPattern !== "all" && workPatternText !== workPattern) {
+      return false;
+    }
+
+    if (matchRule !== "all" && match.matchRule !== matchRule) {
+      return false;
+    }
+
+    return true;
   });
 }
 
@@ -1443,13 +1619,26 @@ function renderExportTable(profiles, selectedDriverId) {
     });
   });
 
-  const rowsHtml = assignments
-    .map((assignment) => {
-      const profile = profileByAssignmentId.get(assignment.assignmentId) || null;
+  const rows = assignments.map((assignment) => {
+    const profile = profileByAssignmentId.get(assignment.assignmentId) || null;
+    const match = resolveAssignmentDriverMatch(assignment, profiles);
+    return { assignment, profile, match };
+  });
+
+  const filteredRows = applyExportTableFilters(rows);
+  if (!filteredRows.length) {
+    container.innerHTML = '<div class="empty-message">A jelenlegi szűrőkkel nincs látható Export sor.</div>';
+    return;
+  }
+
+  const rowsHtml = filteredRows
+    .map(({ assignment, profile, match }) => {
       const selectedClass = profile?.driver.id === selectedDriverId ? "selected" : "";
       const driverNames = (assignment.driverNames || []).join(", ") || profile?.driver.nev || "-";
       const workPattern = assignment.originalWorkPatternCode || assignment.workPatternCode || "-";
-      const driverIdAttr = profile?.driver.id ? ` data-driver-id="${escapeHtml(profile.driver.id)}" role="button" tabindex="0"` : "";
+      const directProfile = match.primaryProfile || profile;
+      const driverIdAttr = directProfile?.id ? ` data-driver-id="${escapeHtml(directProfile.id)}" role="button" tabindex="0"` : "";
+      const confidenceClass = `confidence-${match.confidenceTone}`;
 
       return `
         <tr class="export-table-row ${selectedClass}"${driverIdAttr}>
@@ -1459,13 +1648,18 @@ function renderExportTable(profiles, selectedDriverId) {
           <td>${escapeHtml(assignment.jobId || "-")}</td>
           <td>${escapeHtml(assignment.plannerNote || "-")}</td>
           <td>${escapeHtml(assignment.dispatchNote || "-")}</td>
+          <td>${escapeHtml(String(assignment.sourceRow || "-"))}</td>
+          <td>
+            <span class="match-confidence-badge ${confidenceClass}">${escapeHtml(match.matchLabel)}</span>
+            <div class="match-confidence-detail">${escapeHtml(match.matchedDriverLabel)}</div>
+          </td>
         </tr>
       `;
     })
     .join("");
 
   container.innerHTML = `
-    <div class="export-table-meta">Megjelenített nap: ${escapeHtml(formatDateOnlyLabel(selectedDate))}</div>
+    <div class="export-table-meta">Megjelenített nap: ${escapeHtml(formatDateOnlyLabel(selectedDate))} • Szűrt sorok: ${filteredRows.length} / ${assignments.length}</div>
     <div class="export-table-shell">
       <table class="export-table-view">
         <thead>
@@ -1476,6 +1670,8 @@ function renderExportTable(profiles, selectedDriverId) {
             <th>SZF-SZÁM</th>
             <th>Jani megjegyzés</th>
             <th>Menetirányító megjegyzés</th>
+            <th>Excel sor</th>
+            <th>Párosítás</th>
           </tr>
         </thead>
         <tbody>
@@ -2090,6 +2286,21 @@ function onExportDateSwitcherChange(event) {
 
   appState.selectedExportDate = exportDate;
   refreshDashboard({ preserveSelection: true, focusMode: "none" });
+}
+
+function onExportTableFiltersChanged(event) {
+  const field = event.target.closest("[data-export-filter]");
+  if (!field || !event.currentTarget.contains(field)) {
+    return;
+  }
+
+  const key = field.dataset.exportFilter;
+  if (!Object.hasOwn(appState.exportFilters, key)) {
+    return;
+  }
+
+  appState.exportFilters[key] = field.value || "";
+  renderExportTable(appState.profiles, appState.selectedDriverId);
 }
 
 function onAlertListClick(event) {
