@@ -1,4 +1,6 @@
 import { getDomesticTransitRoleInfo } from "./transit-relations.js";
+import { getLoadedPlanningData } from "../data/generated-loader.js";
+import { evaluateDriverAgainstJob } from "../core/eligibility-engine.js";
 
 // =======================================================
 // TransIT v4.4 - MATCHING ENGINE (Bidirectional)
@@ -188,6 +190,27 @@ export function evaluateSoforForFuvar(sofor, fuvar) {
     if (sofor.driving.restMinutesEarned < 45 * 60 && requiredHours > 4.5) {
       suitable = false;
       reasons.push(`Kötelező pihenő szükséges (maradt: ${(sofor.driving.restMinutesEarned / 60).toFixed(0)} perc)`);
+    }
+  }
+
+  const loadedPlanning = getLoadedPlanningData();
+  if (loadedPlanning?.loaded) {
+    const schedule = loadedPlanning.driverSchedules?.find((item) => item.driverId === (sofor.driverId || sofor.id)) || null;
+    const generatedResult = evaluateDriverAgainstJob({
+      driver: sofor,
+      schedule,
+      vehicles: loadedPlanning.uiVehicles || loadedPlanning.vehicles || [],
+      job: fuvar,
+      planningDate: loadedPlanning.planningContext?.planningDate || new Date().toISOString().slice(0, 10)
+    });
+
+    if (!generatedResult.compatible) {
+      suitable = false;
+      generatedResult.reasons.forEach((reason) => {
+        if (!reasons.includes(reason.message)) {
+          reasons.push(reason.message);
+        }
+      });
     }
   }
 

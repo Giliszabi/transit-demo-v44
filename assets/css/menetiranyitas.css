@@ -92,6 +92,84 @@ body.monitor-page::before {
   padding: 16px clamp(12px, 3vw, 32px) 24px;
 }
 
+.monitor-timelines-section {
+  margin-bottom: 14px;
+}
+
+.monitor-dock-layout {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.monitor-dock-layout .dock-column {
+  min-width: 0;
+}
+
+.monitor-dock-layout .dock-column[data-zone="full"] {
+  grid-column: 1 / -1;
+  order: -1;
+}
+
+.monitor-timeline-panel {
+  margin-bottom: 0;
+}
+
+.monitor-timeline-panel.hidden-by-layout {
+  display: none;
+}
+
+.panel-header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #355067;
+  padding-bottom: 9px;
+}
+
+.panel-header-row .panel-title {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.panel-dock-toolbar {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.panel-dock-btn {
+  border: 1px solid rgba(79, 195, 247, 0.4);
+  background: rgba(79, 195, 247, 0.1);
+  color: #cceeff;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.panel-dock-btn.active-zone {
+  background: rgba(76, 217, 100, 0.16);
+  border-color: rgba(76, 217, 100, 0.52);
+  color: #d8ffe0;
+}
+
+.panel-dock-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.monitor-map-panel-promoted {
+  margin-bottom: 14px;
+}
+
 .monitor-kpi-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -129,7 +207,7 @@ body.monitor-page::before {
 
 .monitor-workspace {
   display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr) minmax(260px, 320px);
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
   gap: 14px;
 }
 
@@ -166,9 +244,18 @@ body.monitor-page::before {
 }
 
 .monitor-alerts-panel {
-  max-height: calc(100vh - 190px);
+  max-height: calc(100vh - 230px);
   display: flex;
   flex-direction: column;
+}
+
+.monitor-alerts-bottom-panel {
+  margin-top: 14px;
+  max-height: none;
+}
+
+.monitor-alerts-bottom-panel .monitor-alerts-list {
+  max-height: 300px;
 }
 
 .risk-legend {
@@ -771,6 +858,10 @@ body.monitor-page::before {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .monitor-dock-layout {
+    grid-template-columns: minmax(320px, 1fr);
+  }
+
   .monitor-workspace {
     grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
   }
@@ -802,6 +893,15 @@ body.monitor-page::before {
 
   .monitor-workspace {
     grid-template-columns: 1fr;
+  }
+
+  .panel-header-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .panel-dock-toolbar {
+    margin-left: 0;
   }
 
   .monitor-column,

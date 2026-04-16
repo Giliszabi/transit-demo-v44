@@ -39,6 +39,53 @@
   <main class="monitor-shell">
     <section id="monitor-kpi-strip" class="monitor-kpi-strip"></section>
 
+    <section class="monitor-timelines-section">
+      <div id="monitor-dock-layout" class="dock-layout monitor-dock-layout">
+        <section class="dock-column" data-zone="full"></section>
+        <section class="dock-column" data-zone="left"></section>
+        <section class="dock-column" data-zone="right"></section>
+      </div>
+
+      <section class="panel dock-panel monitor-timeline-panel" id="monitor-panel-assembly-timeline" data-panel-id="assembly-timeline" data-panel-title="Szerelvény idővonal">
+        <div class="panel-header-row">
+          <div class="panel-title">🧩 Szerelvény idővonal</div>
+          <div class="panel-dock-toolbar">
+            <button type="button" class="panel-dock-btn" data-action="move-up">Feljebb</button>
+            <button type="button" class="panel-dock-btn" data-action="move-down">Lejjebb</button>
+            <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
+            <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
+            <button type="button" class="panel-dock-btn" data-action="toggle-fullwidth">Teljes szélesség</button>
+          </div>
+        </div>
+        <div id="assembly-timeline-container">Betöltés...</div>
+      </section>
+
+      <section class="panel dock-panel monitor-timeline-panel" id="monitor-panel-resource-timeline" data-panel-id="resource-timeline" data-panel-title="Erőforrás idővonal">
+        <div class="panel-header-row">
+          <div class="panel-title">⏱️ Erőforrás idővonal</div>
+          <div class="panel-dock-toolbar">
+            <button type="button" class="panel-dock-btn" data-action="move-up">Feljebb</button>
+            <button type="button" class="panel-dock-btn" data-action="move-down">Lejjebb</button>
+            <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
+            <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
+            <button type="button" class="panel-dock-btn" data-action="toggle-fullwidth">Teljes szélesség</button>
+          </div>
+        </div>
+        <div id="timeline-container">Betöltés...</div>
+      </section>
+    </section>
+
+    <section class="panel monitor-map-panel monitor-map-panel-promoted">
+      <div class="panel-title">🗺️ MapView szinkron (Rig + Tacho)</div>
+      <div class="monitor-map-layer-switch">
+        <span class="monitor-map-layer-pill parking">🅿️ Truck parkolók</span>
+        <span class="monitor-map-layer-pill service">🔧 Szervizek</span>
+        <span class="monitor-map-layer-pill fuel">⛽ Benzinkutak</span>
+        <span class="monitor-map-layer-pill depot">🏭 Depók</span>
+      </div>
+      <div id="monitor-map-container"></div>
+    </section>
+
     <section class="monitor-workspace">
       <aside class="panel monitor-column">
         <div class="panel-title">👤 Sofőr időállapot + Risk Heatmap</div>
@@ -61,32 +108,16 @@
           <div id="monitor-insight-grid"></div>
         </section>
 
-        <section class="panel monitor-map-panel">
-          <div class="panel-title">� Szerelvény Timeline</div>
-          <div id="assembly-timeline-container">Betöltés...</div>
-        </section>
-
         <section class="panel monitor-operation-panel">
           <div class="panel-title">🧾 Szerelvény műveleti napló</div>
           <div id="monitor-operation-log" class="assembly-operation-log"></div>
         </section>
-
-        <section class="panel monitor-map-panel">
-          <div class="panel-title">�🗺️ MapView szinkron (Rig + Tacho)</div>
-          <div class="monitor-map-layer-switch">
-            <span class="monitor-map-layer-pill parking">🅿️ Truck parkolók</span>
-            <span class="monitor-map-layer-pill service">🔧 Szervizek</span>
-            <span class="monitor-map-layer-pill fuel">⛽ Benzinkutak</span>
-            <span class="monitor-map-layer-pill depot">🏭 Depók</span>
-          </div>
-          <div id="monitor-map-container"></div>
-        </section>
       </div>
+    </section>
 
-      <aside class="panel monitor-alerts-panel">
-        <div class="panel-title">🚨 Alerts Panel</div>
-        <div id="monitor-alerts-list" class="monitor-alerts-list"></div>
-      </aside>
+    <section class="panel monitor-alerts-panel monitor-alerts-bottom-panel">
+      <div class="panel-title">🚨 Alerts Panel</div>
+      <div id="monitor-alerts-list" class="monitor-alerts-list"></div>
     </section>
   </main>
 

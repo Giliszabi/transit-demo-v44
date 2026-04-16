@@ -1,0 +1,1142 @@
+[
+  {
+    "driverId": "DRV-torok-sandor",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-ivan-arpad-krisztian",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": [
+      {
+        "date": "2026-04-16",
+        "override": "ON_LEAVE"
+      }
+    ]
+  },
+  {
+    "driverId": "DRV-sipocz-daniel",
+    "workPatternCode": "10_4",
+    "cycleLengthDays": 14,
+    "workDays": 10,
+    "restDays": 4,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-pazmandi-janos",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-gerstmayer-zoltan",
+    "workPatternCode": "10_4",
+    "cycleLengthDays": 14,
+    "workDays": 10,
+    "restDays": 4,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-vancso-attila",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-hallok-gabor",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-csepeti-peter",
+    "workPatternCode": "11_2",
+    "cycleLengthDays": 13,
+    "workDays": 11,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-popovics-david",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-nemeth-nandor",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-kakulya-zsolt",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-tanacs-attila",
+    "workPatternCode": "10_4",
+    "cycleLengthDays": 14,
+    "workDays": 10,
+    "restDays": 4,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-adamek-istvan",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-nyiri-attila",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-bagi-lajos",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-bagi-mario",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-kiss-sandor",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-toth-zsolt",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-hamecz-zsolt",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-zsoltne",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-balazs-istvan",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-torok-attila",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-kata-jozsef",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-letai-ferenc",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-letaine-zsuzsa",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-simon-zoltan",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-nemeth-zsolt",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-horvath-ferenc",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-giber-zoltan",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-pillo-jozsef",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-pillone-s-judit",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-toth-attila",
+    "workPatternCode": "10_3",
+    "cycleLengthDays": 13,
+    "workDays": 10,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": [
+      {
+        "date": "2026-04-16",
+        "override": "ON_LEAVE"
+      }
+    ]
+  },
+  {
+    "driverId": "DRV-csicsai-gabor",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-katona-gabor",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-slebarszky-attila-gabor",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-fodor-karoly",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-hanzi-gyorgy-lehel",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-hemmerlein-zoltan",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-musicz-miklos",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-hollosi-laszlo",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-arvai-jozsef",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-szegedi-robert",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-kern-karoly-janos",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-nagy-szabina",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": [
+      {
+        "date": "2026-04-16",
+        "override": "ON_LEAVE"
+      }
+    ]
+  },
+  {
+    "driverId": "DRV-kalman-janos",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": [
+      {
+        "date": "2026-04-16",
+        "override": "ON_LEAVE"
+      }
+    ]
+  },
+  {
+    "driverId": "DRV-gonda-robert",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-hrasztics-tamas",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-ormandi-mariusz",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-lakatos-robert",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-richter-robert-csaba",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-molarovits-zoltan-edvin",
+    "workPatternCode": "2_1",
+    "cycleLengthDays": 3,
+    "workDays": 2,
+    "restDays": 1,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-kaloczi-peter",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-lehner-zsolt",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-iklodi-sandor",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-tokorcsi-tibor",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-horvath-akos",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-kivonva",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-leallitva",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-masodiknak",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-lazar-gabor",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-balogh-david",
+    "workPatternCode": "4_3",
+    "cycleLengthDays": 7,
+    "workDays": 4,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-hadi-krisztian",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-vincze-gabor",
+    "workPatternCode": "2_1",
+    "cycleLengthDays": 3,
+    "workDays": 2,
+    "restDays": 1,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-toth-mihaly",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-marton-peter",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-busi-sandor-janos",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-knyihar-adrian",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-argyellan-istvan-augusto",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-szabo-levente",
+    "workPatternCode": "1_1",
+    "cycleLengthDays": 2,
+    "workDays": 1,
+    "restDays": 1,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-toth-zoltan-jozsef",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-drozd-peter",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-lajko-zsolt",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-arvai-gabor",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-tozser-gabor",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-simon-gabor",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-kelemen-imre",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-morocz-istvan",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-choijiljav-batbaatar",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-csak-laszlo",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-mellencsuk-attila",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-berki-richard-sandor",
+    "workPatternCode": "2_1",
+    "cycleLengthDays": 3,
+    "workDays": 2,
+    "restDays": 1,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-kopanyi-laszlo",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-moldicz-tamas",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-polyak-laszlo",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-molnar-lajos",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-lutz-mark-richard",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-berek-gabor",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-balazs-tibor",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-meilinger-adam",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-pollak-peter",
+    "workPatternCode": "10_4",
+    "cycleLengthDays": 14,
+    "workDays": 10,
+    "restDays": 4,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-berek-daniel",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-fabian-szabolcs",
+    "workPatternCode": "17_4",
+    "cycleLengthDays": 21,
+    "workDays": 17,
+    "restDays": 4,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-kozma-istvan",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-farkas-rudolf",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-tatarek-sandor",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-vass-istvan",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-szkolcsek-gyorgy",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-ancsak-janos-04-14",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-dalanics-zsolt",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-igneczi-attila",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-mura-milan",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-leiner-gabor",
+    "workPatternCode": "10_4",
+    "cycleLengthDays": 14,
+    "workDays": 10,
+    "restDays": 4,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-tatai-sandor",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-kovacs-marton-peter",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-sogorka-csaba",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-nagy-gyorgy",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-szegedi-zsolt",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-kese-zoltan",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-gali-zoltan-peter",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-majer-dominik-charter",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-horvath-andras-charter",
+    "workPatternCode": "5_2",
+    "cycleLengthDays": 7,
+    "workDays": 5,
+    "restDays": 2,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  },
+  {
+    "driverId": "DRV-pasztor-istvan-charter",
+    "workPatternCode": "11_3",
+    "cycleLengthDays": 14,
+    "workDays": 11,
+    "restDays": 3,
+    "cycleAnchorDate": "2026-04-16",
+    "cycleAnchorSource": "assumed_from_planning_date",
+    "exceptions": []
+  }
+]

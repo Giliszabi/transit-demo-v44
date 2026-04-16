@@ -1,0 +1,695 @@
+[
+  {
+    "plateNumber": "AAFP 569",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 2
+  },
+  {
+    "plateNumber": "AAFP 570",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 3
+  },
+  {
+    "plateNumber": "AAFP 571",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 4
+  },
+  {
+    "plateNumber": "AAFP 572",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 5
+  },
+  {
+    "plateNumber": "AAFP 573",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 6
+  },
+  {
+    "plateNumber": "AAFP 574",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 7
+  },
+  {
+    "plateNumber": "AAFP 575",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 8
+  },
+  {
+    "plateNumber": "AAFP 576",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 9
+  },
+  {
+    "plateNumber": "AAFP 577",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 10
+  },
+  {
+    "plateNumber": "AAFP 578",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 11
+  },
+  {
+    "plateNumber": "AAKL 826",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 12
+  },
+  {
+    "plateNumber": "AEFK 985",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 13
+  },
+  {
+    "plateNumber": "AEFK 986",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 14
+  },
+  {
+    "plateNumber": "AIFN 151",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 15
+  },
+  {
+    "plateNumber": "AIFN 152",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 16
+  },
+  {
+    "plateNumber": "AIFN 153",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 17
+  },
+  {
+    "plateNumber": "AIFN 154",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 18
+  },
+  {
+    "plateNumber": "AIFN 155",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 19
+  },
+  {
+    "plateNumber": "AIFN 156",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 20
+  },
+  {
+    "plateNumber": "AIFN 157",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 21
+  },
+  {
+    "plateNumber": "AIFN 158",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 22
+  },
+  {
+    "plateNumber": "AIFN 159",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 23
+  },
+  {
+    "plateNumber": "AIFN 160",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 24
+  },
+  {
+    "plateNumber": "AIFN 161",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 25
+  },
+  {
+    "plateNumber": "AIFN 162",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 26
+  },
+  {
+    "plateNumber": "AIFN 163",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 27
+  },
+  {
+    "plateNumber": "AIFN 164",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 28
+  },
+  {
+    "plateNumber": "AIFN 165",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 29
+  },
+  {
+    "plateNumber": "AIFN 166",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 30
+  },
+  {
+    "plateNumber": "AIFN 167",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 31
+  },
+  {
+    "plateNumber": "AIFN 168",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 32
+  },
+  {
+    "plateNumber": "AIFN 169",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 33
+  },
+  {
+    "plateNumber": "AIFN 170",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 34
+  },
+  {
+    "plateNumber": "AOMB 251",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 35
+  },
+  {
+    "plateNumber": "AOMB 252",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 36
+  },
+  {
+    "plateNumber": "AOMB 253",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 37
+  },
+  {
+    "plateNumber": "AOMB 254",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 38
+  },
+  {
+    "plateNumber": "AOMB 255",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 39
+  },
+  {
+    "plateNumber": "AOMB 256",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 40
+  },
+  {
+    "plateNumber": "AOMB 257",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 41
+  },
+  {
+    "plateNumber": "AOMB 258",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 42
+  },
+  {
+    "plateNumber": "AOMB 259",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 43
+  },
+  {
+    "plateNumber": "AOMB 260",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 44
+  },
+  {
+    "plateNumber": "NKW 936",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 45
+  },
+  {
+    "plateNumber": "NRZ 695",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 46
+  },
+  {
+    "plateNumber": "PCZ 541",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 47
+  },
+  {
+    "plateNumber": "PCZ 542",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 48
+  },
+  {
+    "plateNumber": "PCZ 543",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 49
+  },
+  {
+    "plateNumber": "PCZ 544",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 50
+  },
+  {
+    "plateNumber": "PJP 382",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 52
+  },
+  {
+    "plateNumber": "PJP 384",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 54
+  },
+  {
+    "plateNumber": "PTT 809",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 56
+  },
+  {
+    "plateNumber": "PTT 810",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 57
+  },
+  {
+    "plateNumber": "PTT 811",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 58
+  },
+  {
+    "plateNumber": "PTT 813",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 59
+  },
+  {
+    "plateNumber": "PTT 814",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 60
+  },
+  {
+    "plateNumber": "PTT 815",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 61
+  },
+  {
+    "plateNumber": "PUN 079",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 62
+  },
+  {
+    "plateNumber": "PUN 080",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 63
+  },
+  {
+    "plateNumber": "PUN 081",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 64
+  },
+  {
+    "plateNumber": "PUN 082",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 65
+  },
+  {
+    "plateNumber": "PUN 083",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 66
+  },
+  {
+    "plateNumber": "PUN 084",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 67
+  },
+  {
+    "plateNumber": "PUN 087",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 68
+  },
+  {
+    "plateNumber": "PUN 088",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 69
+  },
+  {
+    "plateNumber": "RKG 681",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 71
+  },
+  {
+    "plateNumber": "RKG 682",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 72
+  },
+  {
+    "plateNumber": "RKG 683",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 73
+  },
+  {
+    "plateNumber": "RKG 684",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 74
+  },
+  {
+    "plateNumber": "RKG 685",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 75
+  },
+  {
+    "plateNumber": "RKG 686",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 76
+  },
+  {
+    "plateNumber": "RKG 688",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 78
+  },
+  {
+    "plateNumber": "RKG 690",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 79
+  },
+  {
+    "plateNumber": "RPH 684",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 80
+  },
+  {
+    "plateNumber": "SJS 829",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 82
+  },
+  {
+    "plateNumber": "SNR 412",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 83
+  },
+  {
+    "plateNumber": "SNR 416",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 84
+  },
+  {
+    "plateNumber": "SNR 418",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 85
+  },
+  {
+    "plateNumber": "SPP 781",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 86
+  },
+  {
+    "plateNumber": "SPP 782",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 87
+  },
+  {
+    "plateNumber": "SPP 783",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 88
+  },
+  {
+    "plateNumber": "SPP 784",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 89
+  },
+  {
+    "plateNumber": "SPP 785",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 90
+  },
+  {
+    "plateNumber": "SPP 788",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 92
+  },
+  {
+    "plateNumber": "SPP 789",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 93
+  },
+  {
+    "plateNumber": "SPP 790",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 94
+  },
+  {
+    "plateNumber": "TEY 612",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 95
+  },
+  {
+    "plateNumber": "TEY 613",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 96
+  },
+  {
+    "plateNumber": "TEY 614",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 97
+  },
+  {
+    "plateNumber": "TEY 615",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 98
+  },
+  {
+    "plateNumber": "TEY 616",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 99
+  },
+  {
+    "plateNumber": "TEY 617",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 100
+  },
+  {
+    "plateNumber": "TEY 618",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 101
+  },
+  {
+    "plateNumber": "TEY 619",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 102
+  },
+  {
+    "plateNumber": "TEY 620",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 103
+  },
+  {
+    "plateNumber": "TEY 621",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 104
+  },
+  {
+    "plateNumber": "SNR 411",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 109
+  },
+  {
+    "plateNumber": "SNR 413",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": true,
+    "active": true,
+    "sourceRow": 110
+  },
+  {
+    "plateNumber": "SNR 415",
+    "vehicleType": "nemzetkozi",
+    "adrCapable": false,
+    "active": true,
+    "sourceRow": 111
+  }
+]

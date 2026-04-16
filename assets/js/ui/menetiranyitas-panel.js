@@ -2,7 +2,10 @@ import { FUVAROK } from "../data/fuvarok.js";
 import { SOFOROK } from "../data/soforok.js";
 import { VONTATOK } from "../data/vontatok.js";
 import { POTKOCSIK } from "../data/potkocsik.js";
+import { loadGeneratedPlanningData } from "../data/generated-loader.js";
+import { buildEligibilityIndex } from "../core/eligibility-engine.js";
 import { ensureContinuousTimelines } from "./timeline-generator.js";
+import { renderTimeline } from "./timeline.js";
 import { renderSzerelvenyMap } from "./szerelveny-map.js";
 import { getAssemblyOperationLogEntries, renderSzerelvenyTimeline } from "./szerelveny-timeline.js";
 
@@ -177,7 +180,18 @@ const appState = {
   profiles: [],
   alerts: [],
   selectedDriverId: null,
-  refreshTimerId: null
+  refreshTimerId: null,
+  generatedPlanning: null
+};
+
+const TIMELINE_PANEL_IDS = ["assembly-timeline", "resource-timeline"];
+
+let timelineDockLayoutState = {
+  zones: {
+    left: ["assembly-timeline"],
+    right: ["resource-timeline"],
+    full: []
+  }
 };
 
 window.addEventListener("DOMContentLoaded", initMenetiranyitasPanel);
@@ -187,11 +201,16 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
-function initMenetiranyitasPanel() {
+async function initMenetiranyitasPanel() {
+  appState.generatedPlanning = await loadGeneratedPlanningData();
+
   ensureContinuousTimelines(SOFOROK, VONTATOK, POTKOCSIK);
   ensureDemoRigAssignments();
 
+  initTimelineDockLayout();
+
   renderSzerelvenyMap("monitor-map-container", SOFOROK, VONTATOK, POTKOCSIK);
+  renderResourceTimelinePanel();
 
   if (document.getElementById("assembly-timeline-container")) {
     renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK);
@@ -199,6 +218,7 @@ function initMenetiranyitasPanel() {
 
   window.addEventListener("assembly:resources:changed", () => {
     renderSzerelvenyMap("monitor-map-container", SOFOROK, VONTATOK, POTKOCSIK);
+    renderResourceTimelinePanel();
 
     if (document.getElementById("assembly-timeline-container")) {
       renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK);
@@ -229,6 +249,206 @@ function initMenetiranyitasPanel() {
       syncMapFocus(selectedProfile, "assembly");
     }
   }, 220);
+}
+
+function getTimelinePanelElement(panelId) {
+  return document.getElementById(`monitor-panel-${panelId}`);
+}
+
+function cloneTimelineDockLayout(layout) {
+  return {
+    zones: {
+      left: [...(layout?.zones?.left || [])],
+      right: [...(layout?.zones?.right || [])],
+      full: [...(layout?.zones?.full || [])]
+    }
+  };
+}
+
+function getTimelineZoneByPanel(panelId) {
+  if (timelineDockLayoutState.zones.left.includes(panelId)) {
+    return "left";
+  }
+
+  if (timelineDockLayoutState.zones.right.includes(panelId)) {
+    return "right";
+  }
+
+  if (timelineDockLayoutState.zones.full.includes(panelId)) {
+    return "full";
+  }
+
+  return null;
+}
+
+function dockTimelinePanelToZone(panelId, zone) {
+  if (!TIMELINE_PANEL_IDS.includes(panelId) || !["left", "right"].includes(zone)) {
+    return;
+  }
+
+  const next = cloneTimelineDockLayout(timelineDockLayoutState);
+  next.zones.left = next.zones.left.filter((id) => id !== panelId);
+  next.zones.right = next.zones.right.filter((id) => id !== panelId);
+  next.zones.full = next.zones.full.filter((id) => id !== panelId);
+  next.zones[zone].push(panelId);
+  timelineDockLayoutState = next;
+  applyTimelineDockLayout();
+}
+
+function toggleTimelinePanelFullwidth(panelId) {
+  if (!TIMELINE_PANEL_IDS.includes(panelId)) {
+    return;
+  }
+
+  const next = cloneTimelineDockLayout(timelineDockLayoutState);
+  const isFull = next.zones.full.includes(panelId);
+
+  if (isFull) {
+    next.zones.full = next.zones.full.filter((id) => id !== panelId);
+    const fallbackZone = panelId === "assembly-timeline" ? "left" : "right";
+    next.zones[fallbackZone].push(panelId);
+  } else {
+    next.zones.left = next.zones.left.filter((id) => id !== panelId);
+    next.zones.right = next.zones.right.filter((id) => id !== panelId);
+    next.zones.full.push(panelId);
+  }
+
+  timelineDockLayoutState = next;
+  applyTimelineDockLayout();
+}
+
+function moveTimelinePanelOneStep(panelId, direction) {
+  if (!TIMELINE_PANEL_IDS.includes(panelId) || !["up", "down"].includes(direction)) {
+    return;
+  }
+
+  const next = cloneTimelineDockLayout(timelineDockLayoutState);
+  const zone = ["left", "right", "full"].find((zoneName) => next.zones[zoneName].includes(panelId));
+  if (!zone) {
+    return;
+  }
+
+  const list = next.zones[zone];
+  const index = list.indexOf(panelId);
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+
+  if (targetIndex < 0 || targetIndex >= list.length) {
+    return;
+  }
+
+  [list[index], list[targetIndex]] = [list[targetIndex], list[index]];
+  timelineDockLayoutState = next;
+  applyTimelineDockLayout();
+}
+
+function updateTimelinePanelButtons(panelId) {
+  const panel = getTimelinePanelElement(panelId);
+  if (!panel) {
+    return;
+  }
+
+  const zone = getTimelineZoneByPanel(panelId);
+  const zoneList = zone ? (timelineDockLayoutState.zones[zone] || []) : [];
+  const index = zone ? zoneList.indexOf(panelId) : -1;
+
+  const leftBtn = panel.querySelector('[data-action="dock-left"]');
+  const rightBtn = panel.querySelector('[data-action="dock-right"]');
+  const upBtn = panel.querySelector('[data-action="move-up"]');
+  const downBtn = panel.querySelector('[data-action="move-down"]');
+  const fullBtn = panel.querySelector('[data-action="toggle-fullwidth"]');
+
+  leftBtn?.classList.toggle("active-zone", zone === "left");
+  rightBtn?.classList.toggle("active-zone", zone === "right");
+
+  if (fullBtn) {
+    fullBtn.textContent = zone === "full" ? "Fél szélesség" : "Teljes szélesség";
+  }
+
+  if (upBtn) {
+    upBtn.disabled = index <= 0;
+  }
+
+  if (downBtn) {
+    downBtn.disabled = index < 0 || index >= zoneList.length - 1;
+  }
+}
+
+function applyTimelineDockLayout() {
+  const leftColumn = document.querySelector('#monitor-dock-layout .dock-column[data-zone="left"]');
+  const rightColumn = document.querySelector('#monitor-dock-layout .dock-column[data-zone="right"]');
+  const fullColumn = document.querySelector('#monitor-dock-layout .dock-column[data-zone="full"]');
+
+  const appendPanel = (column, panelId) => {
+    const panel = getTimelinePanelElement(panelId);
+    if (!column || !panel) {
+      return;
+    }
+    panel.classList.remove("hidden-by-layout");
+    column.appendChild(panel);
+  };
+
+  TIMELINE_PANEL_IDS.forEach((panelId) => {
+    getTimelinePanelElement(panelId)?.classList.remove("hidden-by-layout");
+  });
+
+  timelineDockLayoutState.zones.left.forEach((panelId) => appendPanel(leftColumn, panelId));
+  timelineDockLayoutState.zones.right.forEach((panelId) => appendPanel(rightColumn, panelId));
+  timelineDockLayoutState.zones.full.forEach((panelId) => appendPanel(fullColumn, panelId));
+
+  TIMELINE_PANEL_IDS.forEach((panelId) => {
+    updateTimelinePanelButtons(panelId);
+  });
+}
+
+function bindTimelineDockToolbarActions() {
+  TIMELINE_PANEL_IDS.forEach((panelId) => {
+    const panel = getTimelinePanelElement(panelId);
+    if (!panel) {
+      return;
+    }
+
+    panel.querySelector('[data-action="move-up"]')?.addEventListener("click", () => {
+      moveTimelinePanelOneStep(panelId, "up");
+    });
+
+    panel.querySelector('[data-action="move-down"]')?.addEventListener("click", () => {
+      moveTimelinePanelOneStep(panelId, "down");
+    });
+
+    panel.querySelector('[data-action="dock-left"]')?.addEventListener("click", () => {
+      dockTimelinePanelToZone(panelId, "left");
+    });
+
+    panel.querySelector('[data-action="dock-right"]')?.addEventListener("click", () => {
+      dockTimelinePanelToZone(panelId, "right");
+    });
+
+    panel.querySelector('[data-action="toggle-fullwidth"]')?.addEventListener("click", () => {
+      toggleTimelinePanelFullwidth(panelId);
+    });
+  });
+}
+
+function initTimelineDockLayout() {
+  const dockLayout = document.getElementById("monitor-dock-layout");
+  if (!dockLayout) {
+    return;
+  }
+
+  bindTimelineDockToolbarActions();
+  applyTimelineDockLayout();
+}
+
+function renderResourceTimelinePanel() {
+  if (!document.getElementById("timeline-container")) {
+    return;
+  }
+
+  renderTimeline("timeline-container", [
+    { icon: "👤", name: "Sofőrök", list: SOFOROK },
+    { icon: "🚛", name: "Vontatók", list: VONTATOK },
+    { icon: "🚚", name: "Pótkocsik", list: POTKOCSIK }
+  ]);
 }
 
 function startAutoRefresh() {
@@ -345,12 +565,23 @@ function ensureResourceFuvarBlock(resource, fuvar) {
 }
 
 function buildDriverProfiles(now) {
+  const planningDate = appState.generatedPlanning?.planningContext?.planningDate || now.toISOString().slice(0, 10);
+  const eligibilityIndex = buildEligibilityIndex({
+    drivers: SOFOROK,
+    driverSchedules: appState.generatedPlanning?.driverSchedules || [],
+    vehicles: VONTATOK,
+    jobs: FUVAROK,
+    planningDate
+  });
+
   return SOFOROK.map((driver, index) => {
-    return buildDriverProfile(driver, index, now);
+    const eligibility = eligibilityIndex.get(driver.id) || null;
+    driver.dispatchEligibility = eligibility;
+    return buildDriverProfile(driver, index, now, eligibility);
   });
 }
 
-function buildDriverProfile(driver, index, now) {
+function buildDriverProfile(driver, index, now, eligibility) {
   const currentBlock = findCurrentBlock(driver.timeline || [], now);
   const seedBase = makeSeed(`${driver.id}|${driver.nev}`);
   const timeBucket = Math.floor(now.getTime() / (15 * 60 * 1000));
@@ -370,6 +601,7 @@ function buildDriverProfile(driver, index, now) {
 
   return {
     driver,
+    eligibility,
     status: {
       key: statusKey,
       ...STATUS_META[statusKey]
@@ -999,6 +1231,12 @@ function renderDriverStateList(profiles, selectedDriverId) {
       const rigLabel = profile.rig.vontato
         ? `${profile.rig.vontato.rendszam} + ${profile.rig.potkocsi?.rendszam || "-"}`
         : "nincs kapcsolt rig";
+      const eligibilityBadge = eligibility?.canStart
+        ? `Indítható • ${eligibility.compatibleJobIds.length} fuvar`
+        : `Blokkolt • ${(eligibility?.reasons || []).slice(0, 1).map((item) => item.message).join(" ") || "nincs kompatibilis fuvar"}`;
+      const firstStartLabel = eligibility?.firstPossibleStartAt
+        ? formatDateTimeCompact(eligibility.firstPossibleStartAt)
+        : "-";
 
       return `
         <article
@@ -1015,6 +1253,7 @@ function renderDriverStateList(profiles, selectedDriverId) {
           <div class="driver-state-badges">
             <span class="driver-badge">${escapeHtml(profile.status.icon)} ${escapeHtml(profile.status.label)}</span>
             <span class="driver-badge">${escapeHtml(profile.risk.label)}</span>
+            <span class="driver-badge">${escapeHtml(eligibilityBadge)}</span>
           </div>
           <div class="driver-state-meta">
             ⏱️ Köv. szünet: ${formatDuration(profile.metrics.breakDueMin)}
@@ -1023,10 +1262,27 @@ function renderDriverStateList(profiles, selectedDriverId) {
             📊 Napi: ${formatDuration(profile.metrics.dailyUsedMin)} / ${formatDuration(profile.metrics.dailyLimitMin)}
           </div>
           <div class="driver-state-meta">
+            🚦 Első lehetséges indulás: ${escapeHtml(firstStartLabel)}
+          </div>
+          <div class="driver-state-meta">
             🚛 Rig: ${escapeHtml(rigLabel)}
           </div>
         </article>
       `;
+
+    function formatDateTimeCompact(dateLike) {
+      const date = new Date(dateLike);
+      if (!Number.isFinite(date.getTime())) {
+        return "-";
+      }
+
+      return date.toLocaleString("hu-HU", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
     })
     .join("");
 }

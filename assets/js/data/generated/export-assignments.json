@@ -1,0 +1,50 @@
+[
+  {
+    "assignmentId": "assign-row-14640",
+    "jobId": null,
+    "vehiclePlate": "RKG 688",
+    "driverNames": [
+      "Berki Richárd Sándor"
+    ],
+    "workPatternCode": "2_1",
+    "plannerNote": "1 357,13 km",
+    "dispatchNote": "megbeszélve vele az uindulás",
+    "sourceRow": 14640
+  },
+  {
+    "assignmentId": "assign-row-14641",
+    "jobId": null,
+    "vehiclePlate": "PUN 081",
+    "driverNames": [
+      "Szabó Levente"
+    ],
+    "workPatternCode": "1_1",
+    "plannerNote": "2 412,32 km",
+    "dispatchNote": null,
+    "sourceRow": 14641
+  },
+  {
+    "assignmentId": "assign-row-14642",
+    "jobId": null,
+    "vehiclePlate": "AIFN 160",
+    "driverNames": [
+      "Németh Zsolt"
+    ],
+    "workPatternCode": "5_2",
+    "plannerNote": "347,54 km",
+    "dispatchNote": null,
+    "sourceRow": 14642
+  },
+  {
+    "assignmentId": "assign-row-14643",
+    "jobId": null,
+    "vehiclePlate": "SNR 416",
+    "driverNames": [
+      "Lutz Márk Richárd"
+    ],
+    "workPatternCode": "11_3",
+    "plannerNote": "2 443,97 km",
+    "dispatchNote": null,
+    "sourceRow": 14643
+  }
+]

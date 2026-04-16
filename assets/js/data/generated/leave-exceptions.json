@@ -1,0 +1,30 @@
+[
+  {
+    "driverId": "DRV-kalman-janos",
+    "date": "2026-04-16",
+    "override": "ON_LEAVE",
+    "sourceSheet": "Szabik 2026",
+    "sourceRow": 11
+  },
+  {
+    "driverId": "DRV-nagy-szabina",
+    "date": "2026-04-16",
+    "override": "ON_LEAVE",
+    "sourceSheet": "Szabik 2026",
+    "sourceRow": 12
+  },
+  {
+    "driverId": "DRV-ivan-arpad-krisztian",
+    "date": "2026-04-16",
+    "override": "ON_LEAVE",
+    "sourceSheet": "Szabik 2026",
+    "sourceRow": 16
+  },
+  {
+    "driverId": "DRV-toth-attila",
+    "date": "2026-04-16",
+    "override": "ON_LEAVE",
+    "sourceSheet": "Szabik 2026",
+    "sourceRow": 95
+  }
+]

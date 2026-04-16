@@ -1,0 +1,23 @@
+{
+  "planningDate": "2026-04-16",
+  "effectiveExportDate": "2026-04-14",
+  "exportFallbackUsed": true,
+  "sourceFile": "menetiranyitas&tervezes_2025 (1).xlsx",
+  "generatedAt": "2026-04-16T08:46:57Z",
+  "sourceSheets": {
+    "export": "EXPORT",
+    "helper": "segédtábla",
+    "leave": "Szabik 2026",
+    "roster": "Munkabeosztás"
+  },
+  "detectedHeaderRows": {
+    "export": 14632,
+    "helper": 1
+  },
+  "exportSection": {
+    "dateRow": 14630,
+    "endRow": 14662,
+    "effectiveDate": "2026-04-14",
+    "fallbackUsed": true
+  }
+}
