@@ -180,6 +180,7 @@ const appState = {
   profiles: [],
   alerts: [],
   selectedDriverId: null,
+  selectedExportDate: null,
   refreshTimerId: null,
   generatedPlanning: null
 };
@@ -203,6 +204,9 @@ window.addEventListener("beforeunload", () => {
 
 async function initMenetiranyitasPanel() {
   appState.generatedPlanning = await loadGeneratedPlanningData();
+  appState.selectedExportDate = appState.generatedPlanning?.planningContext?.effectiveExportDate
+    || appState.generatedPlanning?.planningContext?.planningDate
+    || null;
 
   ensureContinuousTimelines(SOFOROK, VONTATOK, POTKOCSIK);
   ensureDemoRigAssignments();
@@ -229,6 +233,8 @@ async function initMenetiranyitasPanel() {
 
   const driverList = document.getElementById("driver-state-list");
   const exportDriverList = document.getElementById("export-driver-list");
+  const exportDateSwitcher = document.getElementById("export-date-switcher");
+  const exportTableContainer = document.getElementById("export-table-container");
   const alertsList = document.getElementById("monitor-alerts-list");
 
   if (driverList) {
@@ -239,6 +245,17 @@ async function initMenetiranyitasPanel() {
   if (exportDriverList) {
     exportDriverList.addEventListener("click", onDriverListClick);
     exportDriverList.addEventListener("keydown", onDriverListKeydown);
+  }
+
+  if (exportTableContainer) {
+    exportTableContainer.addEventListener("click", onDriverListClick);
+    exportTableContainer.addEventListener("keydown", onDriverListKeydown);
+  }
+
+  if (exportDateSwitcher) {
+    exportDateSwitcher.addEventListener("click", onExportDateSwitcherClick);
+    exportDateSwitcher.addEventListener("keydown", onExportDateSwitcherKeydown);
+    exportDateSwitcher.addEventListener("change", onExportDateSwitcherChange);
   }
 
   if (alertsList) {
@@ -470,6 +487,7 @@ function startAutoRefresh() {
 function refreshDashboard(options = {}) {
   const { preserveSelection = true, focusMode = "assembly" } = options;
   const now = new Date();
+  ensureSelectedExportDate();
 
   const profiles = buildDriverProfiles(now);
   appState.profiles = profiles;
@@ -484,6 +502,8 @@ function refreshDashboard(options = {}) {
 
   renderKpiStrip(profiles);
   renderPlanningContextStrip();
+  renderExportDateSwitcher();
+  renderExportTable(profiles, appState.selectedDriverId);
   renderExportDriverList(profiles, appState.selectedDriverId);
   renderDriverStateList(profiles, appState.selectedDriverId);
   renderMainPanel(selectedProfile, now);
@@ -574,6 +594,7 @@ function ensureResourceFuvarBlock(resource, fuvar) {
 
 function buildDriverProfiles(now) {
   const planningDate = appState.generatedPlanning?.planningContext?.planningDate || now.toISOString().slice(0, 10);
+  const selectedExportDate = getSelectedExportDate();
   const eligibilityIndex = buildEligibilityIndex({
     drivers: SOFOROK,
     driverSchedules: appState.generatedPlanning?.driverSchedules || [],
@@ -585,7 +606,7 @@ function buildDriverProfiles(now) {
   return SOFOROK.map((driver, index) => {
     const eligibility = eligibilityIndex.get(driver.id) || null;
     driver.dispatchEligibility = eligibility;
-    const exportAssignments = resolveExportAssignmentsForDriver(driver);
+    const exportAssignments = resolveExportAssignmentsForDriver(driver, selectedExportDate);
     return buildDriverProfile(driver, index, now, eligibility, exportAssignments);
   });
 }
@@ -630,7 +651,7 @@ function buildDriverProfile(driver, index, now, eligibility, exportAssignments =
   };
 }
 
-function resolveExportAssignmentsForDriver(driver) {
+function resolveExportAssignmentsForDriver(driver, selectedExportDate) {
   const assignments = appState.generatedPlanning?.exportAssignments;
   if (!Array.isArray(assignments) || !assignments.length || !driver) {
     return [];
@@ -641,11 +662,60 @@ function resolveExportAssignmentsForDriver(driver) {
   const linkedVehiclePlateKey = normalizePlanningKey(resolveRigForDriver(driver)?.vontato?.rendszam || "");
 
   return assignments.filter((assignment) => {
+    if (selectedExportDate && String(assignment.exportDate || "").slice(0, 10) !== selectedExportDate) {
+      return false;
+    }
     const assignmentVehicleKey = normalizePlanningKey(assignment.vehiclePlate || "");
     const driverMatch = (assignment.driverNames || []).some((name) => normalizePlanningKey(name) === driverKey);
     const vehicleMatch = Boolean(assignmentVehicleKey)
       && (assignmentVehicleKey === vehiclePlateKey || assignmentVehicleKey === linkedVehiclePlateKey);
     return driverMatch || vehicleMatch;
+  });
+}
+
+function getAvailableExportDates() {
+  const dates = appState.generatedPlanning?.planningContext?.availableExportDates;
+  if (Array.isArray(dates) && dates.length) {
+    return dates
+      .filter((item) => Number(item.parsedAssignmentCount || 0) > 0)
+      .sort((left, right) => String(right.date || "").localeCompare(String(left.date || "")));
+  }
+
+  const exportAssignments = appState.generatedPlanning?.exportAssignments || [];
+  const uniqueDates = [...new Set(exportAssignments.map((item) => String(item.exportDate || "").slice(0, 10)).filter(Boolean))].sort();
+  return uniqueDates
+    .map((date) => ({ date, parsedAssignmentCount: getExportAssignmentsForDate(date).length }))
+    .filter((item) => Number(item.parsedAssignmentCount || 0) > 0)
+    .sort((left, right) => String(right.date || "").localeCompare(String(left.date || "")));
+}
+
+function ensureSelectedExportDate() {
+  const availableDates = getAvailableExportDates();
+  if (!availableDates.length) {
+    appState.selectedExportDate = appState.generatedPlanning?.planningContext?.effectiveExportDate
+      || appState.generatedPlanning?.planningContext?.planningDate
+      || null;
+    return;
+  }
+
+  const availableDateKeys = new Set(availableDates.map((item) => item.date));
+  if (!appState.selectedExportDate || !availableDateKeys.has(appState.selectedExportDate)) {
+    const effectiveDate = appState.generatedPlanning?.planningContext?.effectiveExportDate;
+    appState.selectedExportDate = availableDateKeys.has(effectiveDate)
+      ? effectiveDate
+      : availableDates[0].date;
+  }
+}
+
+function getSelectedExportDate() {
+  ensureSelectedExportDate();
+  return appState.selectedExportDate;
+}
+
+function getExportAssignmentsForDate(exportDate) {
+  const normalizedDate = String(exportDate || "").slice(0, 10);
+  return (appState.generatedPlanning?.exportAssignments || []).filter((assignment) => {
+    return String(assignment.exportDate || "").slice(0, 10) === normalizedDate;
   });
 }
 
@@ -1264,11 +1334,14 @@ function renderPlanningContextStrip() {
   const planningContext = planning.planningContext || {};
   const importReport = planning.importReport || {};
   const rosterMeta = planning.rosterMeta || {};
+  const selectedExportDate = getSelectedExportDate();
+  const selectedExportAssignments = getExportAssignmentsForDate(selectedExportDate);
   const requestedDate = formatDateOnlyLabel(planningContext.planningDate);
+  const selectedDate = formatDateOnlyLabel(selectedExportDate);
   const effectiveExportDate = formatDateOnlyLabel(planningContext.effectiveExportDate);
   const effectiveRosterDate = formatDateOnlyLabel(rosterMeta.effectiveRosterDate);
-  const exportAssignmentCount = Array.isArray(planning.exportAssignments)
-    ? planning.exportAssignments.length
+  const exportAssignmentCount = selectedExportAssignments.length
+    ? selectedExportAssignments.length
     : Number(importReport.exportAssignments || 0);
   const rosterAssignmentCount = Array.isArray(planning.rosterAssignments)
     ? planning.rosterAssignments.length
@@ -1286,6 +1359,7 @@ function renderPlanningContextStrip() {
       <div class="planning-context-headline">${fallbackPill}</div>
       <div class="planning-context-meta-row">
         <span class="planning-context-chip">Kért nap: ${escapeHtml(requestedDate)}</span>
+        <span class="planning-context-chip">Megjelenített Export nap: ${escapeHtml(selectedDate)}</span>
         <span class="planning-context-chip">Effektív EXPORT: ${escapeHtml(effectiveExportDate)}</span>
         <span class="planning-context-chip">Effektív roster: ${escapeHtml(effectiveRosterDate)}</span>
       </div>
@@ -1293,7 +1367,7 @@ function renderPlanningContextStrip() {
     <article class="planning-context-card">
       <div class="planning-context-label">Importált kiosztás</div>
       <div class="planning-context-value">${exportAssignmentCount}</div>
-      <div class="planning-context-note">EXPORT assignment sor</div>
+      <div class="planning-context-note">a megjelenített Export nap sorai</div>
     </article>
     <article class="planning-context-card">
       <div class="planning-context-label">Roster hozzárendelés</div>
@@ -1305,6 +1379,110 @@ function renderPlanningContextStrip() {
       <div class="planning-context-value">${driverCount} sofőr • ${vehicleCount} vontató</div>
       <div class="planning-context-note">generated planning állapot</div>
     </article>
+  `;
+}
+
+function renderExportDateSwitcher() {
+  const container = document.getElementById("export-date-switcher");
+  if (!container) {
+    return;
+  }
+
+  const availableDates = getAvailableExportDates();
+  if (!availableDates.length) {
+    container.innerHTML = "";
+    container.hidden = true;
+    return;
+  }
+
+  const selectedDate = getSelectedExportDate();
+  container.hidden = false;
+  const selectedIndex = Math.max(0, availableDates.findIndex((item) => item.date === selectedDate));
+  const hasPrevious = selectedIndex < availableDates.length - 1;
+  const hasNext = selectedIndex > 0;
+  const optionsHtml = availableDates
+    .map((item) => {
+      const date = item.date;
+      const count = Number(item.parsedAssignmentCount || 0);
+      const selectedAttr = date === selectedDate ? ' selected' : "";
+      return `<option value="${escapeHtml(date)}"${selectedAttr}>${escapeHtml(formatDateOnlyLabel(date))} • ${count} sor</option>`;
+    })
+    .join("");
+
+  container.innerHTML = `
+    <div class="export-date-switcher-controls">
+      <button type="button" class="export-date-nav" data-export-nav="previous" ${hasPrevious ? "" : "disabled"}>← Előző nap</button>
+      <label class="export-date-select-wrap">
+        <span>Export nap</span>
+        <select class="export-date-select" data-export-select="true">
+          ${optionsHtml}
+        </select>
+      </label>
+      <button type="button" class="export-date-nav" data-export-nav="next" ${hasNext ? "" : "disabled"}>Következő nap →</button>
+    </div>
+  `;
+}
+
+function renderExportTable(profiles, selectedDriverId) {
+  const container = document.getElementById("export-table-container");
+  if (!container) {
+    return;
+  }
+
+  const selectedDate = getSelectedExportDate();
+  const assignments = getExportAssignmentsForDate(selectedDate);
+  if (!assignments.length) {
+    container.innerHTML = '<div class="empty-message">A kiválasztott Export napon nincs betöltött kiosztási sor.</div>';
+    return;
+  }
+
+  const profileByAssignmentId = new Map();
+  profiles.forEach((profile) => {
+    (profile.exportAssignments || []).forEach((assignment) => {
+      profileByAssignmentId.set(assignment.assignmentId, profile);
+    });
+  });
+
+  const rowsHtml = assignments
+    .map((assignment) => {
+      const profile = profileByAssignmentId.get(assignment.assignmentId) || null;
+      const selectedClass = profile?.driver.id === selectedDriverId ? "selected" : "";
+      const driverNames = (assignment.driverNames || []).join(", ") || profile?.driver.nev || "-";
+      const workPattern = assignment.originalWorkPatternCode || assignment.workPatternCode || "-";
+      const driverIdAttr = profile?.driver.id ? ` data-driver-id="${escapeHtml(profile.driver.id)}" role="button" tabindex="0"` : "";
+
+      return `
+        <tr class="export-table-row ${selectedClass}"${driverIdAttr}>
+          <td>${escapeHtml(workPattern)}</td>
+          <td>${escapeHtml(assignment.vehiclePlate || "-")}</td>
+          <td>${escapeHtml(driverNames)}</td>
+          <td>${escapeHtml(assignment.jobId || "-")}</td>
+          <td>${escapeHtml(assignment.plannerNote || "-")}</td>
+          <td>${escapeHtml(assignment.dispatchNote || "-")}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  container.innerHTML = `
+    <div class="export-table-meta">Megjelenített nap: ${escapeHtml(formatDateOnlyLabel(selectedDate))}</div>
+    <div class="export-table-shell">
+      <table class="export-table-view">
+        <thead>
+          <tr>
+            <th>MI neve</th>
+            <th>Vontató rendszám</th>
+            <th>Sofőr(ök)</th>
+            <th>SZF-SZÁM</th>
+            <th>Jani megjegyzés</th>
+            <th>Menetirányító megjegyzés</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
   `;
 }
 
@@ -1811,8 +1989,8 @@ function renderAlertsPanel(alerts, selectedDriverId) {
 }
 
 function onDriverListClick(event) {
-  const card = event.target.closest(".driver-state-card");
-  if (!card) {
+  const card = event.target.closest("[data-driver-id]");
+  if (!card || !event.currentTarget.contains(card)) {
     return;
   }
 
@@ -1831,8 +2009,8 @@ function onDriverListKeydown(event) {
     return;
   }
 
-  const card = event.target.closest(".driver-state-card");
-  if (!card) {
+  const card = event.target.closest("[data-driver-id]");
+  if (!card || !event.currentTarget.contains(card)) {
     return;
   }
 
@@ -1846,6 +2024,72 @@ function onDriverListKeydown(event) {
   appState.selectedDriverId = driverId;
   refreshDashboard({ preserveSelection: true, focusMode: "assembly" });
   pulseMainPanel();
+}
+
+function onExportDateSwitcherClick(event) {
+  const button = event.target.closest("[data-export-nav]");
+  if (!button || !event.currentTarget.contains(button)) {
+    return;
+  }
+
+  const availableDates = getAvailableExportDates();
+  const currentIndex = availableDates.findIndex((item) => item.date === appState.selectedExportDate);
+  if (currentIndex === -1) {
+    return;
+  }
+
+  const delta = button.dataset.exportNav === "previous" ? 1 : -1;
+  const nextDate = availableDates[currentIndex + delta]?.date;
+  const exportDate = String(nextDate || "").slice(0, 10);
+  if (!exportDate || exportDate === appState.selectedExportDate) {
+    return;
+  }
+
+  appState.selectedExportDate = exportDate;
+  refreshDashboard({ preserveSelection: true, focusMode: "none" });
+}
+
+function onExportDateSwitcherKeydown(event) {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  const button = event.target.closest("[data-export-nav]");
+  if (!button || !event.currentTarget.contains(button)) {
+    return;
+  }
+
+  event.preventDefault();
+  const availableDates = getAvailableExportDates();
+  const currentIndex = availableDates.findIndex((item) => item.date === appState.selectedExportDate);
+  if (currentIndex === -1) {
+    return;
+  }
+
+  const delta = button.dataset.exportNav === "previous" ? 1 : -1;
+  const nextDate = availableDates[currentIndex + delta]?.date;
+  const exportDate = String(nextDate || "").slice(0, 10);
+  if (!exportDate || exportDate === appState.selectedExportDate) {
+    return;
+  }
+
+  appState.selectedExportDate = exportDate;
+  refreshDashboard({ preserveSelection: true, focusMode: "none" });
+}
+
+function onExportDateSwitcherChange(event) {
+  const select = event.target.closest("[data-export-select]");
+  if (!select || !event.currentTarget.contains(select)) {
+    return;
+  }
+
+  const exportDate = String(select.value || "").slice(0, 10);
+  if (!exportDate || exportDate === appState.selectedExportDate) {
+    return;
+  }
+
+  appState.selectedExportDate = exportDate;
+  refreshDashboard({ preserveSelection: true, focusMode: "none" });
 }
 
 function onAlertListClick(event) {

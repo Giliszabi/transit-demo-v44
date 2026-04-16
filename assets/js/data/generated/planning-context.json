@@ -3,7 +3,7 @@
   "effectiveExportDate": "2026-04-14",
   "exportFallbackUsed": true,
   "sourceFile": "menetiranyitas&tervezes_2025 (1).xlsx",
-  "generatedAt": "2026-04-16T08:46:57Z",
+  "generatedAt": "2026-04-16T09:47:40Z",
   "sourceSheets": {
     "export": "EXPORT",
     "helper": "segédtábla",
@@ -19,5 +19,5177 @@
     "endRow": 14662,
     "effectiveDate": "2026-04-14",
     "fallbackUsed": true
-  }
+  },
+  "availableExportDates": [
+    {
+      "date": "2025-01-01",
+      "dateRow": 1,
+      "headerRow": 3,
+      "endRow": 32,
+      "excelCount": 1,
+      "parsedAssignmentCount": 8,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-02",
+      "dateRow": 33,
+      "headerRow": 35,
+      "endRow": 59,
+      "excelCount": 4,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-03",
+      "dateRow": 60,
+      "headerRow": 62,
+      "endRow": 87,
+      "excelCount": 4,
+      "parsedAssignmentCount": 13,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-04",
+      "dateRow": 88,
+      "headerRow": 90,
+      "endRow": 115,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-05",
+      "dateRow": 116,
+      "headerRow": 118,
+      "endRow": 145,
+      "excelCount": 29,
+      "parsedAssignmentCount": 22,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-06",
+      "dateRow": 146,
+      "headerRow": 148,
+      "endRow": 193,
+      "excelCount": 37,
+      "parsedAssignmentCount": 39,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-07",
+      "dateRow": 194,
+      "headerRow": 196,
+      "endRow": 239,
+      "excelCount": 4,
+      "parsedAssignmentCount": 24,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-08",
+      "dateRow": 240,
+      "headerRow": 242,
+      "endRow": 275,
+      "excelCount": 4,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-09",
+      "dateRow": 276,
+      "headerRow": 278,
+      "endRow": 313,
+      "excelCount": null,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-10",
+      "dateRow": 314,
+      "headerRow": 316,
+      "endRow": 343,
+      "excelCount": 1,
+      "parsedAssignmentCount": 13,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-11",
+      "dateRow": 344,
+      "headerRow": 346,
+      "endRow": 373,
+      "excelCount": 1,
+      "parsedAssignmentCount": 5,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-12",
+      "dateRow": 374,
+      "headerRow": 376,
+      "endRow": 419,
+      "excelCount": 9,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-13",
+      "dateRow": 420,
+      "headerRow": 422,
+      "endRow": 464,
+      "excelCount": 9,
+      "parsedAssignmentCount": 37,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-14",
+      "dateRow": 465,
+      "headerRow": 467,
+      "endRow": 512,
+      "excelCount": 5,
+      "parsedAssignmentCount": 36,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-15",
+      "dateRow": 513,
+      "headerRow": 515,
+      "endRow": 551,
+      "excelCount": 7,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-16",
+      "dateRow": 552,
+      "headerRow": 554,
+      "endRow": 591,
+      "excelCount": 5,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-17",
+      "dateRow": 592,
+      "headerRow": 594,
+      "endRow": 631,
+      "excelCount": 0,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-18",
+      "dateRow": 632,
+      "headerRow": 634,
+      "endRow": 662,
+      "excelCount": 3,
+      "parsedAssignmentCount": 7,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-19",
+      "dateRow": 663,
+      "headerRow": 665,
+      "endRow": 705,
+      "excelCount": 9,
+      "parsedAssignmentCount": 30,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-20",
+      "dateRow": 706,
+      "headerRow": 708,
+      "endRow": 759,
+      "excelCount": 38,
+      "parsedAssignmentCount": 46,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-21",
+      "dateRow": 760,
+      "headerRow": 762,
+      "endRow": 800,
+      "excelCount": 3,
+      "parsedAssignmentCount": 30,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-22",
+      "dateRow": 801,
+      "headerRow": 803,
+      "endRow": 839,
+      "excelCount": 11,
+      "parsedAssignmentCount": 26,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-23",
+      "dateRow": 840,
+      "headerRow": 842,
+      "endRow": 879,
+      "excelCount": 16,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-24",
+      "dateRow": 880,
+      "headerRow": 882,
+      "endRow": 904,
+      "excelCount": 5,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-25",
+      "dateRow": 905,
+      "headerRow": 907,
+      "endRow": 920,
+      "excelCount": 3,
+      "parsedAssignmentCount": 3,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-26",
+      "dateRow": 921,
+      "headerRow": 923,
+      "endRow": 963,
+      "excelCount": 6,
+      "parsedAssignmentCount": 34,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-27",
+      "dateRow": 964,
+      "headerRow": 966,
+      "endRow": 1012,
+      "excelCount": 19,
+      "parsedAssignmentCount": 41,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-28",
+      "dateRow": 1013,
+      "headerRow": 1015,
+      "endRow": 1049,
+      "excelCount": 1,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-29",
+      "dateRow": 1050,
+      "headerRow": 1052,
+      "endRow": 1088,
+      "excelCount": 10,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-30",
+      "dateRow": 1089,
+      "headerRow": 1091,
+      "endRow": 1125,
+      "excelCount": 93,
+      "parsedAssignmentCount": 26,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-01-31",
+      "dateRow": 1126,
+      "headerRow": 1128,
+      "endRow": 1159,
+      "excelCount": 25,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-01",
+      "dateRow": 1160,
+      "headerRow": 1162,
+      "endRow": 1182,
+      "excelCount": 2,
+      "parsedAssignmentCount": 7,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-02",
+      "dateRow": 1183,
+      "headerRow": 1185,
+      "endRow": 1215,
+      "excelCount": 4,
+      "parsedAssignmentCount": 22,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-03",
+      "dateRow": 1216,
+      "headerRow": 1218,
+      "endRow": 1273,
+      "excelCount": 14,
+      "parsedAssignmentCount": 46,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-04",
+      "dateRow": 1274,
+      "headerRow": 1276,
+      "endRow": 1309,
+      "excelCount": 10,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-05",
+      "dateRow": 1310,
+      "headerRow": 1312,
+      "endRow": 1341,
+      "excelCount": 13,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-06",
+      "dateRow": 1342,
+      "headerRow": 1344,
+      "endRow": 1381,
+      "excelCount": 23,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-07",
+      "dateRow": 1382,
+      "headerRow": 1384,
+      "endRow": 1407,
+      "excelCount": 7,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-08",
+      "dateRow": 1408,
+      "headerRow": 1410,
+      "endRow": 1443,
+      "excelCount": 5,
+      "parsedAssignmentCount": 5,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-09",
+      "dateRow": 1444,
+      "headerRow": 1446,
+      "endRow": 1492,
+      "excelCount": 21,
+      "parsedAssignmentCount": 39,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-10",
+      "dateRow": 1493,
+      "headerRow": 1495,
+      "endRow": 1537,
+      "excelCount": 7,
+      "parsedAssignmentCount": 36,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-11",
+      "dateRow": 1538,
+      "headerRow": 1540,
+      "endRow": 1574,
+      "excelCount": 34,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-12",
+      "dateRow": 1575,
+      "headerRow": 1577,
+      "endRow": 1609,
+      "excelCount": 11,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-13",
+      "dateRow": 1610,
+      "headerRow": 1612,
+      "endRow": 1640,
+      "excelCount": 34,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-14",
+      "dateRow": 1641,
+      "headerRow": 1643,
+      "endRow": 1676,
+      "excelCount": 9,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-15",
+      "dateRow": 1677,
+      "headerRow": 1679,
+      "endRow": 1708,
+      "excelCount": 49,
+      "parsedAssignmentCount": 7,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-16",
+      "dateRow": 1709,
+      "headerRow": 1711,
+      "endRow": 1754,
+      "excelCount": 25,
+      "parsedAssignmentCount": 34,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-17",
+      "dateRow": 1755,
+      "headerRow": 1757,
+      "endRow": 1800,
+      "excelCount": 17,
+      "parsedAssignmentCount": 38,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-18",
+      "dateRow": 1801,
+      "headerRow": 1803,
+      "endRow": 1837,
+      "excelCount": 12,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-19",
+      "dateRow": 1838,
+      "headerRow": 1840,
+      "endRow": 1870,
+      "excelCount": 8,
+      "parsedAssignmentCount": 26,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-20",
+      "dateRow": 1871,
+      "headerRow": 1873,
+      "endRow": 1901,
+      "excelCount": 31,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-21",
+      "dateRow": 1902,
+      "headerRow": 1904,
+      "endRow": 1926,
+      "excelCount": 1,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-22",
+      "dateRow": 1927,
+      "headerRow": 1929,
+      "endRow": 1946,
+      "excelCount": 10,
+      "parsedAssignmentCount": 11,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-23",
+      "dateRow": 1947,
+      "headerRow": 1949,
+      "endRow": 1986,
+      "excelCount": 15,
+      "parsedAssignmentCount": 31,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-24",
+      "dateRow": 1987,
+      "headerRow": 1989,
+      "endRow": 2040,
+      "excelCount": 15,
+      "parsedAssignmentCount": 44,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-25",
+      "dateRow": 2041,
+      "headerRow": 2043,
+      "endRow": 2080,
+      "excelCount": 8,
+      "parsedAssignmentCount": 31,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-26",
+      "dateRow": 2081,
+      "headerRow": 2083,
+      "endRow": 2110,
+      "excelCount": 10,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-27",
+      "dateRow": 2111,
+      "headerRow": 2113,
+      "endRow": 2150,
+      "excelCount": 100,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-02-28",
+      "dateRow": 2151,
+      "headerRow": 2153,
+      "endRow": 2177,
+      "excelCount": 70,
+      "parsedAssignmentCount": 17,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-01",
+      "dateRow": 2178,
+      "headerRow": 2180,
+      "endRow": 2188,
+      "excelCount": 115,
+      "parsedAssignmentCount": 5,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-02",
+      "dateRow": 2189,
+      "headerRow": 2191,
+      "endRow": 2233,
+      "excelCount": 19,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-03",
+      "dateRow": 2234,
+      "headerRow": 2236,
+      "endRow": 2274,
+      "excelCount": 11,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-04",
+      "dateRow": 2275,
+      "headerRow": 2277,
+      "endRow": 2311,
+      "excelCount": 14,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-05",
+      "dateRow": 2312,
+      "headerRow": 2314,
+      "endRow": 2345,
+      "excelCount": 12,
+      "parsedAssignmentCount": 25,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-06",
+      "dateRow": 2346,
+      "headerRow": 2348,
+      "endRow": 2374,
+      "excelCount": 12,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-07",
+      "dateRow": 2375,
+      "headerRow": 2377,
+      "endRow": 2400,
+      "excelCount": 8,
+      "parsedAssignmentCount": 15,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-08",
+      "dateRow": 2401,
+      "headerRow": 2403,
+      "endRow": 2410,
+      "excelCount": 4,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-09",
+      "dateRow": 2411,
+      "headerRow": 2413,
+      "endRow": 2456,
+      "excelCount": 18,
+      "parsedAssignmentCount": 36,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-10",
+      "dateRow": 2457,
+      "headerRow": 2459,
+      "endRow": 2503,
+      "excelCount": 26,
+      "parsedAssignmentCount": 37,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-11",
+      "dateRow": 2504,
+      "headerRow": 2506,
+      "endRow": 2548,
+      "excelCount": 14,
+      "parsedAssignmentCount": 34,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-12",
+      "dateRow": 2549,
+      "headerRow": 2551,
+      "endRow": 2588,
+      "excelCount": 17,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-13",
+      "dateRow": 2589,
+      "headerRow": 2591,
+      "endRow": 2621,
+      "excelCount": 30,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-14",
+      "dateRow": 2622,
+      "headerRow": 2624,
+      "endRow": 2639,
+      "excelCount": 5,
+      "parsedAssignmentCount": 10,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-15",
+      "dateRow": 2640,
+      "headerRow": 2642,
+      "endRow": 2680,
+      "excelCount": 11,
+      "parsedAssignmentCount": 11,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-16",
+      "dateRow": 2681,
+      "headerRow": 2683,
+      "endRow": 2727,
+      "excelCount": 24,
+      "parsedAssignmentCount": 35,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-17",
+      "dateRow": 2728,
+      "headerRow": 2730,
+      "endRow": 2782,
+      "excelCount": 41,
+      "parsedAssignmentCount": 45,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-18",
+      "dateRow": 2783,
+      "headerRow": 2785,
+      "endRow": 2809,
+      "excelCount": 7,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-19",
+      "dateRow": 2810,
+      "headerRow": 2812,
+      "endRow": 2841,
+      "excelCount": 12,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-20",
+      "dateRow": 2842,
+      "headerRow": 2844,
+      "endRow": 2875,
+      "excelCount": 12,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-21",
+      "dateRow": 2876,
+      "headerRow": 2878,
+      "endRow": 2909,
+      "excelCount": 9,
+      "parsedAssignmentCount": 25,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-22",
+      "dateRow": 2910,
+      "headerRow": 2912,
+      "endRow": 2921,
+      "excelCount": 2,
+      "parsedAssignmentCount": 3,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-23",
+      "dateRow": 2922,
+      "headerRow": 2924,
+      "endRow": 2959,
+      "excelCount": 17,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-24",
+      "dateRow": 2960,
+      "headerRow": 2962,
+      "endRow": 3016,
+      "excelCount": 13,
+      "parsedAssignmentCount": 46,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-25",
+      "dateRow": 3017,
+      "headerRow": 3019,
+      "endRow": 3054,
+      "excelCount": 8,
+      "parsedAssignmentCount": 25,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-26",
+      "dateRow": 3055,
+      "headerRow": 3057,
+      "endRow": 3091,
+      "excelCount": 14,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-27",
+      "dateRow": 3092,
+      "headerRow": 3094,
+      "endRow": 3121,
+      "excelCount": 8,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-28",
+      "dateRow": 3122,
+      "headerRow": 3124,
+      "endRow": 3146,
+      "excelCount": 4,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-29",
+      "dateRow": 3147,
+      "headerRow": 3149,
+      "endRow": 3161,
+      "excelCount": 3,
+      "parsedAssignmentCount": 5,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-30",
+      "dateRow": 3162,
+      "headerRow": 3164,
+      "endRow": 3203,
+      "excelCount": 21,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-03-31",
+      "dateRow": 3204,
+      "headerRow": 3206,
+      "endRow": 3262,
+      "excelCount": 29,
+      "parsedAssignmentCount": 51,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-01",
+      "dateRow": 3263,
+      "headerRow": 3265,
+      "endRow": 3294,
+      "excelCount": 11,
+      "parsedAssignmentCount": 22,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-02",
+      "dateRow": 3295,
+      "headerRow": 3297,
+      "endRow": 3330,
+      "excelCount": 16,
+      "parsedAssignmentCount": 25,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-03",
+      "dateRow": 3331,
+      "headerRow": 3333,
+      "endRow": 3361,
+      "excelCount": 35,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-04",
+      "dateRow": 3362,
+      "headerRow": 3364,
+      "endRow": 3388,
+      "excelCount": 7,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-05",
+      "dateRow": 3389,
+      "headerRow": 3391,
+      "endRow": 3399,
+      "excelCount": 4,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-06",
+      "dateRow": 3400,
+      "headerRow": 3402,
+      "endRow": 3438,
+      "excelCount": 14,
+      "parsedAssignmentCount": 30,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-07",
+      "dateRow": 3439,
+      "headerRow": 3441,
+      "endRow": 3484,
+      "excelCount": 22,
+      "parsedAssignmentCount": 38,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-08",
+      "dateRow": 3485,
+      "headerRow": 3487,
+      "endRow": 3522,
+      "excelCount": 12,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-09",
+      "dateRow": 3523,
+      "headerRow": 3525,
+      "endRow": 3553,
+      "excelCount": 49,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-10",
+      "dateRow": 3554,
+      "headerRow": 3556,
+      "endRow": 3585,
+      "excelCount": 25,
+      "parsedAssignmentCount": 22,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-11",
+      "dateRow": 3586,
+      "headerRow": 3588,
+      "endRow": 3618,
+      "excelCount": 8,
+      "parsedAssignmentCount": 17,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-12",
+      "dateRow": 3619,
+      "headerRow": 3621,
+      "endRow": 3631,
+      "excelCount": 4,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-13",
+      "dateRow": 3632,
+      "headerRow": 3634,
+      "endRow": 3668,
+      "excelCount": 10,
+      "parsedAssignmentCount": 30,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-14",
+      "dateRow": 3669,
+      "headerRow": 3671,
+      "endRow": 3717,
+      "excelCount": 15,
+      "parsedAssignmentCount": 39,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-15",
+      "dateRow": 3718,
+      "headerRow": 3720,
+      "endRow": 3748,
+      "excelCount": 15,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-16",
+      "dateRow": 3749,
+      "headerRow": 3751,
+      "endRow": 3779,
+      "excelCount": 22,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-17",
+      "dateRow": 3780,
+      "headerRow": 3782,
+      "endRow": 3789,
+      "excelCount": 1,
+      "parsedAssignmentCount": 5,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-18",
+      "dateRow": 3790,
+      "headerRow": 3792,
+      "endRow": 3797,
+      "excelCount": 2,
+      "parsedAssignmentCount": 2,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-19",
+      "dateRow": 3798,
+      "headerRow": 3800,
+      "endRow": 3807,
+      "excelCount": 3,
+      "parsedAssignmentCount": 3,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-20",
+      "dateRow": 3808,
+      "headerRow": 3810,
+      "endRow": 3812,
+      "excelCount": 1,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-21",
+      "dateRow": 3813,
+      "headerRow": 3815,
+      "endRow": 3871,
+      "excelCount": 32,
+      "parsedAssignmentCount": 49,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-22",
+      "dateRow": 3872,
+      "headerRow": 3874,
+      "endRow": 3910,
+      "excelCount": 12,
+      "parsedAssignmentCount": 30,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-23",
+      "dateRow": 3911,
+      "headerRow": 3913,
+      "endRow": 3932,
+      "excelCount": 14,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-24",
+      "dateRow": 3933,
+      "headerRow": 3935,
+      "endRow": 3960,
+      "excelCount": 15,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-25",
+      "dateRow": 3961,
+      "headerRow": 3963,
+      "endRow": 3983,
+      "excelCount": 5,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-26",
+      "dateRow": 3984,
+      "headerRow": 3986,
+      "endRow": 4011,
+      "excelCount": 11,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-27",
+      "dateRow": 4012,
+      "headerRow": 4014,
+      "endRow": 4058,
+      "excelCount": 25,
+      "parsedAssignmentCount": 39,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-28",
+      "dateRow": 4059,
+      "headerRow": 4061,
+      "endRow": 4099,
+      "excelCount": 16,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-29",
+      "dateRow": 4100,
+      "headerRow": 4102,
+      "endRow": 4127,
+      "excelCount": 5,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-04-30",
+      "dateRow": 4128,
+      "headerRow": 4130,
+      "endRow": 4147,
+      "excelCount": 1,
+      "parsedAssignmentCount": 12,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-01",
+      "dateRow": 4148,
+      "headerRow": 4150,
+      "endRow": 4162,
+      "excelCount": 2,
+      "parsedAssignmentCount": 9,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-02",
+      "dateRow": 4163,
+      "headerRow": 4165,
+      "endRow": 4185,
+      "excelCount": 4,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-03",
+      "dateRow": 4186,
+      "headerRow": 4188,
+      "endRow": 4197,
+      "excelCount": 2,
+      "parsedAssignmentCount": 2,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-04",
+      "dateRow": 4198,
+      "headerRow": 4200,
+      "endRow": 4245,
+      "excelCount": 12,
+      "parsedAssignmentCount": 35,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-05",
+      "dateRow": 4246,
+      "headerRow": 4248,
+      "endRow": 4290,
+      "excelCount": 7,
+      "parsedAssignmentCount": 38,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-06",
+      "dateRow": 4291,
+      "headerRow": 4293,
+      "endRow": 4322,
+      "excelCount": 7,
+      "parsedAssignmentCount": 24,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-07",
+      "dateRow": 4323,
+      "headerRow": 4325,
+      "endRow": 4363,
+      "excelCount": 16,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-08",
+      "dateRow": 4364,
+      "headerRow": 4366,
+      "endRow": 4389,
+      "excelCount": 8,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-09",
+      "dateRow": 4390,
+      "headerRow": 4392,
+      "endRow": 4417,
+      "excelCount": 40,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-10",
+      "dateRow": 4418,
+      "headerRow": 4420,
+      "endRow": 4428,
+      "excelCount": 2,
+      "parsedAssignmentCount": 5,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-11",
+      "dateRow": 4429,
+      "headerRow": 4431,
+      "endRow": 4478,
+      "excelCount": 15,
+      "parsedAssignmentCount": 38,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-12",
+      "dateRow": 4479,
+      "headerRow": 4481,
+      "endRow": 4518,
+      "excelCount": 6,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-13",
+      "dateRow": 4519,
+      "headerRow": 4521,
+      "endRow": 4556,
+      "excelCount": 12,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-14",
+      "dateRow": 4557,
+      "headerRow": 4559,
+      "endRow": 4590,
+      "excelCount": 8,
+      "parsedAssignmentCount": 22,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-15",
+      "dateRow": 4591,
+      "headerRow": 4593,
+      "endRow": 4624,
+      "excelCount": 17,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-16",
+      "dateRow": 4625,
+      "headerRow": 4627,
+      "endRow": 4655,
+      "excelCount": 20,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-17",
+      "dateRow": 4656,
+      "headerRow": 4658,
+      "endRow": 4667,
+      "excelCount": 0,
+      "parsedAssignmentCount": 6,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-18",
+      "dateRow": 4668,
+      "headerRow": 4670,
+      "endRow": 4706,
+      "excelCount": 11,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-19",
+      "dateRow": 4707,
+      "headerRow": 4709,
+      "endRow": 4751,
+      "excelCount": 18,
+      "parsedAssignmentCount": 37,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-20",
+      "dateRow": 4752,
+      "headerRow": 4754,
+      "endRow": 4778,
+      "excelCount": 9,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-21",
+      "dateRow": 4779,
+      "headerRow": 4781,
+      "endRow": 4816,
+      "excelCount": 37,
+      "parsedAssignmentCount": 26,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-22",
+      "dateRow": 4817,
+      "headerRow": 4819,
+      "endRow": 4848,
+      "excelCount": 12,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-23",
+      "dateRow": 4849,
+      "headerRow": 4851,
+      "endRow": 4870,
+      "excelCount": 3,
+      "parsedAssignmentCount": 12,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-24",
+      "dateRow": 4871,
+      "headerRow": 4873,
+      "endRow": 4888,
+      "excelCount": 1,
+      "parsedAssignmentCount": 12,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-25",
+      "dateRow": 4889,
+      "headerRow": 4891,
+      "endRow": 4939,
+      "excelCount": 14,
+      "parsedAssignmentCount": 39,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-26",
+      "dateRow": 4940,
+      "headerRow": 4942,
+      "endRow": 4985,
+      "excelCount": 14,
+      "parsedAssignmentCount": 36,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-27",
+      "dateRow": 4986,
+      "headerRow": 4988,
+      "endRow": 5012,
+      "excelCount": 7,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-28",
+      "dateRow": 5013,
+      "headerRow": 5015,
+      "endRow": 5045,
+      "excelCount": 10,
+      "parsedAssignmentCount": 24,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-29",
+      "dateRow": 5046,
+      "headerRow": 5048,
+      "endRow": 5069,
+      "excelCount": 7,
+      "parsedAssignmentCount": 13,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-30",
+      "dateRow": 5070,
+      "headerRow": 5072,
+      "endRow": 5104,
+      "excelCount": 6,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-05-31",
+      "dateRow": 5105,
+      "headerRow": 5107,
+      "endRow": 5116,
+      "excelCount": 1,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-01",
+      "dateRow": 5117,
+      "headerRow": 5119,
+      "endRow": 5157,
+      "excelCount": 11,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-02",
+      "dateRow": 5158,
+      "headerRow": 5160,
+      "endRow": 5196,
+      "excelCount": 14,
+      "parsedAssignmentCount": 34,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-03",
+      "dateRow": 5197,
+      "headerRow": 5199,
+      "endRow": 5231,
+      "excelCount": 36,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-04",
+      "dateRow": 5232,
+      "headerRow": 5234,
+      "endRow": 5268,
+      "excelCount": 13,
+      "parsedAssignmentCount": 26,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-05",
+      "dateRow": 5269,
+      "headerRow": 5271,
+      "endRow": 5295,
+      "excelCount": 8,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-06",
+      "dateRow": 5296,
+      "headerRow": 5298,
+      "endRow": 5315,
+      "excelCount": 0,
+      "parsedAssignmentCount": 13,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-07",
+      "dateRow": 5316,
+      "headerRow": 5318,
+      "endRow": 5324,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-08",
+      "dateRow": 5325,
+      "headerRow": 5327,
+      "endRow": 5332,
+      "excelCount": 1,
+      "parsedAssignmentCount": 3,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-09",
+      "dateRow": 5333,
+      "headerRow": 5335,
+      "endRow": 5387,
+      "excelCount": 334,
+      "parsedAssignmentCount": 45,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-10",
+      "dateRow": 5388,
+      "headerRow": 5390,
+      "endRow": 5426,
+      "excelCount": 8,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-11",
+      "dateRow": 5427,
+      "headerRow": 5429,
+      "endRow": 5457,
+      "excelCount": 5,
+      "parsedAssignmentCount": 22,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-12",
+      "dateRow": 5458,
+      "headerRow": 5460,
+      "endRow": 5488,
+      "excelCount": 29,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-13",
+      "dateRow": 5489,
+      "headerRow": 5491,
+      "endRow": 5511,
+      "excelCount": 19,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-14",
+      "dateRow": 5512,
+      "headerRow": 5514,
+      "endRow": 5521,
+      "excelCount": 1,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-15",
+      "dateRow": 5522,
+      "headerRow": 5524,
+      "endRow": 5564,
+      "excelCount": 18,
+      "parsedAssignmentCount": 36,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-16",
+      "dateRow": 5565,
+      "headerRow": 5567,
+      "endRow": 5608,
+      "excelCount": 13,
+      "parsedAssignmentCount": 37,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-17",
+      "dateRow": 5609,
+      "headerRow": 5611,
+      "endRow": 5639,
+      "excelCount": 6,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-18",
+      "dateRow": 5640,
+      "headerRow": 5642,
+      "endRow": 5674,
+      "excelCount": 14,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-19",
+      "dateRow": 5675,
+      "headerRow": 5677,
+      "endRow": 5700,
+      "excelCount": 8,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-20",
+      "dateRow": 5701,
+      "headerRow": 5703,
+      "endRow": 5715,
+      "excelCount": 10,
+      "parsedAssignmentCount": 7,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-21",
+      "dateRow": 5716,
+      "headerRow": 5718,
+      "endRow": 5729,
+      "excelCount": 83,
+      "parsedAssignmentCount": 5,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-22",
+      "dateRow": 5730,
+      "headerRow": 5732,
+      "endRow": 5768,
+      "excelCount": 13,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-23",
+      "dateRow": 5769,
+      "headerRow": 5771,
+      "endRow": 5812,
+      "excelCount": 8,
+      "parsedAssignmentCount": 34,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-24",
+      "dateRow": 5813,
+      "headerRow": 5815,
+      "endRow": 5843,
+      "excelCount": 4,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-25",
+      "dateRow": 5844,
+      "headerRow": 5846,
+      "endRow": 5876,
+      "excelCount": 5,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-26",
+      "dateRow": 5877,
+      "headerRow": 5879,
+      "endRow": 5908,
+      "excelCount": 9,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-27",
+      "dateRow": 5909,
+      "headerRow": 5911,
+      "endRow": 5936,
+      "excelCount": 4,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-28",
+      "dateRow": 5937,
+      "headerRow": 5939,
+      "endRow": 5948,
+      "excelCount": 0,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-29",
+      "dateRow": 5949,
+      "headerRow": 5951,
+      "endRow": 5985,
+      "excelCount": 10,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-06-30",
+      "dateRow": 5986,
+      "headerRow": 5988,
+      "endRow": 6034,
+      "excelCount": 15,
+      "parsedAssignmentCount": 40,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-01",
+      "dateRow": 6035,
+      "headerRow": 6037,
+      "endRow": 6058,
+      "excelCount": 2,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-02",
+      "dateRow": 6059,
+      "headerRow": 6061,
+      "endRow": 6093,
+      "excelCount": 12,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-03",
+      "dateRow": 6094,
+      "headerRow": 6096,
+      "endRow": 6132,
+      "excelCount": 8,
+      "parsedAssignmentCount": 25,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-04",
+      "dateRow": 6133,
+      "headerRow": 6135,
+      "endRow": 6156,
+      "excelCount": 1,
+      "parsedAssignmentCount": 17,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-05",
+      "dateRow": 6157,
+      "headerRow": 6159,
+      "endRow": 6168,
+      "excelCount": 2,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-06",
+      "dateRow": 6169,
+      "headerRow": 6171,
+      "endRow": 6209,
+      "excelCount": 8,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-07",
+      "dateRow": 6210,
+      "headerRow": 6212,
+      "endRow": 6243,
+      "excelCount": 10,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-08",
+      "dateRow": 6244,
+      "headerRow": 6246,
+      "endRow": 6281,
+      "excelCount": 9,
+      "parsedAssignmentCount": 25,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-09",
+      "dateRow": 6282,
+      "headerRow": 6284,
+      "endRow": 6320,
+      "excelCount": 11,
+      "parsedAssignmentCount": 25,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-10",
+      "dateRow": 6321,
+      "headerRow": 6323,
+      "endRow": 6354,
+      "excelCount": 12,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-11",
+      "dateRow": 6355,
+      "headerRow": 6357,
+      "endRow": 6376,
+      "excelCount": 8,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-12",
+      "dateRow": 6377,
+      "headerRow": 6379,
+      "endRow": 6385,
+      "excelCount": 1,
+      "parsedAssignmentCount": 2,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-13",
+      "dateRow": 6386,
+      "headerRow": 6388,
+      "endRow": 6427,
+      "excelCount": 12,
+      "parsedAssignmentCount": 31,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-14",
+      "dateRow": 6428,
+      "headerRow": 6430,
+      "endRow": 6471,
+      "excelCount": 9,
+      "parsedAssignmentCount": 34,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-15",
+      "dateRow": 6472,
+      "headerRow": 6474,
+      "endRow": 6501,
+      "excelCount": 6,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-16",
+      "dateRow": 6502,
+      "headerRow": 6504,
+      "endRow": 6539,
+      "excelCount": 8,
+      "parsedAssignmentCount": 24,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-17",
+      "dateRow": 6540,
+      "headerRow": 6542,
+      "endRow": 6562,
+      "excelCount": 7,
+      "parsedAssignmentCount": 15,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-18",
+      "dateRow": 6563,
+      "headerRow": 6565,
+      "endRow": 6578,
+      "excelCount": 2,
+      "parsedAssignmentCount": 7,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-19",
+      "dateRow": 6579,
+      "headerRow": 6581,
+      "endRow": 6592,
+      "excelCount": 4,
+      "parsedAssignmentCount": 6,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-20",
+      "dateRow": 6593,
+      "headerRow": 6595,
+      "endRow": 6631,
+      "excelCount": 9,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-21",
+      "dateRow": 6632,
+      "headerRow": 6634,
+      "endRow": 6680,
+      "excelCount": 40,
+      "parsedAssignmentCount": 39,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-22",
+      "dateRow": 6681,
+      "headerRow": 6683,
+      "endRow": 6714,
+      "excelCount": 6,
+      "parsedAssignmentCount": 24,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-23",
+      "dateRow": 6715,
+      "headerRow": 6717,
+      "endRow": 6752,
+      "excelCount": 10,
+      "parsedAssignmentCount": 24,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-24",
+      "dateRow": 6753,
+      "headerRow": 6755,
+      "endRow": 6771,
+      "excelCount": 2,
+      "parsedAssignmentCount": 12,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-25",
+      "dateRow": 6772,
+      "headerRow": 6774,
+      "endRow": 6796,
+      "excelCount": 1,
+      "parsedAssignmentCount": 17,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-26",
+      "dateRow": 6797,
+      "headerRow": 6799,
+      "endRow": 6808,
+      "excelCount": 0,
+      "parsedAssignmentCount": 5,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-27",
+      "dateRow": 6809,
+      "headerRow": 6811,
+      "endRow": 6857,
+      "excelCount": 4,
+      "parsedAssignmentCount": 41,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-28",
+      "dateRow": 6858,
+      "headerRow": 6860,
+      "endRow": 6897,
+      "excelCount": 10,
+      "parsedAssignmentCount": 30,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-29",
+      "dateRow": 6898,
+      "headerRow": 6900,
+      "endRow": 6922,
+      "excelCount": 2,
+      "parsedAssignmentCount": 15,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-30",
+      "dateRow": 6923,
+      "headerRow": 6925,
+      "endRow": 6961,
+      "excelCount": 11,
+      "parsedAssignmentCount": 25,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-07-31",
+      "dateRow": 6962,
+      "headerRow": 6964,
+      "endRow": 6982,
+      "excelCount": 30,
+      "parsedAssignmentCount": 13,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-01",
+      "dateRow": 6983,
+      "headerRow": 6985,
+      "endRow": 6998,
+      "excelCount": 0,
+      "parsedAssignmentCount": 8,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-02",
+      "dateRow": 6999,
+      "headerRow": 7001,
+      "endRow": 7007,
+      "excelCount": 1,
+      "parsedAssignmentCount": 2,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-03",
+      "dateRow": 7008,
+      "headerRow": 7010,
+      "endRow": 7050,
+      "excelCount": 16,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-04",
+      "dateRow": 7051,
+      "headerRow": 7053,
+      "endRow": 7081,
+      "excelCount": 38,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-05",
+      "dateRow": 7082,
+      "headerRow": 7084,
+      "endRow": 7110,
+      "excelCount": 4,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-06",
+      "dateRow": 7111,
+      "headerRow": 7113,
+      "endRow": 7142,
+      "excelCount": 10,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-07",
+      "dateRow": 7143,
+      "headerRow": 7145,
+      "endRow": 7168,
+      "excelCount": 11,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-08",
+      "dateRow": 7169,
+      "headerRow": 7171,
+      "endRow": 7185,
+      "excelCount": 1,
+      "parsedAssignmentCount": 9,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-09",
+      "dateRow": 7186,
+      "headerRow": 7188,
+      "endRow": 7195,
+      "excelCount": 2,
+      "parsedAssignmentCount": 3,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-10",
+      "dateRow": 7196,
+      "headerRow": 7198,
+      "endRow": 7236,
+      "excelCount": 9,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-11",
+      "dateRow": 7237,
+      "headerRow": 7239,
+      "endRow": 7262,
+      "excelCount": 6,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-12",
+      "dateRow": 7263,
+      "headerRow": 7265,
+      "endRow": 7289,
+      "excelCount": 6,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-13",
+      "dateRow": 7290,
+      "headerRow": 7292,
+      "endRow": 7318,
+      "excelCount": 11,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-14",
+      "dateRow": 7319,
+      "headerRow": 7321,
+      "endRow": 7339,
+      "excelCount": 45,
+      "parsedAssignmentCount": 11,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-15",
+      "dateRow": 7340,
+      "headerRow": 7342,
+      "endRow": 7359,
+      "excelCount": 0,
+      "parsedAssignmentCount": 12,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-16",
+      "dateRow": 7360,
+      "headerRow": 7362,
+      "endRow": 7367,
+      "excelCount": 42,
+      "parsedAssignmentCount": 2,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-17",
+      "dateRow": 7368,
+      "headerRow": 7370,
+      "endRow": 7404,
+      "excelCount": 14,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-18",
+      "dateRow": 7405,
+      "headerRow": 7407,
+      "endRow": 7452,
+      "excelCount": 14,
+      "parsedAssignmentCount": 38,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-19",
+      "dateRow": 7453,
+      "headerRow": 7455,
+      "endRow": 7478,
+      "excelCount": 6,
+      "parsedAssignmentCount": 17,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-20",
+      "dateRow": 7479,
+      "headerRow": 7481,
+      "endRow": 7503,
+      "excelCount": 12,
+      "parsedAssignmentCount": 15,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-21",
+      "dateRow": 7504,
+      "headerRow": 7506,
+      "endRow": 7532,
+      "excelCount": 71,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-22",
+      "dateRow": 7533,
+      "headerRow": 7535,
+      "endRow": 7568,
+      "excelCount": 70,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-23",
+      "dateRow": 7569,
+      "headerRow": 7571,
+      "endRow": 7579,
+      "excelCount": 5,
+      "parsedAssignmentCount": 5,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-24",
+      "dateRow": 7580,
+      "headerRow": 7582,
+      "endRow": 7629,
+      "excelCount": 6,
+      "parsedAssignmentCount": 38,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-25",
+      "dateRow": 7630,
+      "headerRow": 7632,
+      "endRow": 7670,
+      "excelCount": 31,
+      "parsedAssignmentCount": 35,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-26",
+      "dateRow": 7671,
+      "headerRow": 7673,
+      "endRow": 7695,
+      "excelCount": 1,
+      "parsedAssignmentCount": 17,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-27",
+      "dateRow": 7696,
+      "headerRow": 7698,
+      "endRow": 7727,
+      "excelCount": 31,
+      "parsedAssignmentCount": 22,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-28",
+      "dateRow": 7728,
+      "headerRow": 7730,
+      "endRow": 7753,
+      "excelCount": 71,
+      "parsedAssignmentCount": 17,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-29",
+      "dateRow": 7754,
+      "headerRow": 7756,
+      "endRow": 7773,
+      "excelCount": 2,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-30",
+      "dateRow": 7774,
+      "headerRow": 7776,
+      "endRow": 7780,
+      "excelCount": 1,
+      "parsedAssignmentCount": 1,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-08-31",
+      "dateRow": 7781,
+      "headerRow": 7783,
+      "endRow": 7826,
+      "excelCount": 14,
+      "parsedAssignmentCount": 36,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-01",
+      "dateRow": 7827,
+      "headerRow": 7829,
+      "endRow": 7869,
+      "excelCount": 8,
+      "parsedAssignmentCount": 36,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-02",
+      "dateRow": 7870,
+      "headerRow": 7872,
+      "endRow": 7903,
+      "excelCount": 6,
+      "parsedAssignmentCount": 24,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-03",
+      "dateRow": 7904,
+      "headerRow": 7906,
+      "endRow": 7933,
+      "excelCount": 9,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-04",
+      "dateRow": 7934,
+      "headerRow": 7936,
+      "endRow": 7959,
+      "excelCount": 31,
+      "parsedAssignmentCount": 17,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-05",
+      "dateRow": 7960,
+      "headerRow": 7962,
+      "endRow": 7986,
+      "excelCount": 7,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-06",
+      "dateRow": 7987,
+      "headerRow": 7989,
+      "endRow": 7997,
+      "excelCount": 1,
+      "parsedAssignmentCount": 5,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-07",
+      "dateRow": 7998,
+      "headerRow": 8000,
+      "endRow": 8038,
+      "excelCount": 32,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-08",
+      "dateRow": 8039,
+      "headerRow": 8041,
+      "endRow": 8092,
+      "excelCount": 9,
+      "parsedAssignmentCount": 40,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-09",
+      "dateRow": 8093,
+      "headerRow": 8095,
+      "endRow": 8133,
+      "excelCount": 14,
+      "parsedAssignmentCount": 31,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-10",
+      "dateRow": 8134,
+      "headerRow": 8136,
+      "endRow": 8170,
+      "excelCount": 50,
+      "parsedAssignmentCount": 25,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-11",
+      "dateRow": 8171,
+      "headerRow": 8173,
+      "endRow": 8196,
+      "excelCount": 27,
+      "parsedAssignmentCount": 17,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-12",
+      "dateRow": 8197,
+      "headerRow": 8199,
+      "endRow": 8221,
+      "excelCount": 0,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-13",
+      "dateRow": 8222,
+      "headerRow": 8224,
+      "endRow": 8236,
+      "excelCount": 2,
+      "parsedAssignmentCount": 8,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-14",
+      "dateRow": 8237,
+      "headerRow": 8239,
+      "endRow": 8273,
+      "excelCount": 64,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-15",
+      "dateRow": 8274,
+      "headerRow": 8276,
+      "endRow": 8321,
+      "excelCount": 9,
+      "parsedAssignmentCount": 42,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-16",
+      "dateRow": 8322,
+      "headerRow": 8324,
+      "endRow": 8348,
+      "excelCount": 7,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-17",
+      "dateRow": 8349,
+      "headerRow": 8351,
+      "endRow": 8393,
+      "excelCount": 21,
+      "parsedAssignmentCount": 31,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-18",
+      "dateRow": 8394,
+      "headerRow": 8396,
+      "endRow": 8422,
+      "excelCount": 26,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-19",
+      "dateRow": 8423,
+      "headerRow": 8425,
+      "endRow": 8450,
+      "excelCount": 5,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-20",
+      "dateRow": 8451,
+      "headerRow": 8453,
+      "endRow": 8462,
+      "excelCount": 2,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-21",
+      "dateRow": 8463,
+      "headerRow": 8465,
+      "endRow": 8507,
+      "excelCount": 44,
+      "parsedAssignmentCount": 34,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-22",
+      "dateRow": 8508,
+      "headerRow": 8510,
+      "endRow": 8548,
+      "excelCount": 9,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-23",
+      "dateRow": 8549,
+      "headerRow": 8551,
+      "endRow": 8574,
+      "excelCount": 7,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-24",
+      "dateRow": 8575,
+      "headerRow": 8577,
+      "endRow": 8616,
+      "excelCount": 143,
+      "parsedAssignmentCount": 31,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-25",
+      "dateRow": 8617,
+      "headerRow": 8619,
+      "endRow": 8637,
+      "excelCount": 2,
+      "parsedAssignmentCount": 15,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-26",
+      "dateRow": 8638,
+      "headerRow": 8640,
+      "endRow": 8660,
+      "excelCount": 63,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-27",
+      "dateRow": 8661,
+      "headerRow": 8663,
+      "endRow": 8671,
+      "excelCount": 1,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-28",
+      "dateRow": 8672,
+      "headerRow": 8674,
+      "endRow": 8712,
+      "excelCount": 10,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-29",
+      "dateRow": 8713,
+      "headerRow": 8715,
+      "endRow": 8756,
+      "excelCount": 11,
+      "parsedAssignmentCount": 35,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-09-30",
+      "dateRow": 8757,
+      "headerRow": 8759,
+      "endRow": 8785,
+      "excelCount": 4,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-01",
+      "dateRow": 8786,
+      "headerRow": 8788,
+      "endRow": 8833,
+      "excelCount": 16,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-02",
+      "dateRow": 8834,
+      "headerRow": 8836,
+      "endRow": 8849,
+      "excelCount": 34,
+      "parsedAssignmentCount": 8,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-03",
+      "dateRow": 8850,
+      "headerRow": 8852,
+      "endRow": 8885,
+      "excelCount": 8,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-04",
+      "dateRow": 8886,
+      "headerRow": 8888,
+      "endRow": 8893,
+      "excelCount": 1,
+      "parsedAssignmentCount": 2,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-05",
+      "dateRow": 8894,
+      "headerRow": 8896,
+      "endRow": 8938,
+      "excelCount": 12,
+      "parsedAssignmentCount": 37,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-06",
+      "dateRow": 8939,
+      "headerRow": 8941,
+      "endRow": 8980,
+      "excelCount": 5,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-07",
+      "dateRow": 8981,
+      "headerRow": 8983,
+      "endRow": 9015,
+      "excelCount": 5,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-08",
+      "dateRow": 9016,
+      "headerRow": 9018,
+      "endRow": 9047,
+      "excelCount": 12,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-09",
+      "dateRow": 9048,
+      "headerRow": 9050,
+      "endRow": 9079,
+      "excelCount": 32,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-10",
+      "dateRow": 9080,
+      "headerRow": 9082,
+      "endRow": 9108,
+      "excelCount": 6,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-11",
+      "dateRow": 9109,
+      "headerRow": 9111,
+      "endRow": 9116,
+      "excelCount": 1,
+      "parsedAssignmentCount": 3,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-12",
+      "dateRow": 9117,
+      "headerRow": 9119,
+      "endRow": 9156,
+      "excelCount": 36,
+      "parsedAssignmentCount": 30,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-13",
+      "dateRow": 9157,
+      "headerRow": 9159,
+      "endRow": 9200,
+      "excelCount": 38,
+      "parsedAssignmentCount": 34,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-14",
+      "dateRow": 9201,
+      "headerRow": 9203,
+      "endRow": 9228,
+      "excelCount": 1,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-15",
+      "dateRow": 9229,
+      "headerRow": 9231,
+      "endRow": 9265,
+      "excelCount": 52,
+      "parsedAssignmentCount": 26,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-16",
+      "dateRow": 9266,
+      "headerRow": 9268,
+      "endRow": 9287,
+      "excelCount": 6,
+      "parsedAssignmentCount": 15,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-17",
+      "dateRow": 9288,
+      "headerRow": 9290,
+      "endRow": 9310,
+      "excelCount": 33,
+      "parsedAssignmentCount": 17,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-18",
+      "dateRow": 9311,
+      "headerRow": 9313,
+      "endRow": 9319,
+      "excelCount": 10,
+      "parsedAssignmentCount": 3,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-19",
+      "dateRow": 9320,
+      "headerRow": 9322,
+      "endRow": 9358,
+      "excelCount": 12,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-20",
+      "dateRow": 9359,
+      "headerRow": 9361,
+      "endRow": 9406,
+      "excelCount": 8,
+      "parsedAssignmentCount": 36,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-21",
+      "dateRow": 9407,
+      "headerRow": 9409,
+      "endRow": 9440,
+      "excelCount": 5,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-22",
+      "dateRow": 9441,
+      "headerRow": 9443,
+      "endRow": 9485,
+      "excelCount": 11,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-23",
+      "dateRow": 9486,
+      "headerRow": 9488,
+      "endRow": 9505,
+      "excelCount": 2,
+      "parsedAssignmentCount": 12,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-24",
+      "dateRow": 9506,
+      "headerRow": 9508,
+      "endRow": 9530,
+      "excelCount": 4,
+      "parsedAssignmentCount": 15,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-25",
+      "dateRow": 9531,
+      "headerRow": 9533,
+      "endRow": 9537,
+      "excelCount": 0,
+      "parsedAssignmentCount": 1,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-26",
+      "dateRow": 9538,
+      "headerRow": 9540,
+      "endRow": 9565,
+      "excelCount": 4,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-27",
+      "dateRow": 9566,
+      "headerRow": 9568,
+      "endRow": 9615,
+      "excelCount": 67,
+      "parsedAssignmentCount": 42,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-28",
+      "dateRow": 9616,
+      "headerRow": 9618,
+      "endRow": 9648,
+      "excelCount": 31,
+      "parsedAssignmentCount": 26,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-29",
+      "dateRow": 9649,
+      "headerRow": 9651,
+      "endRow": 9685,
+      "excelCount": 8,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-30",
+      "dateRow": 9686,
+      "headerRow": 9688,
+      "endRow": 9707,
+      "excelCount": 1,
+      "parsedAssignmentCount": 12,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-10-31",
+      "dateRow": 9708,
+      "headerRow": 9710,
+      "endRow": 9726,
+      "excelCount": 0,
+      "parsedAssignmentCount": 10,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-01",
+      "dateRow": 9727,
+      "headerRow": 9729,
+      "endRow": 9733,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-02",
+      "dateRow": 9734,
+      "headerRow": 9736,
+      "endRow": 9782,
+      "excelCount": 50,
+      "parsedAssignmentCount": 38,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-03",
+      "dateRow": 9783,
+      "headerRow": 9785,
+      "endRow": 9820,
+      "excelCount": 6,
+      "parsedAssignmentCount": 30,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-04",
+      "dateRow": 9821,
+      "headerRow": 9823,
+      "endRow": 9859,
+      "excelCount": 11,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-05",
+      "dateRow": 9860,
+      "headerRow": 9862,
+      "endRow": 9907,
+      "excelCount": 22,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-06",
+      "dateRow": 9908,
+      "headerRow": 9910,
+      "endRow": 9929,
+      "excelCount": 10,
+      "parsedAssignmentCount": 13,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-07",
+      "dateRow": 9930,
+      "headerRow": 9932,
+      "endRow": 9951,
+      "excelCount": 9,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-08",
+      "dateRow": 9952,
+      "headerRow": 9954,
+      "endRow": 9959,
+      "excelCount": 1,
+      "parsedAssignmentCount": 2,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-09",
+      "dateRow": 9960,
+      "headerRow": 9962,
+      "endRow": 10001,
+      "excelCount": 15,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-10",
+      "dateRow": 10002,
+      "headerRow": 10004,
+      "endRow": 10042,
+      "excelCount": 8,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-11",
+      "dateRow": 10043,
+      "headerRow": 10045,
+      "endRow": 10076,
+      "excelCount": 7,
+      "parsedAssignmentCount": 25,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-12",
+      "dateRow": 10077,
+      "headerRow": 10079,
+      "endRow": 10117,
+      "excelCount": 1,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-13",
+      "dateRow": 10118,
+      "headerRow": 10120,
+      "endRow": 10140,
+      "excelCount": 29,
+      "parsedAssignmentCount": 15,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-14",
+      "dateRow": 10141,
+      "headerRow": 10143,
+      "endRow": 10172,
+      "excelCount": 5,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-15",
+      "dateRow": 10173,
+      "headerRow": 10175,
+      "endRow": 10181,
+      "excelCount": 0,
+      "parsedAssignmentCount": 1,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-16",
+      "dateRow": 10182,
+      "headerRow": 10184,
+      "endRow": 10232,
+      "excelCount": 16,
+      "parsedAssignmentCount": 37,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-17",
+      "dateRow": 10233,
+      "headerRow": 10235,
+      "endRow": 10273,
+      "excelCount": 8,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-18",
+      "dateRow": 10274,
+      "headerRow": 10276,
+      "endRow": 10308,
+      "excelCount": 8,
+      "parsedAssignmentCount": 26,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-19",
+      "dateRow": 10309,
+      "headerRow": 10311,
+      "endRow": 10342,
+      "excelCount": 3,
+      "parsedAssignmentCount": 26,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-20",
+      "dateRow": 10343,
+      "headerRow": 10345,
+      "endRow": 10374,
+      "excelCount": 12,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-21",
+      "dateRow": 10375,
+      "headerRow": 10377,
+      "endRow": 10406,
+      "excelCount": 74,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-22",
+      "dateRow": 10407,
+      "headerRow": 10409,
+      "endRow": 10421,
+      "excelCount": 1,
+      "parsedAssignmentCount": 8,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-23",
+      "dateRow": 10422,
+      "headerRow": 10424,
+      "endRow": 10465,
+      "excelCount": 8,
+      "parsedAssignmentCount": 36,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-24",
+      "dateRow": 10466,
+      "headerRow": 10468,
+      "endRow": 10505,
+      "excelCount": 11,
+      "parsedAssignmentCount": 31,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-25",
+      "dateRow": 10506,
+      "headerRow": 10508,
+      "endRow": 10537,
+      "excelCount": 4,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-26",
+      "dateRow": 10538,
+      "headerRow": 10540,
+      "endRow": 10585,
+      "excelCount": 22,
+      "parsedAssignmentCount": 34,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-27",
+      "dateRow": 10586,
+      "headerRow": 10588,
+      "endRow": 10607,
+      "excelCount": 15,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-28",
+      "dateRow": 10608,
+      "headerRow": 10610,
+      "endRow": 10631,
+      "excelCount": 1,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-29",
+      "dateRow": 10632,
+      "headerRow": 10634,
+      "endRow": 10637,
+      "excelCount": 1,
+      "parsedAssignmentCount": 1,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-11-30",
+      "dateRow": 10638,
+      "headerRow": 10640,
+      "endRow": 10684,
+      "excelCount": 18,
+      "parsedAssignmentCount": 40,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-01",
+      "dateRow": 10685,
+      "headerRow": 10687,
+      "endRow": 10725,
+      "excelCount": 15,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-02",
+      "dateRow": 10726,
+      "headerRow": 10728,
+      "endRow": 10767,
+      "excelCount": 19,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-03",
+      "dateRow": 10768,
+      "headerRow": 10770,
+      "endRow": 10796,
+      "excelCount": 1,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-04",
+      "dateRow": 10797,
+      "headerRow": 10799,
+      "endRow": 10819,
+      "excelCount": 1,
+      "parsedAssignmentCount": 15,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-05",
+      "dateRow": 10820,
+      "headerRow": 10822,
+      "endRow": 10840,
+      "excelCount": 1,
+      "parsedAssignmentCount": 12,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-06",
+      "dateRow": 10841,
+      "headerRow": 10843,
+      "endRow": 10855,
+      "excelCount": 83,
+      "parsedAssignmentCount": 6,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-07",
+      "dateRow": 10856,
+      "headerRow": 10858,
+      "endRow": 10902,
+      "excelCount": 20,
+      "parsedAssignmentCount": 38,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-08",
+      "dateRow": 10903,
+      "headerRow": 10905,
+      "endRow": 10938,
+      "excelCount": 9,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-09",
+      "dateRow": 10939,
+      "headerRow": 10941,
+      "endRow": 10968,
+      "excelCount": 8,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-10",
+      "dateRow": 10969,
+      "headerRow": 10971,
+      "endRow": 11006,
+      "excelCount": 15,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-11",
+      "dateRow": 11007,
+      "headerRow": 11009,
+      "endRow": 11035,
+      "excelCount": 21,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-12",
+      "dateRow": 11036,
+      "headerRow": 11038,
+      "endRow": 11064,
+      "excelCount": 2,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-13",
+      "dateRow": 11065,
+      "headerRow": 11067,
+      "endRow": 11071,
+      "excelCount": 1,
+      "parsedAssignmentCount": 2,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-14",
+      "dateRow": 11072,
+      "headerRow": 11074,
+      "endRow": 11118,
+      "excelCount": 15,
+      "parsedAssignmentCount": 39,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-15",
+      "dateRow": 11119,
+      "headerRow": 11121,
+      "endRow": 11156,
+      "excelCount": 7,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-16",
+      "dateRow": 11157,
+      "headerRow": 11159,
+      "endRow": 11194,
+      "excelCount": 9,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-17",
+      "dateRow": 11195,
+      "headerRow": 11197,
+      "endRow": 11232,
+      "excelCount": 14,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-18",
+      "dateRow": 11233,
+      "headerRow": 11235,
+      "endRow": 11262,
+      "excelCount": 3,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-19",
+      "dateRow": 11263,
+      "headerRow": 11265,
+      "endRow": 11297,
+      "excelCount": 2,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-20",
+      "dateRow": 11298,
+      "headerRow": 11300,
+      "endRow": 11328,
+      "excelCount": 4,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-21",
+      "dateRow": 11329,
+      "headerRow": 11331,
+      "endRow": 11343,
+      "excelCount": 5,
+      "parsedAssignmentCount": 6,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-22",
+      "dateRow": 11344,
+      "headerRow": 11346,
+      "endRow": 11378,
+      "excelCount": 0,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-23",
+      "dateRow": 11379,
+      "headerRow": 11381,
+      "endRow": 11392,
+      "excelCount": 0,
+      "parsedAssignmentCount": 8,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-24",
+      "dateRow": 11393,
+      "headerRow": 11395,
+      "endRow": 11405,
+      "excelCount": 1,
+      "parsedAssignmentCount": 6,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-25",
+      "dateRow": 11406,
+      "headerRow": 11408,
+      "endRow": 11415,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-26",
+      "dateRow": 11416,
+      "headerRow": 11418,
+      "endRow": 11425,
+      "excelCount": 4,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-27",
+      "dateRow": 11426,
+      "headerRow": 11428,
+      "endRow": 11437,
+      "excelCount": 2,
+      "parsedAssignmentCount": 6,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-28",
+      "dateRow": 11438,
+      "headerRow": 11440,
+      "endRow": 11450,
+      "excelCount": 4,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-29",
+      "dateRow": 11451,
+      "headerRow": 11453,
+      "endRow": 11460,
+      "excelCount": 1,
+      "parsedAssignmentCount": 3,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-30",
+      "dateRow": 11461,
+      "headerRow": 11463,
+      "endRow": 11474,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2025-12-31",
+      "dateRow": 11475,
+      "headerRow": 11477,
+      "endRow": 11484,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-01",
+      "dateRow": 11485,
+      "headerRow": 11487,
+      "endRow": 11499,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-02",
+      "dateRow": 11500,
+      "headerRow": 11502,
+      "endRow": 11528,
+      "excelCount": 3,
+      "parsedAssignmentCount": 11,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-03",
+      "dateRow": 11529,
+      "headerRow": 11531,
+      "endRow": 11544,
+      "excelCount": 1,
+      "parsedAssignmentCount": 9,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-04",
+      "dateRow": 11545,
+      "headerRow": 11547,
+      "endRow": 11588,
+      "excelCount": 11,
+      "parsedAssignmentCount": 31,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-05",
+      "dateRow": 11589,
+      "headerRow": 11591,
+      "endRow": 11619,
+      "excelCount": 8,
+      "parsedAssignmentCount": 22,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-06",
+      "dateRow": 11620,
+      "headerRow": 11622,
+      "endRow": 11655,
+      "excelCount": 14,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-07",
+      "dateRow": 11656,
+      "headerRow": 11658,
+      "endRow": 11684,
+      "excelCount": 5,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-08",
+      "dateRow": 11685,
+      "headerRow": 11687,
+      "endRow": 11704,
+      "excelCount": 5,
+      "parsedAssignmentCount": 15,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-09",
+      "dateRow": 11705,
+      "headerRow": 11707,
+      "endRow": 11728,
+      "excelCount": 35,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-10",
+      "dateRow": 11729,
+      "headerRow": 11731,
+      "endRow": 11737,
+      "excelCount": 1,
+      "parsedAssignmentCount": 3,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-11",
+      "dateRow": 11738,
+      "headerRow": 11740,
+      "endRow": 11781,
+      "excelCount": 22,
+      "parsedAssignmentCount": 34,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-12",
+      "dateRow": 11782,
+      "headerRow": 11784,
+      "endRow": 11820,
+      "excelCount": 13,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-13",
+      "dateRow": 11821,
+      "headerRow": 11823,
+      "endRow": 11846,
+      "excelCount": 6,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-14",
+      "dateRow": 11847,
+      "headerRow": 11849,
+      "endRow": 11893,
+      "excelCount": 66,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-15",
+      "dateRow": 11894,
+      "headerRow": 11896,
+      "endRow": 11913,
+      "excelCount": 7,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-16",
+      "dateRow": 11914,
+      "headerRow": 11916,
+      "endRow": 11942,
+      "excelCount": 7,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-17",
+      "dateRow": 11943,
+      "headerRow": 11945,
+      "endRow": 11949,
+      "excelCount": 0,
+      "parsedAssignmentCount": 1,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-18",
+      "dateRow": 11950,
+      "headerRow": 11952,
+      "endRow": 11997,
+      "excelCount": 31,
+      "parsedAssignmentCount": 37,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-19",
+      "dateRow": 11998,
+      "headerRow": 12000,
+      "endRow": 12035,
+      "excelCount": 11,
+      "parsedAssignmentCount": 30,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-20",
+      "dateRow": 12036,
+      "headerRow": 12038,
+      "endRow": 12063,
+      "excelCount": 2,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-21",
+      "dateRow": 12064,
+      "headerRow": 12066,
+      "endRow": 12101,
+      "excelCount": 15,
+      "parsedAssignmentCount": 26,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-22",
+      "dateRow": 12102,
+      "headerRow": 12104,
+      "endRow": 12120,
+      "excelCount": 6,
+      "parsedAssignmentCount": 12,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-23",
+      "dateRow": 12121,
+      "headerRow": 12123,
+      "endRow": 12143,
+      "excelCount": 0,
+      "parsedAssignmentCount": 14,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-24",
+      "dateRow": 12144,
+      "headerRow": 12146,
+      "endRow": 12165,
+      "excelCount": 1,
+      "parsedAssignmentCount": 11,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-25",
+      "dateRow": 12166,
+      "headerRow": 12168,
+      "endRow": 12205,
+      "excelCount": 8,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-26",
+      "dateRow": 12206,
+      "headerRow": 12208,
+      "endRow": 12245,
+      "excelCount": 6,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-27",
+      "dateRow": 12246,
+      "headerRow": 12248,
+      "endRow": 12272,
+      "excelCount": 7,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-28",
+      "dateRow": 12273,
+      "headerRow": 12275,
+      "endRow": 12317,
+      "excelCount": 18,
+      "parsedAssignmentCount": 30,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-29",
+      "dateRow": 12318,
+      "headerRow": 12320,
+      "endRow": 12334,
+      "excelCount": 5,
+      "parsedAssignmentCount": 11,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-30",
+      "dateRow": 12335,
+      "headerRow": 12337,
+      "endRow": 12354,
+      "excelCount": 4,
+      "parsedAssignmentCount": 11,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-01-31",
+      "dateRow": 12355,
+      "headerRow": 12357,
+      "endRow": 12363,
+      "excelCount": 1,
+      "parsedAssignmentCount": 3,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-01",
+      "dateRow": 12364,
+      "headerRow": 12366,
+      "endRow": 12412,
+      "excelCount": 16,
+      "parsedAssignmentCount": 40,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-02",
+      "dateRow": 12413,
+      "headerRow": 12415,
+      "endRow": 12449,
+      "excelCount": 10,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-03",
+      "dateRow": 12450,
+      "headerRow": 12452,
+      "endRow": 12489,
+      "excelCount": 12,
+      "parsedAssignmentCount": 25,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-04",
+      "dateRow": 12490,
+      "headerRow": 12492,
+      "endRow": 12535,
+      "excelCount": 24,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-05",
+      "dateRow": 12536,
+      "headerRow": 12538,
+      "endRow": 12552,
+      "excelCount": 2,
+      "parsedAssignmentCount": 9,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-06",
+      "dateRow": 12553,
+      "headerRow": 12555,
+      "endRow": 12581,
+      "excelCount": 5,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-07",
+      "dateRow": 12582,
+      "headerRow": 12584,
+      "endRow": 12589,
+      "excelCount": 0,
+      "parsedAssignmentCount": 2,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-08",
+      "dateRow": 12590,
+      "headerRow": 12592,
+      "endRow": 12637,
+      "excelCount": 27,
+      "parsedAssignmentCount": 37,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-09",
+      "dateRow": 12638,
+      "headerRow": 12640,
+      "endRow": 12678,
+      "excelCount": 21,
+      "parsedAssignmentCount": 31,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-10",
+      "dateRow": 12679,
+      "headerRow": 12681,
+      "endRow": 12727,
+      "excelCount": 22,
+      "parsedAssignmentCount": 35,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-11",
+      "dateRow": 12728,
+      "headerRow": 12730,
+      "endRow": 12758,
+      "excelCount": 9,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-12",
+      "dateRow": 12759,
+      "headerRow": 12761,
+      "endRow": 12787,
+      "excelCount": 10,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-13",
+      "dateRow": 12788,
+      "headerRow": 12790,
+      "endRow": 12804,
+      "excelCount": 5,
+      "parsedAssignmentCount": 9,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-14",
+      "dateRow": 12805,
+      "headerRow": 12807,
+      "endRow": 12814,
+      "excelCount": 1,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-15",
+      "dateRow": 12815,
+      "headerRow": 12817,
+      "endRow": 12867,
+      "excelCount": 21,
+      "parsedAssignmentCount": 44,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-16",
+      "dateRow": 12868,
+      "headerRow": 12870,
+      "endRow": 12902,
+      "excelCount": 11,
+      "parsedAssignmentCount": 27,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-17",
+      "dateRow": 12903,
+      "headerRow": 12905,
+      "endRow": 12929,
+      "excelCount": 7,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-18",
+      "dateRow": 12930,
+      "headerRow": 12932,
+      "endRow": 12965,
+      "excelCount": 10,
+      "parsedAssignmentCount": 24,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-19",
+      "dateRow": 12966,
+      "headerRow": 12968,
+      "endRow": 12999,
+      "excelCount": 16,
+      "parsedAssignmentCount": 23,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-20",
+      "dateRow": 13000,
+      "headerRow": 13002,
+      "endRow": 13029,
+      "excelCount": 5,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-21",
+      "dateRow": 13030,
+      "headerRow": 13032,
+      "endRow": 13038,
+      "excelCount": 21,
+      "parsedAssignmentCount": 3,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-22",
+      "dateRow": 13039,
+      "headerRow": 13041,
+      "endRow": 13084,
+      "excelCount": 5,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-23",
+      "dateRow": 13085,
+      "headerRow": 13087,
+      "endRow": 13124,
+      "excelCount": 18,
+      "parsedAssignmentCount": 32,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-24",
+      "dateRow": 13125,
+      "headerRow": 13127,
+      "endRow": 13169,
+      "excelCount": 15,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-25",
+      "dateRow": 13170,
+      "headerRow": 13172,
+      "endRow": 13199,
+      "excelCount": 47,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-26",
+      "dateRow": 13200,
+      "headerRow": 13202,
+      "endRow": 13227,
+      "excelCount": 9,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-27",
+      "dateRow": 13228,
+      "headerRow": 13230,
+      "endRow": 13262,
+      "excelCount": 6,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-02-28",
+      "dateRow": 13263,
+      "headerRow": 13265,
+      "endRow": 13269,
+      "excelCount": 1,
+      "parsedAssignmentCount": 1,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-01",
+      "dateRow": 13270,
+      "headerRow": 13272,
+      "endRow": 13310,
+      "excelCount": 20,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-02",
+      "dateRow": 13311,
+      "headerRow": 13313,
+      "endRow": 13353,
+      "excelCount": 9,
+      "parsedAssignmentCount": 37,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-03",
+      "dateRow": 13354,
+      "headerRow": 13356,
+      "endRow": 13378,
+      "excelCount": 9,
+      "parsedAssignmentCount": 19,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-04",
+      "dateRow": 13379,
+      "headerRow": 13381,
+      "endRow": 13416,
+      "excelCount": 59,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-05",
+      "dateRow": 13417,
+      "headerRow": 13419,
+      "endRow": 13457,
+      "excelCount": 13,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-06",
+      "dateRow": 13458,
+      "headerRow": 13460,
+      "endRow": 13473,
+      "excelCount": 2,
+      "parsedAssignmentCount": 8,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-07",
+      "dateRow": 13474,
+      "headerRow": 13476,
+      "endRow": 13494,
+      "excelCount": 10,
+      "parsedAssignmentCount": 10,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-08",
+      "dateRow": 13495,
+      "headerRow": 13497,
+      "endRow": 13538,
+      "excelCount": 19,
+      "parsedAssignmentCount": 35,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-09",
+      "dateRow": 13539,
+      "headerRow": 13541,
+      "endRow": 13573,
+      "excelCount": 15,
+      "parsedAssignmentCount": 30,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-10",
+      "dateRow": 13574,
+      "headerRow": 13576,
+      "endRow": 13615,
+      "excelCount": 18,
+      "parsedAssignmentCount": 30,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-11",
+      "dateRow": 13616,
+      "headerRow": 13618,
+      "endRow": 13650,
+      "excelCount": 70,
+      "parsedAssignmentCount": 22,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-12",
+      "dateRow": 13651,
+      "headerRow": 13653,
+      "endRow": 13674,
+      "excelCount": 9,
+      "parsedAssignmentCount": 17,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-13",
+      "dateRow": 13675,
+      "headerRow": 13677,
+      "endRow": 13695,
+      "excelCount": 12,
+      "parsedAssignmentCount": 13,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-14",
+      "dateRow": 13696,
+      "headerRow": 13698,
+      "endRow": 13703,
+      "excelCount": 2,
+      "parsedAssignmentCount": 2,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-15",
+      "dateRow": 13704,
+      "headerRow": 13706,
+      "endRow": 13738,
+      "excelCount": 41,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-16",
+      "dateRow": 13739,
+      "headerRow": 13741,
+      "endRow": 13780,
+      "excelCount": 44,
+      "parsedAssignmentCount": 36,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-17",
+      "dateRow": 13781,
+      "headerRow": 13783,
+      "endRow": 13818,
+      "excelCount": 68,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-18",
+      "dateRow": 13819,
+      "headerRow": 13821,
+      "endRow": 13858,
+      "excelCount": 102,
+      "parsedAssignmentCount": 28,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-19",
+      "dateRow": 13859,
+      "headerRow": 13861,
+      "endRow": 13884,
+      "excelCount": 21,
+      "parsedAssignmentCount": 15,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-20",
+      "dateRow": 13885,
+      "headerRow": 13887,
+      "endRow": 13909,
+      "excelCount": 7,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-21",
+      "dateRow": 13910,
+      "headerRow": 13912,
+      "endRow": 13917,
+      "excelCount": 1,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-22",
+      "dateRow": 13918,
+      "headerRow": 13920,
+      "endRow": 13960,
+      "excelCount": 15,
+      "parsedAssignmentCount": 35,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-23",
+      "dateRow": 13961,
+      "headerRow": 13963,
+      "endRow": 13997,
+      "excelCount": 10,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-24",
+      "dateRow": 13998,
+      "headerRow": 14000,
+      "endRow": 14042,
+      "excelCount": 12,
+      "parsedAssignmentCount": 29,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-25",
+      "dateRow": 14043,
+      "headerRow": 14045,
+      "endRow": 14078,
+      "excelCount": 54,
+      "parsedAssignmentCount": 25,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-26",
+      "dateRow": 14079,
+      "headerRow": 14081,
+      "endRow": 14102,
+      "excelCount": 36,
+      "parsedAssignmentCount": 17,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-27",
+      "dateRow": 14103,
+      "headerRow": 14105,
+      "endRow": 14126,
+      "excelCount": 4,
+      "parsedAssignmentCount": 18,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-28",
+      "dateRow": 14127,
+      "headerRow": 14129,
+      "endRow": 14136,
+      "excelCount": 1,
+      "parsedAssignmentCount": 2,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-29",
+      "dateRow": 14137,
+      "headerRow": 14139,
+      "endRow": 14176,
+      "excelCount": 20,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-30",
+      "dateRow": 14177,
+      "headerRow": 14179,
+      "endRow": 14218,
+      "excelCount": 15,
+      "parsedAssignmentCount": 36,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-03-31",
+      "dateRow": 14219,
+      "headerRow": 14221,
+      "endRow": 14247,
+      "excelCount": 8,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-01",
+      "dateRow": 14248,
+      "headerRow": 14250,
+      "endRow": 14278,
+      "excelCount": 36,
+      "parsedAssignmentCount": 20,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-02",
+      "dateRow": 14279,
+      "headerRow": 14281,
+      "endRow": 14291,
+      "excelCount": 0,
+      "parsedAssignmentCount": 7,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-03",
+      "dateRow": 14292,
+      "headerRow": 14294,
+      "endRow": 14307,
+      "excelCount": 6,
+      "parsedAssignmentCount": 9,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-04",
+      "dateRow": 14308,
+      "headerRow": 14310,
+      "endRow": 14313,
+      "excelCount": 96,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-05",
+      "dateRow": 14314,
+      "headerRow": 14316,
+      "endRow": 14320,
+      "excelCount": 1,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-06",
+      "dateRow": 14321,
+      "headerRow": 14323,
+      "endRow": 14375,
+      "excelCount": 15,
+      "parsedAssignmentCount": 45,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-07",
+      "dateRow": 14376,
+      "headerRow": 14378,
+      "endRow": 14416,
+      "excelCount": 6,
+      "parsedAssignmentCount": 33,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-08",
+      "dateRow": 14417,
+      "headerRow": 14419,
+      "endRow": 14451,
+      "excelCount": 9,
+      "parsedAssignmentCount": 24,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-09",
+      "dateRow": 14452,
+      "headerRow": 14454,
+      "endRow": 14484,
+      "excelCount": 10,
+      "parsedAssignmentCount": 21,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-10",
+      "dateRow": 14485,
+      "headerRow": 14487,
+      "endRow": 14518,
+      "excelCount": 6,
+      "parsedAssignmentCount": 16,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-11",
+      "dateRow": 14519,
+      "headerRow": 14521,
+      "endRow": 14548,
+      "excelCount": 2,
+      "parsedAssignmentCount": 7,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-12",
+      "dateRow": 14549,
+      "headerRow": 14551,
+      "endRow": 14591,
+      "excelCount": 5,
+      "parsedAssignmentCount": 34,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-13",
+      "dateRow": 14592,
+      "headerRow": 14594,
+      "endRow": 14629,
+      "excelCount": 11,
+      "parsedAssignmentCount": 24,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-14",
+      "dateRow": 14630,
+      "headerRow": 14632,
+      "endRow": 14662,
+      "excelCount": 2,
+      "parsedAssignmentCount": 4,
+      "isRequestedDate": false,
+      "isEffectiveDate": true
+    },
+    {
+      "date": "2026-04-15",
+      "dateRow": 14663,
+      "headerRow": 14665,
+      "endRow": 14695,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-16",
+      "dateRow": 14696,
+      "headerRow": 14698,
+      "endRow": 14728,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": true,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-17",
+      "dateRow": 14729,
+      "headerRow": 14731,
+      "endRow": 14761,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-18",
+      "dateRow": 14762,
+      "headerRow": 14764,
+      "endRow": 14794,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-19",
+      "dateRow": 14795,
+      "headerRow": 14797,
+      "endRow": 14827,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-20",
+      "dateRow": 14828,
+      "headerRow": 14830,
+      "endRow": 14860,
+      "excelCount": 0,
+      "parsedAssignmentCount": 1,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-21",
+      "dateRow": 14861,
+      "headerRow": 14863,
+      "endRow": 14893,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-22",
+      "dateRow": 14894,
+      "headerRow": 14896,
+      "endRow": 14927,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-23",
+      "dateRow": 14928,
+      "headerRow": 14930,
+      "endRow": 14960,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-24",
+      "dateRow": 14961,
+      "headerRow": 14963,
+      "endRow": 14995,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-25",
+      "dateRow": 14996,
+      "headerRow": 14998,
+      "endRow": 15028,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-26",
+      "dateRow": 15029,
+      "headerRow": 15031,
+      "endRow": 15061,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-27",
+      "dateRow": 15062,
+      "headerRow": 15064,
+      "endRow": 15094,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-28",
+      "dateRow": 15095,
+      "headerRow": 15097,
+      "endRow": 15127,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-29",
+      "dateRow": 15128,
+      "headerRow": 15130,
+      "endRow": 15160,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-30",
+      "dateRow": 15161,
+      "headerRow": 15163,
+      "endRow": 15193,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-01",
+      "dateRow": 15194,
+      "headerRow": 15196,
+      "endRow": 15226,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-02",
+      "dateRow": 15227,
+      "headerRow": 15229,
+      "endRow": 15259,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-03",
+      "dateRow": 15260,
+      "headerRow": 15262,
+      "endRow": 15292,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-04",
+      "dateRow": 15293,
+      "headerRow": 15295,
+      "endRow": 15325,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-05",
+      "dateRow": 15326,
+      "headerRow": 15328,
+      "endRow": 15358,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-06",
+      "dateRow": 15359,
+      "headerRow": 15361,
+      "endRow": 15391,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-07",
+      "dateRow": 15392,
+      "headerRow": 15394,
+      "endRow": 15424,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-08",
+      "dateRow": 15425,
+      "headerRow": 15427,
+      "endRow": 15457,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-09",
+      "dateRow": 15458,
+      "headerRow": 15460,
+      "endRow": 15490,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-10",
+      "dateRow": 15491,
+      "headerRow": 15493,
+      "endRow": 15523,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-11",
+      "dateRow": 15524,
+      "headerRow": 15526,
+      "endRow": 15556,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-12",
+      "dateRow": 15557,
+      "headerRow": 15559,
+      "endRow": 15589,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-13",
+      "dateRow": 15590,
+      "headerRow": 15592,
+      "endRow": 15622,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-14",
+      "dateRow": 15623,
+      "headerRow": 15625,
+      "endRow": 15655,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-15",
+      "dateRow": 15656,
+      "headerRow": 15658,
+      "endRow": 15688,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-16",
+      "dateRow": 15689,
+      "headerRow": 15691,
+      "endRow": 15721,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-17",
+      "dateRow": 15722,
+      "headerRow": 15724,
+      "endRow": 15754,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-18",
+      "dateRow": 15755,
+      "headerRow": 15757,
+      "endRow": 15787,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-19",
+      "dateRow": 15788,
+      "headerRow": 15790,
+      "endRow": 15820,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-20",
+      "dateRow": 15821,
+      "headerRow": 15823,
+      "endRow": 15853,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-05-21",
+      "dateRow": 15854,
+      "headerRow": 15856,
+      "endRow": 15886,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-15",
+      "dateRow": 15887,
+      "headerRow": 15889,
+      "endRow": 15919,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-15",
+      "dateRow": 15920,
+      "headerRow": 15922,
+      "endRow": 15952,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-15",
+      "dateRow": 15953,
+      "headerRow": 15955,
+      "endRow": 15985,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-15",
+      "dateRow": 15986,
+      "headerRow": 15988,
+      "endRow": 16018,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-15",
+      "dateRow": 16019,
+      "headerRow": 16021,
+      "endRow": 16051,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-15",
+      "dateRow": 16052,
+      "headerRow": 16054,
+      "endRow": 16084,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-15",
+      "dateRow": 16085,
+      "headerRow": 16087,
+      "endRow": 16117,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-15",
+      "dateRow": 16118,
+      "headerRow": 16120,
+      "endRow": 16150,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-15",
+      "dateRow": 16151,
+      "headerRow": 16153,
+      "endRow": 16183,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-15",
+      "dateRow": 16184,
+      "headerRow": 16186,
+      "endRow": 16216,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    },
+    {
+      "date": "2026-04-15",
+      "dateRow": 16217,
+      "headerRow": 16219,
+      "endRow": 16245,
+      "excelCount": 0,
+      "parsedAssignmentCount": 0,
+      "isRequestedDate": false,
+      "isEffectiveDate": false
+    }
+  ]
 }

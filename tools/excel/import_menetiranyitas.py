@@ -457,7 +457,8 @@ def map_export_assignment_row(
     row: Dict[str, Any],
     mapping: Dict[str, str],
     config: Dict[str, Any],
-    report: ImportReport,
+    report: Optional[ImportReport],
+    export_date: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     out: Dict[str, Any] = {}
     for col, target in mapping.items():
@@ -484,8 +485,10 @@ def map_export_assignment_row(
     assignment = {
         "assignmentId": f"assign-row-{row['_row']}",
         "jobId": job_id or None,
+        "exportDate": export_date,
         "vehiclePlate": vehicle_plate or None,
         "driverNames": driver_names,
+        "originalWorkPatternCode": str(out.get("workPatternCode") or "").strip() or None,
         "workPatternCode": config["workPatternMap"].get(work_pattern_raw),
         "plannerNote": None if normalize_key(out.get("plannerNote")) in skip_values else str(out.get("plannerNote") or "").strip() or None,
         "dispatchNote": str(out.get("dispatchNote") or "").strip() or None,
@@ -495,12 +498,33 @@ def map_export_assignment_row(
     if not assignment["vehiclePlate"] and not assignment["driverNames"] and not assignment["jobId"]:
         return None
 
-    if work_pattern_raw and not assignment["workPatternCode"]:
+    if work_pattern_raw and not assignment["workPatternCode"] and report is not None:
         report.warn(
             f"Export row {row['_row']}: unknown work pattern '{out.get('workPatternCode')}'"
         )
 
     return assignment
+
+
+def collect_export_assignments_for_section(
+    sheet,
+    section: Dict[str, Any],
+    config: Dict[str, Any],
+    report: Optional[ImportReport] = None,
+) -> List[Dict[str, Any]]:
+    section_rows = slice_sheet_records(sheet, section["headerRow"], section["endRow"])
+    assignments: List[Dict[str, Any]] = []
+    for row in section_rows:
+        mapped_assignment = map_export_assignment_row(
+            row,
+            config.get("exportAssignmentMapping", {}),
+            config,
+            report,
+            export_date=section.get("date"),
+        )
+        if mapped_assignment:
+          assignments.append(mapped_assignment)
+    return assignments
 
 
 def map_helper_row(
@@ -789,6 +813,7 @@ def main() -> None:
     if helper_sheet is None:
         raise SystemExit("Helper sheet not found. Check sheetAliases.helper in config.")
 
+    export_sections = list_export_sections(export_sheet)
     export_section = select_export_section(export_sheet, planning_date)
     if export_section is None:
         report.warn(f"Export section not found for planning date {planning_date}; export assignments will be empty")
@@ -808,6 +833,30 @@ def main() -> None:
         export_effective_date = export_section["date"]
         export_fallback_used = bool(export_section.get("fallbackUsed"))
         export_rows = slice_sheet_records(export_sheet, export_header_row, export_section_end_row)
+
+    export_sections_summary: List[Dict[str, Any]] = []
+    all_export_assignments: List[Dict[str, Any]] = []
+    for section in export_sections:
+        section_report = report if section.get("date") == export_effective_date else None
+        section_assignments = collect_export_assignments_for_section(
+            export_sheet,
+            section,
+            config,
+            report=section_report,
+        )
+        export_sections_summary.append(
+            {
+                "date": section.get("date"),
+                "dateRow": section.get("dateRow"),
+                "headerRow": section.get("headerRow"),
+                "endRow": section.get("endRow"),
+                "excelCount": section.get("count"),
+                "parsedAssignmentCount": len(section_assignments),
+                "isRequestedDate": section.get("date") == planning_date,
+                "isEffectiveDate": section.get("date") == export_effective_date,
+            }
+        )
+        all_export_assignments.extend(section_assignments)
 
     helper_header_row = find_header_row(
         helper_sheet,
@@ -849,6 +898,7 @@ def main() -> None:
             config.get("exportAssignmentMapping", {}),
             config,
             report,
+            export_date=export_effective_date,
         )
         if mapped_assignment:
             assignments.append(mapped_assignment)
@@ -939,6 +989,7 @@ def main() -> None:
             "effectiveDate": export_effective_date,
             "fallbackUsed": export_fallback_used,
         },
+        "availableExportDates": export_sections_summary,
     }
 
     write_json(out_dir / "planning-context.json", planning_context)
@@ -946,7 +997,7 @@ def main() -> None:
     write_json(out_dir / "driver-schedules.json", schedules)
     write_json(out_dir / "vehicles.json", vehicles)
     write_json(out_dir / "jobs.json", jobs)
-    write_json(out_dir / "export-assignments.json", assignments)
+    write_json(out_dir / "export-assignments.json", all_export_assignments or assignments)
     write_json(out_dir / "leave-exceptions.json", leave_exceptions)
     write_json(out_dir / "roster-assignments.json", roster_assignments)
 
@@ -959,6 +1010,7 @@ def main() -> None:
             "vehicles": len(vehicles),
             "jobs": len(jobs),
             "exportAssignments": len(assignments),
+            "exportAssignmentsAllDates": len(all_export_assignments),
             "leaveExceptions": len(leave_exceptions),
             "rosterAssignments": len(roster_assignments),
         },
