@@ -36,6 +36,30 @@ const RISK_META = {
   red: { label: "Magas kockázat", className: "risk-red" }
 };
 
+const RISK_FILTER_META = {
+  all: {
+    label: "Összes",
+    shortLabel: "Minden sofőr",
+    description: "A teljes heatmap lista megjelenítése szűrés nélkül.",
+    className: "risk-filter-all"
+  },
+  red: {
+    ...RISK_META.red,
+    shortLabel: "Piros",
+    description: "Kritikus szabály- vagy ETA-kockázat, azonnali diszpécseri figyelmet igényel."
+  },
+  yellow: {
+    ...RISK_META.yellow,
+    shortLabel: "Sárga",
+    description: "Közelgő limit vagy szűkülő pihenőablak, előkészítést igényel."
+  },
+  green: {
+    ...RISK_META.green,
+    shortLabel: "Zöld",
+    description: "A vezetési és pihenőidő ablakok jelenleg biztonságos tartományban vannak."
+  }
+};
+
 const CITY_COORDS = {
   budapest: [47.4979, 19.0402],
   gyor: [47.6875, 17.6504],
@@ -186,6 +210,7 @@ const appState = {
     workPattern: "all",
     matchRule: "all"
   },
+  riskFilter: "all",
   selectedDriverId: null,
   selectedExportDate: null,
   refreshTimerId: null,
@@ -203,6 +228,7 @@ let timelineDockLayoutState = {
 };
 
 window.addEventListener("DOMContentLoaded", initMenetiranyitasPanel);
+window.addEventListener("keydown", onGlobalKeydown);
 window.addEventListener("beforeunload", () => {
   if (appState.refreshTimerId) {
     clearInterval(appState.refreshTimerId);
@@ -244,6 +270,7 @@ async function initMenetiranyitasPanel() {
   const exportTableFilters = document.getElementById("export-table-filters");
   const exportTableContainer = document.getElementById("export-table-container");
   const alertsList = document.getElementById("monitor-alerts-list");
+  const riskLegend = document.getElementById("risk-legend");
 
   if (driverList) {
     driverList.addEventListener("click", onDriverListClick);
@@ -274,6 +301,11 @@ async function initMenetiranyitasPanel() {
   if (alertsList) {
     alertsList.addEventListener("click", onAlertListClick);
     alertsList.addEventListener("keydown", onAlertListKeydown);
+  }
+
+  if (riskLegend) {
+    riskLegend.addEventListener("click", onRiskLegendClick);
+    riskLegend.addEventListener("keydown", onRiskLegendKeydown);
   }
 
   refreshDashboard({ preserveSelection: false, focusMode: "assembly" });
@@ -341,7 +373,7 @@ function toggleTimelinePanelFullwidth(panelId) {
 
   if (isFull) {
     next.zones.full = next.zones.full.filter((id) => id !== panelId);
-    const fallbackZone = panelId === "assembly-timeline" ? "left" : "right";
+    const fallbackZone = panelId === "resource-timeline" ? "right" : "left";
     next.zones[fallbackZone].push(panelId);
   } else {
     next.zones.left = next.zones.left.filter((id) => id !== panelId);
@@ -503,23 +535,26 @@ function refreshDashboard(options = {}) {
   ensureSelectedExportDate();
 
   const profiles = buildDriverProfiles(now);
+  const filteredProfiles = getRiskFilteredProfiles(profiles);
   appState.profiles = profiles;
   appState.alerts = buildAlerts(profiles);
 
-  if (!preserveSelection || !profiles.some((profile) => profile.driver.id === appState.selectedDriverId)) {
-    const ordered = [...profiles].sort((a, b) => b.risk.score - a.risk.score);
-    appState.selectedDriverId = ordered[0]?.driver.id || null;
+  if (!preserveSelection) {
+    appState.selectedDriverId = null;
+  } else if (!filteredProfiles.some((profile) => profile.driver.id === appState.selectedDriverId)) {
+    appState.selectedDriverId = null;
   }
 
   const selectedProfile = getSelectedProfile();
 
   renderKpiStrip(profiles);
+  renderRiskLegend(profiles);
   renderPlanningContextStrip();
   renderExportDateSwitcher();
   renderExportTableFilters(profiles);
   renderExportTable(profiles, appState.selectedDriverId);
   renderExportDriverList(profiles, appState.selectedDriverId);
-  renderDriverStateList(profiles, appState.selectedDriverId);
+  renderDriverStateList(filteredProfiles, appState.selectedDriverId);
   renderMainPanel(selectedProfile, now);
   renderInsightsPanel(selectedProfile);
   renderOperationLogPanel();
@@ -1472,7 +1507,7 @@ function renderKpiStrip(profiles) {
 
   container.innerHTML = `
     <article class="kpi-card">
-      <div class="kpi-label">Risk Heatmap</div>
+      <div class="kpi-label">Kockázatos fuvarok</div>
       <div class="kpi-value">🟢 ${greenCount} • 🟡 ${yellowCount} • 🔴 ${redCount}</div>
       <div class="kpi-note">sofőr kockázati állapot valós időben</div>
     </article>
@@ -1492,6 +1527,59 @@ function renderKpiStrip(profiles) {
       <div class="kpi-note">diszpécseri beavatkozásra jelölt</div>
     </article>
   `;
+}
+
+function renderRiskLegend(profiles) {
+  const container = document.getElementById("risk-legend");
+  if (!container) {
+    return;
+  }
+
+  const counts = {
+    green: profiles.filter((profile) => profile.risk.level === "green").length,
+    yellow: profiles.filter((profile) => profile.risk.level === "yellow").length,
+    red: profiles.filter((profile) => profile.risk.level === "red").length
+  };
+
+  const totalCount = profiles.length;
+  const activeFilter = appState.riskFilter;
+  const legendOrder = ["all", "red", "yellow", "green"];
+
+  container.innerHTML = legendOrder
+    .map((key) => {
+      const meta = RISK_FILTER_META[key];
+      const isActive = activeFilter === key;
+      const count = key === "all" ? totalCount : counts[key];
+      const colorDot = key === "all"
+        ? '<span class="risk-legend-dot risk-filter-all" aria-hidden="true"></span>'
+        : `<span class="risk-legend-dot ${meta.className}" aria-hidden="true"></span>`;
+
+      return `
+        <button
+          type="button"
+          class="risk-legend-button ${isActive ? "active" : ""} ${meta.className}"
+          data-risk-filter="${escapeHtml(key)}"
+          aria-pressed="${isActive ? "true" : "false"}"
+          title="${escapeHtml(meta.description)}"
+        >
+          <span class="risk-legend-head">
+            ${colorDot}
+            <span class="risk-legend-title">${escapeHtml(meta.shortLabel)}</span>
+            <span class="risk-legend-count">${count}</span>
+          </span>
+          <span class="risk-legend-copy">${escapeHtml(meta.description)}</span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function getRiskFilteredProfiles(profiles) {
+  if (appState.riskFilter === "all") {
+    return profiles;
+  }
+
+  return profiles.filter((profile) => profile.risk.level === appState.riskFilter);
 }
 
 function renderPlanningContextStrip() {
@@ -1706,6 +1794,12 @@ function renderDriverStateList(profiles, selectedDriverId) {
     return;
   }
 
+  if (!profiles.length) {
+    const label = RISK_FILTER_META[appState.riskFilter]?.label || "szűrt";
+    container.innerHTML = `<div class="empty-message">Nincs megjeleníthető sofőr a kiválasztott ${escapeHtml(label)} szűrővel.</div>`;
+    return;
+  }
+
   const ordered = [...profiles].sort((a, b) => b.risk.score - a.risk.score);
 
   container.innerHTML = ordered
@@ -1827,15 +1921,19 @@ function renderExportDriverList(profiles, selectedDriverId) {
 }
 
 function renderMainPanel(profile, now) {
+  const panel = document.getElementById("monitor-main-panel");
   const container = document.getElementById("tacho-main-content");
-  if (!container) {
+  if (!panel || !container) {
     return;
   }
 
   if (!profile) {
-    container.innerHTML = "<div class=\"empty-message\">Nincs elérhető sofőrprofil.</div>";
+    panel.hidden = true;
+    container.innerHTML = "";
     return;
   }
+
+  panel.hidden = false;
 
   const counters = buildCounterCards(profile);
 
@@ -2220,6 +2318,56 @@ function onDriverListKeydown(event) {
   appState.selectedDriverId = driverId;
   refreshDashboard({ preserveSelection: true, focusMode: "assembly" });
   pulseMainPanel();
+}
+
+function onRiskLegendClick(event) {
+  const button = event.target.closest("[data-risk-filter]");
+  if (!button || !event.currentTarget.contains(button)) {
+    return;
+  }
+
+  const riskFilter = button.dataset.riskFilter;
+  if (!Object.hasOwn(RISK_FILTER_META, riskFilter) || riskFilter === appState.riskFilter) {
+    return;
+  }
+
+  appState.riskFilter = riskFilter;
+  refreshDashboard({ preserveSelection: true, focusMode: "none" });
+}
+
+function onRiskLegendKeydown(event) {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  const button = event.target.closest("[data-risk-filter]");
+  if (!button || !event.currentTarget.contains(button)) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const riskFilter = button.dataset.riskFilter;
+  if (!Object.hasOwn(RISK_FILTER_META, riskFilter) || riskFilter === appState.riskFilter) {
+    return;
+  }
+
+  appState.riskFilter = riskFilter;
+  refreshDashboard({ preserveSelection: true, focusMode: "none" });
+}
+
+function onGlobalKeydown(event) {
+  if (event.key !== "Escape" || !appState.selectedDriverId) {
+    return;
+  }
+
+  const target = event.target;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
+    return;
+  }
+
+  appState.selectedDriverId = null;
+  refreshDashboard({ preserveSelection: true, focusMode: "none" });
 }
 
 function onExportDateSwitcherClick(event) {

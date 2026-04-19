@@ -98,6 +98,53 @@
       border-bottom: none;
     }
 
+    header.panel {
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px 16px;
+      align-items: start;
+    }
+
+    .header-copy {
+      min-width: 0;
+    }
+
+    .header-copy .panel-title {
+      margin-bottom: 8px;
+    }
+
+    .header-copy p {
+      margin: 0;
+      opacity: 0.7;
+    }
+
+    #layout-profile-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      align-self: center;
+      width: auto;
+      margin-top: 0;
+    }
+
+    .global-filter-host {
+      grid-column: 1 / -1;
+      min-width: 0;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .global-filter-host .subpanel-title {
+      margin-bottom: 8px;
+    }
+
+    .global-filter-host .fuvar-filter-bar {
+      align-items: end;
+    }
+
     .detached-window-title {
       display: none;
       margin-bottom: 10px;
@@ -652,6 +699,14 @@
     }
 
     @media (max-width: 1100px) {
+      header.panel {
+        grid-template-columns: 1fr;
+      }
+
+      #layout-profile-bar {
+        justify-content: flex-start;
+      }
+
       .dock-layout {
         grid-template-columns: minmax(320px, 1fr);
       }
@@ -677,11 +732,13 @@
 <main class="app-main" id="page-fuvarszervezes">
 
 <header class="panel">
-  <div class="panel-title">🚛 Fuvarszervezés v4.4 (Advanced)</div>
-  <p style="opacity:0.7;">
-    Sofőr • Vontató • Pótkocsi – idő + hely + relevancia illesztés
-  </p>
-  <div id="layout-profile-bar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end;width:100%;margin-top:8px;">
+  <div class="header-copy">
+    <div class="panel-title">🚛 Fuvarszervezés v4.4 (Advanced)</div>
+    <p>
+      Sofőr • Vontató • Pótkocsi – idő + hely + relevancia illesztés
+    </p>
+  </div>
+  <div id="layout-profile-bar">
     <details class="gear-settings-wrapper">
       <summary title="Beállítások">⚙ Beállítások</summary>
       <div class="gear-settings-panel">
@@ -717,6 +774,10 @@
       </div>
     </details>
   </div>
+  <div class="global-filter-host">
+    <div class="subpanel-title">🔍 Globális szűrők</div>
+    <div id="filter-container"></div>
+  </div>
 </header>
 
 <div class="container">
@@ -739,11 +800,6 @@
       </div>
     </div>
 
-    <div style="margin-bottom:10px;">
-      <div class="subpanel-title" style="margin-bottom:6px;">🔍 Gyorsszűrők</div>
-      <div id="filter-container"></div>
-    </div>
-
     <details class="panel-collapsible" open>
       <summary class="panel-summary">
         <span class="panel-title">📋 Fuvarfeladat lista</span>
@@ -755,7 +811,7 @@
     </details>
   </section>
 
-  <section class="panel dock-panel" id="panel-resource" data-panel-id="resource" data-panel-title="Erőforrás kártyák">
+  <section class="panel dock-panel" id="panel-resource" data-panel-id="resource" data-panel-title="Erőforrás kártyák" hidden aria-hidden="true">
     <div class="panel-header-row">
       <div class="panel-title">🧩 Erőforrás kártyák</div>
       <div class="panel-dock-toolbar">
@@ -823,6 +879,20 @@
     <div id="assembly-operation-log" class="assembly-operation-log"></div>
   </section>
 
+  <section class="panel dock-panel" id="panel-jarat-timeline" data-panel-id="jarat-timeline" data-panel-title="Járat idővonal">
+    <div class="panel-header-row">
+      <div class="panel-title">🧭 Járat idővonal</div>
+      <div class="panel-dock-toolbar">
+        <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
+        <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
+        <button type="button" class="panel-dock-btn" data-action="toggle-fullwidth">Teljes szélesség</button>
+        <button type="button" class="panel-dock-btn" data-action="undock">Külön ablak</button>
+        <button type="button" class="panel-dock-btn" data-action="redock">Visszadokkolás</button>
+      </div>
+    </div>
+    <div id="jarat-timeline-container">Betöltés...</div>
+  </section>
+
   <section class="panel dock-panel" id="panel-timeline" data-panel-id="timeline" data-panel-title="Erőforrás idővonal">
     <div class="panel-header-row">
       <div class="panel-title">⏱️ Erőforrás idővonal</div>
@@ -884,9 +954,9 @@ import { POTKOCSIK } from "./assets/js/data/potkocsik.js";
 /* ------------------------
    UI/MATCHING MODULOK
 ------------------------- */
-import { renderTimeline, getTimelineFilterReferenceDate, refreshAutoDriverStatesForLinkedConvoys, refreshAutoTransitBlocksForResource } from "./assets/js/ui/timeline.js";
+import { renderTimeline, getTimelineFilterReferenceDate, setTimelineWindowDayOffset, refreshAutoDriverStatesForLinkedConvoys, refreshAutoTransitBlocksForResource } from "./assets/js/ui/timeline.js";
 import { setDispatchProfile as setTimelineDispatchProfile } from "./assets/js/ui/timeline.js";
-import { getAssemblyOperationLogEntries, renderSzerelvenyTimeline } from "./assets/js/ui/szerelveny-timeline.js";
+import { getAssemblyOperationLogEntries, renderJaratTimeline, renderSzerelvenyTimeline, setAssemblyTimelineWindowDayOffset } from "./assets/js/ui/szerelveny-timeline.js";
 import { renderSzerelvenyMap } from "./assets/js/ui/szerelveny-map.js";
 import { renderResourcePanel } from "./assets/js/ui/resource-panel.js";
 import { ensureContinuousTimelines } from "./assets/js/ui/timeline-generator.js";
@@ -1024,7 +1094,7 @@ const RECOMMENDATION_ADDRESS_COORDS = {
   kornye: { lat: 47.5449, lng: 18.3188 }
 };
 
-const PANEL_IDS = ["fuvar", "resource", "elofutas", "utofutas", "assembly-timeline", "timeline", "map"];
+const PANEL_IDS = ["fuvar", "resource", "elofutas", "utofutas", "assembly-timeline", "jarat-timeline", "timeline", "map"];
 const DOCK_LAYOUT_KEY = "transit.v44.dockLayout";
 const DOCK_PROFILES_KEY = "transit.v44.dockProfiles";
 const DOCK_CHANNEL_NAME = "transit.v44.dockLayout.channel";
@@ -1041,7 +1111,7 @@ const dockChannel = canBroadcast ? new BroadcastChannel(DOCK_CHANNEL_NAME) : nul
 const defaultDockLayout = {
   zones: {
     left: ["fuvar", "resource", "elofutas"],
-    right: ["assembly-timeline", "timeline", "map", "utofutas"],
+    right: ["assembly-timeline", "jarat-timeline", "timeline", "map", "utofutas"],
     full: []
   },
   detached: [],
@@ -1051,6 +1121,7 @@ const defaultDockLayout = {
     elofutas: "left",
     utofutas: "right",
     "assembly-timeline": "right",
+    "jarat-timeline": "right",
     timeline: "right",
     map: "right"
   }
@@ -1061,11 +1132,39 @@ let dockProfilesState = null;
 let activeUserId = null;
 let activeViewId = null;
 let isSyncingFuvarColumnsUi = false;
+const LEGACY_DEFAULT_FUVAR_COLUMNS = [
+  "route",
+  "pickup",
+  "delivery",
+  "distance",
+  "status",
+  "driver",
+  "tractor",
+  "trailer",
+  "excel_28",
+  "excel_29",
+  "excel_33",
+  "excel_34"
+];
+
+function hasSameColumnCollection(left, right) {
+  if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+    return false;
+  }
+
+  const rightSet = new Set(right);
+  return left.every((item) => rightSet.has(item));
+}
 
 function sanitizeFuvarColumns(raw) {
   const allowed = new Set(FUVAR_CARD_COLUMN_OPTIONS.map((item) => item.id));
   const incoming = Array.isArray(raw) ? raw : DEFAULT_FUVAR_CARD_COLUMNS;
   const normalized = incoming.filter((id) => allowed.has(id));
+
+  if (!normalized.includes("client") && hasSameColumnCollection(normalized, LEGACY_DEFAULT_FUVAR_COLUMNS)) {
+    return [...DEFAULT_FUVAR_CARD_COLUMNS];
+  }
+
   return normalized.length > 0 ? normalized : [...DEFAULT_FUVAR_CARD_COLUMNS];
 }
 
@@ -1989,7 +2088,7 @@ function bindLayoutProfileControls() {
   });
 
   document.getElementById("layout-columns-default")?.addEventListener("click", () => {
-    setActiveFuvarColumns(["route", "pickup", "delivery", "distance", "status", "tractor"], {
+    setActiveFuvarColumns(DEFAULT_FUVAR_CARD_COLUMNS, {
       persist: true,
       broadcast: true,
       refresh: true
@@ -2223,18 +2322,26 @@ function syncResourceFocusFromFuvarSelection() {
 }
 
 function getVisibleResourcesByScope() {
+  const filterMatchingResources = (list) => {
+    if (!selectedFuvarId) {
+      return list;
+    }
+
+    return list.filter((item) => item?.matchSuitable !== false);
+  };
+
   if (!resourceFocusScope) {
     return {
-      soforok: SOFOROK,
-      vontatok: VONTATOK,
-      potkocsik: POTKOCSIK
+      soforok: filterMatchingResources(SOFOROK),
+      vontatok: filterMatchingResources(VONTATOK),
+      potkocsik: filterMatchingResources(POTKOCSIK)
     };
   }
 
   return {
-    soforok: SOFOROK.filter((item) => resourceFocusScope.soforIds.has(item.id)),
-    vontatok: VONTATOK.filter((item) => resourceFocusScope.vontatoIds.has(item.id)),
-    potkocsik: POTKOCSIK.filter((item) => resourceFocusScope.potkocsiIds.has(item.id))
+    soforok: filterMatchingResources(SOFOROK.filter((item) => resourceFocusScope.soforIds.has(item.id))),
+    vontatok: filterMatchingResources(VONTATOK.filter((item) => resourceFocusScope.vontatoIds.has(item.id))),
+    potkocsik: filterMatchingResources(POTKOCSIK.filter((item) => resourceFocusScope.potkocsiIds.has(item.id)))
   };
 }
 
@@ -3284,9 +3391,9 @@ function applyFuvarSelectionById(fuvarId, options = { broadcast: true }) {
   }));
 
   if (!selectedFuvarId) {
-    SOFOROK.forEach((s) => { delete s.matchGrade; delete s.matchReasons; });
-    VONTATOK.forEach((v) => { delete v.matchGrade; delete v.matchReasons; });
-    POTKOCSIK.forEach((p) => { delete p.matchGrade; delete p.matchReasons; });
+    SOFOROK.forEach((s) => { delete s.matchGrade; delete s.matchSuitable; delete s.matchReasons; });
+    VONTATOK.forEach((v) => { delete v.matchGrade; delete v.matchSuitable; delete v.matchReasons; });
+    POTKOCSIK.forEach((p) => { delete p.matchGrade; delete p.matchSuitable; delete p.matchReasons; });
     refreshAllViews();
 
     if (options.broadcast) {
@@ -3333,6 +3440,15 @@ function getFuvarCardRenderOptions() {
   };
 }
 
+function applyGlobalTimelineDayFilter(dayOffset) {
+  if (!Number.isInteger(dayOffset) || dayOffset < 0) {
+    return;
+  }
+
+  setTimelineWindowDayOffset(dayOffset);
+  setAssemblyTimelineWindowDayOffset(dayOffset);
+}
+
 function isSpedicioModeActive() {
   return Boolean(currentFuvarFilter?.spediccio);
 }
@@ -3343,7 +3459,13 @@ function renderFuvarFiltersWithCurrentState() {
   }
 
   renderFuvarFilters("filter-container", (filter) => {
+    const previousDayOffset = currentFuvarFilter?.dayOffset ?? null;
     currentFuvarFilter = filter;
+
+    if (filter.dayOffset !== null && filter.dayOffset !== previousDayOffset) {
+      applyGlobalTimelineDayFilter(filter.dayOffset);
+    }
+
     refreshAllViews();
   }, {
     getTimelineReferenceDate: () => getTimelineFilterReferenceDate(),
@@ -3352,7 +3474,13 @@ function renderFuvarFiltersWithCurrentState() {
 }
 
 function applyProgrammaticFuvarFilter(nextFilter) {
+  const previousDayOffset = currentFuvarFilter?.dayOffset ?? null;
   currentFuvarFilter = nextFilter;
+
+  if (currentFuvarFilter.dayOffset !== null && currentFuvarFilter.dayOffset !== previousDayOffset) {
+    applyGlobalTimelineDayFilter(currentFuvarFilter.dayOffset);
+  }
+
   renderFuvarFiltersWithCurrentState();
   refreshAllViews();
 }
@@ -3637,7 +3765,31 @@ function renderAssemblyOperationLog() {
   }).join("");
 }
 
+function captureElementScrollPosition(element) {
+  if (!element) {
+    return null;
+  }
+
+  return {
+    top: element.scrollTop,
+    left: element.scrollLeft
+  };
+}
+
+function restoreElementScrollPosition(element, position) {
+  if (!element || !position) {
+    return;
+  }
+
+  element.scrollTop = position.top;
+  element.scrollLeft = position.left;
+}
+
   function refreshAllViews() {
+    const timelineScrollPosition = captureElementScrollPosition(document.getElementById("timeline-container"));
+    const assemblyTimelineScrollPosition = captureElementScrollPosition(document.getElementById("assembly-timeline-container"));
+    const jaratTimelineScrollPosition = captureElementScrollPosition(document.getElementById("jarat-timeline-container"));
+
     SOFOROK.forEach((sofor) => {
       refreshAutoTransitBlocksForResource(sofor, FUVAROK);
     });
@@ -3682,7 +3834,8 @@ function renderAssemblyOperationLog() {
       restoreSelectedFuvarCard();
     }
 
-    if (document.getElementById("resource-panel-container")) {
+    const resourcePanelSection = document.getElementById("panel-resource");
+    if (document.getElementById("resource-panel-container") && !resourcePanelSection?.hidden) {
       if (spedicioMode) {
         renderResourcePanel("resource-panel-container", FUVAROK, onSelectResource, {
           mode: "spedicio-partners",
@@ -3712,11 +3865,26 @@ function renderAssemblyOperationLog() {
         ]);
       }
       enableTimelineDrop();
+      requestAnimationFrame(() => {
+        restoreElementScrollPosition(document.getElementById("timeline-container"), timelineScrollPosition);
+      });
     }
 
     if (document.getElementById("assembly-timeline-container")) {
       renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK, {
         spedicioOnly: spedicioMode
+      });
+      requestAnimationFrame(() => {
+        restoreElementScrollPosition(document.getElementById("assembly-timeline-container"), assemblyTimelineScrollPosition);
+      });
+    }
+
+    if (document.getElementById("jarat-timeline-container")) {
+      renderJaratTimeline("jarat-timeline-container", SOFOROK, VONTATOK, POTKOCSIK, {
+        spedicioOnly: spedicioMode
+      });
+      requestAnimationFrame(() => {
+        restoreElementScrollPosition(document.getElementById("jarat-timeline-container"), jaratTimelineScrollPosition);
       });
     }
 
@@ -3742,18 +3910,21 @@ function onSelectFuvar(results, options = { broadcast: true }) {
   SOFOROK.forEach((s) => {
     const r = results.soforok.find(x => x.id === s.id);
     s.matchGrade = r.result.grade;
+    s.matchSuitable = r.result.suitable;
     s.matchReasons = r.result.reasons || [];
   });
 
   VONTATOK.forEach((v) => {
     const r = results.vontatok.find(x => x.id === v.id);
     v.matchGrade = r.result.grade;
+    v.matchSuitable = r.result.suitable;
     v.matchReasons = r.result.reasons || [];
   });
 
   POTKOCSIK.forEach((p) => {
     const r = results.potkocsik.find(x => x.id === p.id);
     p.matchGrade = r.result.grade;
+    p.matchSuitable = r.result.suitable;
     p.matchReasons = r.result.reasons || [];
   });
 

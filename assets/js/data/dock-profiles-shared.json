@@ -22,7 +22,7 @@
               "map": "right"
             }
           },
-          "fuvarColumns": ["route", "pickup", "delivery", "distance", "status", "tractor"]
+          "fuvarColumns": ["route", "pickup", "delivery", "client", "distance"]
         }
       ],
       "lastUsedViewId": "view-default"

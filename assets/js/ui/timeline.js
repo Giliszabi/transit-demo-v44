@@ -8,7 +8,7 @@
 
 import { distanceKm, formatDate } from "../utils.js";
 import { FUVAROK } from "../data/fuvarok.js";
-import { evaluateFuvarTags } from "./matching.js";
+import { evaluateFuvarTags, getResourceMatchSortValue, sortResourcesByMatchQuality } from "./matching.js";
 import { getCategoryPalette } from "./colors.js";
 import { buildSoforMetaTooltip, renderSoforMetaBadges } from "./sofor-display-meta.js";
 
@@ -588,8 +588,8 @@ function buildDropoffResourceView(groups) {
 
 function getMatchGradePriority(matchGrade) {
   if (matchGrade === "ok") return 0;
-  if (matchGrade === "bad") return 1;
-  if (matchGrade === "warn") return 2;
+  if (matchGrade === "warn") return 1;
+  if (matchGrade === "bad") return 2;
   return 3;
 }
 
@@ -606,11 +606,7 @@ function getSoforSortValueTL(sofor, columnId) {
     return Math.max(0, (driving.weeklyLimitHours || 0) - (driving.weeklyDrivenHours || 0));
   }
   if (columnId === "match") {
-    // Dummy score: biztosan adjon látható sorrendet a Matching gombra.
-    const idNum = Number.parseInt(String(sofor?.id || "").replace(/\D+/g, ""), 10) || 0;
-    const name = getSoforSortNameTL(sofor);
-    const nameScore = Array.from(name).reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 100;
-    return idNum * 100 + nameScore;
+    return -getResourceMatchSortValue(sofor);
   }
   return 0;
 }
@@ -691,20 +687,19 @@ function buildTimelineSoforSortBar() {
 }
 
 function sortResourcesByMatch(list) {
-  return list
-    .map((resource, index) => ({ resource, index }))
-    .sort((a, b) => {
-      const priorityDiff =
-        getMatchGradePriority(a.resource.matchGrade) -
-        getMatchGradePriority(b.resource.matchGrade);
+  return sortResourcesByMatchQuality(list);
+}
 
-      if (priorityDiff !== 0) {
-        return priorityDiff;
-      }
+function buildTimelineMatchReasonsHtml(reasons = []) {
+  if (!Array.isArray(reasons) || reasons.length === 0) {
+    return "";
+  }
 
-      return a.index - b.index;
-    })
-    .map(({ resource }) => resource);
+  return `
+    <div class="timeline-resource-match-reasons">
+      ${reasons.map((reason) => `<div class="timeline-resource-match-reason">${reason}</div>`).join("")}
+    </div>
+  `;
 }
 
 function getLocalDayBounds(anchorDate = new Date()) {
@@ -875,6 +870,11 @@ function getBaseDate() {
 
 export function getTimelineFilterReferenceDate() {
   return getWindowStartDate();
+}
+
+export function setTimelineWindowDayOffset(dayOffset = 0) {
+  const normalizedOffset = Number.isInteger(dayOffset) ? dayOffset : 0;
+  timelineOffsetHours = normalizedOffset * 24;
 }
 
 function notifyTimelineWindowChanged() {
@@ -2532,6 +2532,7 @@ function renderResourceRow(parent, r, type) {
   const soforMetaHtml = type === "sofor"
     ? `<div class="timeline-resource-driver-badges">${renderSoforMetaBadges(r, { compact: true, shortLabels: true })}</div>`
     : "";
+  const matchReasonsHtml = buildTimelineMatchReasonsHtml(r.matchReasons || []);
 
   name.innerHTML = `
     <div class="timeline-resource-main-line">
@@ -2540,10 +2541,13 @@ function renderResourceRow(parent, r, type) {
     </div>
     ${soforMetaHtml}
     ${partnerMeta}
+    ${matchReasonsHtml}
   `;
 
   if (type === "sofor") {
-    name.title = buildSoforMetaTooltip(r);
+    name.title = [buildSoforMetaTooltip(r), ...(r.matchReasons || [])].filter(Boolean).join("\n");
+  } else if (Array.isArray(r.matchReasons) && r.matchReasons.length > 0) {
+    name.title = r.matchReasons.join("\n");
   }
 
   // Timeline sáv
@@ -2919,12 +2923,18 @@ function renderTimelinePager(container, containerId, groups, dropoffView) {
   nav.className = "timeline-nav";
 
   const prevBtn = document.createElement("button");
-  prevBtn.className = "btn timeline-nav-btn";
-  prevBtn.textContent = "← Előző 72 óra";
+  prevBtn.className = "btn timeline-nav-btn timeline-nav-arrow-btn";
+  prevBtn.type = "button";
+  prevBtn.innerHTML = "&larr;";
+  prevBtn.setAttribute("aria-label", "Előző 72 óra");
+  prevBtn.title = "Előző 72 óra";
 
   const nextBtn = document.createElement("button");
-  nextBtn.className = "btn timeline-nav-btn";
-  nextBtn.textContent = "Következő 72 óra →";
+  nextBtn.className = "btn timeline-nav-btn timeline-nav-arrow-btn";
+  nextBtn.type = "button";
+  nextBtn.innerHTML = "&rarr;";
+  nextBtn.setAttribute("aria-label", "Következő 72 óra");
+  nextBtn.title = "Következő 72 óra";
 
   const label = document.createElement("div");
   label.className = "timeline-nav-label";

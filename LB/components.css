@@ -241,15 +241,15 @@ summary.btn {
 }
 
 .fuvar-card-table-scroll {
-  --fuvar-tag-lane-width: 118px;
+  --fuvar-tag-lane-width: 230px;
 }
 
 .fuvar-card-grid {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
-  gap: 8px;
-  margin-top: 2px;
+  gap: 12px;
+  margin-top: 5px;
   overflow: visible;
   width: max-content;
   min-width: 100%;
@@ -258,7 +258,7 @@ summary.btn {
 .fuvar-card-inline {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   min-width: 100%;
 }
 
@@ -288,7 +288,7 @@ summary.btn {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -482,7 +482,7 @@ summary.btn {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding-right: 8px;
+  padding-right: 12px;
   border-right: 1px solid rgba(255,255,255,0.08);
   box-sizing: border-box;
 }
@@ -492,7 +492,7 @@ summary.btn {
 }
 
 .fuvar-card-item-value {
-  font-size: 11px;
+  font-size: 12px;
   opacity: 0.9;
   white-space: nowrap;
   overflow: hidden;
@@ -1031,8 +1031,6 @@ summary.btn {
 
 .resource-card.match-bad {
   border-color: #ff3b30;
-  opacity: 0.52;
-  filter: saturate(0.35);
 }
 
 .resource-card.match-warn {
@@ -1045,7 +1043,6 @@ summary.btn {
 
 .resource-card.match-bad:hover {
   border-color: #ff3b30;
-  opacity: 0.64;
 }
 
 .resource-card.match-warn:hover {
@@ -1466,65 +1463,6 @@ summary.btn {
   border: 1px solid rgba(153, 186, 213, 0.35);
 }
 
-.fuvar-details-modal {
-  width: min(900px, 96vw);
-  max-height: 88vh;
-  overflow: auto;
-}
-
-.fuvar-details-header {
-  position: sticky;
-  top: 0;
-  background: linear-gradient(180deg, rgba(23, 29, 40, 0.98) 0%, rgba(19, 25, 35, 0.96) 100%);
-  z-index: 2;
-}
-
-.fuvar-details-summary {
-  margin-bottom: 14px;
-}
-
-.fuvar-details-tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.fuvar-details-grid {
-  display: grid;
-  gap: 10px;
-}
-
-.fuvar-details-row {
-  display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.fuvar-details-label {
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #b7c8d8;
-}
-
-.fuvar-details-value {
-  min-width: 0;
-  font-size: 13px;
-  color: #edf4fb;
-  line-height: 1.45;
-  word-break: break-word;
-}
-
-.fuvar-details-empty {
-  font-size: 12px;
-  color: #91a4b7;
-}
-
 .spediccio-cancel-btn {
   background: rgba(125, 140, 158, 0.2);
   color: #d8e4f1;
@@ -1545,11 +1483,6 @@ summary.btn {
 }
 
 @media (max-width: 900px) {
-  .fuvar-details-row {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
   .fuvar-card-inline {
     align-items: flex-start;
     flex-direction: column;

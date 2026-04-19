@@ -1,0 +1,132 @@
+/* Globális layoutok, konténerek, grid-ek */
+
+.container {
+  padding: 16px 28px;
+}
+
+.panel {
+  background: #1e1f24;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #333;
+}
+
+.panel-title {
+  font-size: 18px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #444;
+}
+
+.panel-collapsible {
+  padding-top: 14px;
+}
+
+.panel-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #444;
+}
+
+.panel-summary::-webkit-details-marker {
+  display: none;
+}
+
+.panel-summary::marker {
+  content: "";
+}
+
+.panel-summary .panel-title {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.panel-toggle-icon {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(79, 195, 247, 0.35);
+  background: rgba(79, 195, 247, 0.12);
+  color: #a8ddff;
+  font-size: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.panel-toggle-icon::before {
+  content: "▼";
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.panel-collapsible[open] .panel-toggle-icon::before,
+.subpanel-collapsible[open] .panel-toggle-icon::before {
+  content: "▲";
+}
+
+.panel-summary:hover .panel-toggle-icon,
+.subpanel-summary:hover .panel-toggle-icon {
+  background: rgba(79, 195, 247, 0.2);
+  border-color: rgba(79, 195, 247, 0.5);
+}
+
+.panel-content {
+  overflow: hidden;
+}
+
+.subpanel-collapsible {
+  margin-bottom: 12px;
+  border: 1px solid #333a46;
+  border-radius: 10px;
+  background: rgba(20, 22, 28, 0.5);
+}
+
+.subpanel-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  padding: 10px 12px;
+}
+
+.subpanel-summary::-webkit-details-marker {
+  display: none;
+}
+
+.subpanel-summary::marker {
+  content: "";
+}
+
+.subpanel-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #d7dee2;
+}
+
+.subpanel-content {
+  padding: 0 12px 10px;
+}
+
+@media (max-width: 900px) {
+  .container {
+    padding: 12px;
+  }
+
+  .panel {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+}

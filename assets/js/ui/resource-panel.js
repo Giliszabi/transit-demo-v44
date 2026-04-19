@@ -10,7 +10,7 @@ import { buildSoforMetaTooltip, renderSoforMetaBadges } from "./sofor-display-me
 import { getDomesticTransitRoleInfo } from "./transit-relations.js";
 
 // Matching integráció
-import { evaluateFuvarokForResource } from "./matching.js";
+import { evaluateFuvarokForResource, getResourceMatchSortValue, sortResourcesByMatchQuality } from "./matching.js";
 
 const resourceSearchTerms = {
   sofor: "",
@@ -23,13 +23,6 @@ function normalizeSearchText(value) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-}
-
-function getMatchGradePriority(matchGrade) {
-  if (matchGrade === "ok") return 0;
-  if (matchGrade === "bad") return 1;
-  if (matchGrade === "warn") return 2;
-  return 3;
 }
 
 function buildResourceMatchingContextHtml(fuvarList, selectedFuvarId) {
@@ -65,11 +58,7 @@ function getSoforSortValue(sofor, columnId) {
     return Math.max(0, (driving.weeklyLimitHours || 0) - (driving.weeklyDrivenHours || 0));
   }
   if (columnId === "match") {
-    // Dummy score: biztosan adjon látható sorrendet a Matching gombra.
-    const idNum = Number.parseInt(String(sofor?.id || "").replace(/\D+/g, ""), 10) || 0;
-    const name = getSoforSortName(sofor);
-    const nameScore = Array.from(name).reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 100;
-    return idNum * 100 + nameScore;
+    return -getResourceMatchSortValue(sofor);
   }
   return 0;
 }
@@ -136,20 +125,7 @@ function bindSoforSortButtons(container) {
 }
 
 function sortResourcesByMatch(list) {
-  return list
-    .map((resource, index) => ({ resource, index }))
-    .sort((a, b) => {
-      const priorityDiff =
-        getMatchGradePriority(a.resource.matchGrade) -
-        getMatchGradePriority(b.resource.matchGrade);
-
-      if (priorityDiff !== 0) {
-        return priorityDiff;
-      }
-
-      return a.index - b.index;
-    })
-    .map(({ resource }) => resource);
+  return sortResourcesByMatchQuality(list);
 }
 
 function getResourceCardMatchClass(matchGrade) {
@@ -224,6 +200,7 @@ export function renderResourcePanel(containerId, FUVAROK, onSelectResource, opti
   const soforList = Array.isArray(options.soforok) ? options.soforok : SOFOROK;
   const vontatoList = Array.isArray(options.vontatok) ? options.vontatok : VONTATOK;
   const potkocsiList = Array.isArray(options.potkocsik) ? options.potkocsik : POTKOCSIK;
+  const selectedFuvarId = options.selectedFuvarId || null;
 
   const openState = {
     sofor: true,
@@ -298,11 +275,23 @@ export function renderResourcePanel(containerId, FUVAROK, onSelectResource, opti
     </div>
   `;
 
-  renderSoforList("list-sofor", soforList, FUVAROK, onSelectResource);
-  renderVontatoList("list-vontato", vontatoList, FUVAROK, onSelectResource);
-  renderPotkocsiList("list-potkocsi", potkocsiList, FUVAROK, onSelectResource);
+  renderSoforList("list-sofor", soforList, FUVAROK, onSelectResource, selectedFuvarId);
+  renderVontatoList("list-vontato", vontatoList, FUVAROK, onSelectResource, selectedFuvarId);
+  renderPotkocsiList("list-potkocsi", potkocsiList, FUVAROK, onSelectResource, selectedFuvarId);
   bindSoforSortButtons(container);
   bindResourceSearchInputs(container);
+}
+
+function filterResourceListForSelectedFuvar(list, selectedFuvarId) {
+  if (!selectedFuvarId) {
+    return Array.isArray(list) ? list : [];
+  }
+
+  return (Array.isArray(list) ? list : []).filter((resource) => resource?.matchSuitable !== false);
+}
+
+function renderEmptyResourceState(target, message) {
+  target.innerHTML = `<div class="res-no-fuvar">${message}</div>`;
 }
 
 function renderSpedicioPartnerPanel(container, FUVAROK, onSelectResource, partnerList) {
@@ -511,11 +500,17 @@ function resourceCardHtml(icon, title, position, timeline = [], linkedInfoHtml =
 // ======================================================================
 // SOFŐR LISTA
 // ======================================================================
-function renderSoforList(targetId, list, FUVAROK, onSelectResource) {
+function renderSoforList(targetId, list, FUVAROK, onSelectResource, selectedFuvarId = null) {
   const el = document.getElementById(targetId);
   el.innerHTML = "";
 
-  const sortedList = applySoforSort(list);
+  const filteredList = filterResourceListForSelectedFuvar(list, selectedFuvarId);
+  const sortedList = applySoforSort(filteredList);
+
+  if (sortedList.length === 0) {
+    renderEmptyResourceState(el, "Nincs megfelelő sofőr a kijelölt fuvarhoz.");
+    return;
+  }
 
   sortedList.forEach((s) => {
     const div = document.createElement("div");
@@ -549,11 +544,17 @@ function renderSoforList(targetId, list, FUVAROK, onSelectResource) {
 // ======================================================================
 // VONTATÓ LISTA
 // ======================================================================
-function renderVontatoList(targetId, list, FUVAROK, onSelectResource) {
+function renderVontatoList(targetId, list, FUVAROK, onSelectResource, selectedFuvarId = null) {
   const el = document.getElementById(targetId);
   el.innerHTML = "";
 
-  const sortedList = sortResourcesByMatch(list);
+  const filteredList = filterResourceListForSelectedFuvar(list, selectedFuvarId);
+  const sortedList = sortResourcesByMatch(filteredList);
+
+  if (sortedList.length === 0) {
+    renderEmptyResourceState(el, "Nincs megfelelő vontató a kijelölt fuvarhoz.");
+    return;
+  }
 
   sortedList.forEach((v) => {
     const div = document.createElement("div");
@@ -586,11 +587,17 @@ function renderVontatoList(targetId, list, FUVAROK, onSelectResource) {
 // ======================================================================
 // PÓTKOCSI LISTA
 // ======================================================================
-function renderPotkocsiList(targetId, list, FUVAROK, onSelectResource) {
+function renderPotkocsiList(targetId, list, FUVAROK, onSelectResource, selectedFuvarId = null) {
   const el = document.getElementById(targetId);
   el.innerHTML = "";
 
-  const sortedList = sortResourcesByMatch(list);
+  const filteredList = filterResourceListForSelectedFuvar(list, selectedFuvarId);
+  const sortedList = sortResourcesByMatch(filteredList);
+
+  if (sortedList.length === 0) {
+    renderEmptyResourceState(el, "Nincs megfelelő pótkocsi a kijelölt fuvarhoz.");
+    return;
+  }
 
   sortedList.forEach((p) => {
     const div = document.createElement("div");

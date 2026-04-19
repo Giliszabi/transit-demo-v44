@@ -43,6 +43,40 @@ function isDomesticOnlyTipus(tipus) {
   return normalizeText(tipus).includes("belfold");
 }
 
+export function getMatchGradePriority(matchGrade) {
+  if (matchGrade === "ok") return 0;
+  if (matchGrade === "warn") return 1;
+  if (matchGrade === "bad") return 2;
+  return 3;
+}
+
+export function getResourceMatchSortValue(resource) {
+  const priority = getMatchGradePriority(resource?.matchGrade);
+  const reasonCount = Array.isArray(resource?.matchReasons) ? resource.matchReasons.length : 0;
+  return (priority * 100) + reasonCount;
+}
+
+export function sortResourcesByMatchQuality(list, getLabel = null) {
+  return [...(Array.isArray(list) ? list : [])]
+    .map((resource, index) => ({ resource, index }))
+    .sort((left, right) => {
+      const scoreDiff = getResourceMatchSortValue(left.resource) - getResourceMatchSortValue(right.resource);
+      if (scoreDiff !== 0) {
+        return scoreDiff;
+      }
+
+      const leftLabel = String(getLabel ? getLabel(left.resource) : (left.resource?.nev || left.resource?.rendszam || left.resource?.id || ""));
+      const rightLabel = String(getLabel ? getLabel(right.resource) : (right.resource?.nev || right.resource?.rendszam || right.resource?.id || ""));
+      const labelDiff = leftLabel.localeCompare(rightLabel, "hu-HU");
+      if (labelDiff !== 0) {
+        return labelDiff;
+      }
+
+      return left.index - right.index;
+    })
+    .map(({ resource }) => resource);
+}
+
 // =======================================================
 // AKTÍV FUVARSZERVEZÉSI PROFIL (opcionális, modul-szintű)
 // =======================================================

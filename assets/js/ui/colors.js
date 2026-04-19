@@ -33,37 +33,37 @@ const FUVAR_TAG_META = {
     textColor: "#F5F7FA"
   },
   adr: {
-    label: "ADR",
+    label: "A",
     color: "#E53935",
     textColor: "#FFF4F4"
   },
   surgos: {
-    label: "Sürgős",
+    label: "S",
     color: "#FB8C00",
     textColor: "#FFF8F1"
   },
   belfold: {
-    label: "Belföld",
+    label: "BF",
     color: FIXED_CATEGORY_COLORS.belfold,
     textColor: "#F3FFF6"
   },
   export: {
-    label: "Export",
+    label: "E",
     color: FIXED_CATEGORY_COLORS.export,
     textColor: "#F3FAFF"
   },
   import: {
-    label: "Import",
+    label: "I",
     color: FIXED_CATEGORY_COLORS.import,
     textColor: "#FFF8EF"
   },
   elofutas: {
-    label: "Előfutás",
+    label: "EF",
     color: "#2E9A79",
     textColor: "#F2FFF8"
   },
   utofutas: {
-    label: "Utófutás",
+    label: "UF",
     color: "#B66A2B",
     textColor: "#FFF6EC"
   },

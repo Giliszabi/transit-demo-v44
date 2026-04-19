@@ -1,66 +1,6 @@
 import { DEMO_NEARBY_FREE_PAIR_SCENARIO } from "./demo-warning-scenario.js";
 import { FUVAROK_REAL } from "./fuvarok-real.js";
 
-const FUVAR_DATE_SHIFT_DAYS = 10;
-const MEBIZO_COMPANIES = [
-  "Hankook Tire Magyarorszag Kft",
-  "NNOCORE VISION KFT",
-  "PANADDITÍV KFT",
-  "Grundfos Operation A/S",
-  "SCHENKER Neutraubling",
-  "NTG GONDRAND KFT",
-  "KÜHNE + NAGEL KFT",
-  "UNITED SHIPPING HUNGÁRIA KFT",
-  "DONECK PRONAT KFT",
-  "XPO Transport Solutions Netherlands BV",
-  "Hummels Trade Kft",
-  "DHL FREIGHT MAGYARORSZÁG KFT"
-];
-
-function shiftIsoDateByDays(isoString, days) {
-  if (!isoString) {
-    return isoString;
-  }
-
-  const shifted = new Date(isoString);
-  if (!Number.isFinite(shifted.getTime())) {
-    return isoString;
-  }
-
-  shifted.setDate(shifted.getDate() + days);
-  return shifted.toISOString().slice(0, 16);
-}
-
-function shiftFuvarDatesInPlace(fuvarokList, days) {
-  fuvarokList.forEach((fuvar) => {
-    if (fuvar?.felrakas?.ido) {
-      fuvar.felrakas.ido = shiftIsoDateByDays(fuvar.felrakas.ido, days);
-    }
-
-    if (fuvar?.lerakas?.ido) {
-      fuvar.lerakas.ido = shiftIsoDateByDays(fuvar.lerakas.ido, days);
-    }
-  });
-}
-
-function getStableCompanyIndex(seed) {
-  return Array.from(String(seed || ""))
-    .reduce((sum, char, index) => sum + (char.charCodeAt(0) * (index + 1)), 0);
-}
-
-function assignMegbizoCompanies(fuvarokList) {
-  fuvarokList.forEach((fuvar, index) => {
-    const companyIndex = (getStableCompanyIndex(fuvar?.id || index) + index) % MEBIZO_COMPANIES.length;
-    const companyName = MEBIZO_COMPANIES[companyIndex];
-
-    fuvar.megbizo = companyName;
-    fuvar.excelData = {
-      ...(fuvar.excelData || {}),
-      "Megbízó partner": companyName
-    };
-  });
-}
-
 // --- Előfutás / utófutás auto-generáló ---
 // Előfutás: export feladat felrakási helye → Környe Telephely
 // Utófutás: Környe Telephely → import feladat lerakási helye
@@ -334,9 +274,6 @@ export const FUVAROK = [
   }
   */
 ];
-
-shiftFuvarDatesInPlace(FUVAROK, FUVAR_DATE_SHIFT_DAYS);
-assignMegbizoCompanies(FUVAROK);
 
 function resetInitialSpedicioState() {
   FUVAROK.forEach((fuvar) => {

@@ -28,8 +28,9 @@ const DEFAULT_FUVAR_FILTER_STATE = Object.freeze({
 });
 const BASE_CARD_COLUMN_OPTIONS = [
   { id: "route", label: "Útvonal" },
-  { id: "pickup", label: "Felrakás" },
-  { id: "delivery", label: "Lerakás" },
+  { id: "pickup", label: "Felrakás dátuma" },
+  { id: "delivery", label: "Lerakás dátuma" },
+  { id: "client", label: "Megbízó" },
   { id: "distance", label: "Távolság" },
   { id: "type", label: "Típus" },
   { id: "status", label: "Státusz" },
@@ -116,15 +117,8 @@ export const DEFAULT_FUVAR_CARD_COLUMNS = [
   "route",
   "pickup",
   "delivery",
+  "client",
   "distance",
-  "status",
-  "driver",
-  "tractor",
-  "trailer",
-  "excel_28",
-  "excel_29",
-  "excel_33",
-  "excel_34"
 ];
 
 export function createDefaultFuvarFilterState() {
@@ -191,10 +185,11 @@ function isNumberLikeLabel(label) {
 
 function getColumnMeta(columnId) {
   const baseMap = {
-    route: { width: 240, sortType: "text" },
-    pickup: { width: 168, sortType: "date" },
-    delivery: { width: 168, sortType: "date" },
-    distance: { width: 116, sortType: "number" },
+    route: { width: 196, sortType: "text" },
+    pickup: { width: 146, sortType: "date" },
+    delivery: { width: 146, sortType: "date" },
+    client: { width: 188, sortType: "text" },
+    distance: { width: 88, sortType: "number" },
     type: { width: 116, sortType: "text" },
     status: { width: 130, sortType: "text" },
     driver: { width: 180, sortType: "text" },
@@ -551,22 +546,25 @@ function getExcelFieldValue(fuvar, excelLabel, context) {
 
 function getBaseColumnDisplayValue(fuvar, columnId, context) {
   if (columnId === "route") {
-    return `📍 ${getDisplayLocation(fuvar.felrakas.cim)} → ${getDisplayLocation(fuvar.lerakas.cim)}`;
+    return `${getDisplayLocation(fuvar.felrakas.cim)} → ${getDisplayLocation(fuvar.lerakas.cim)}`;
   }
   if (columnId === "pickup") {
-    return `📦 ${formatDate(fuvar.felrakas.ido)}`;
+    return formatDate(fuvar.felrakas.ido);
   }
   if (columnId === "delivery") {
-    return `📦 ${formatDate(fuvar.lerakas.ido)}`;
+    return formatDate(fuvar.lerakas.ido);
+  }
+  if (columnId === "client") {
+    return fuvar?.megbizo || getExcelFieldValue(fuvar, "Megbízó partner", context);
   }
   if (columnId === "distance") {
     const assemblyDropoffAddress = getFocusedAssemblyDropoffAddress();
     const selectedAssemblyDistance = getSelectedAssemblyDistanceKm(fuvar, assemblyDropoffAddress);
     if (focusedAssemblyId && Number.isFinite(selectedAssemblyDistance)) {
-      return `🎯 ${Math.round(selectedAssemblyDistance)} km`;
+      return `${Math.round(selectedAssemblyDistance)} km`;
     }
 
-    return `🚚 ${fuvar.tavolsag_km} km`;
+    return `${fuvar.tavolsag_km} km`;
   }
   if (columnId === "type") {
     return context.viszonylatLabel;
@@ -595,6 +593,9 @@ function getBaseColumnSortValue(fuvar, columnId, context) {
   }
   if (columnId === "delivery") {
     return new Date(fuvar.lerakas.ido).getTime();
+  }
+  if (columnId === "client") {
+    return normalizeText(fuvar?.megbizo || getExcelFieldValue(fuvar, "Megbízó partner", context));
   }
   if (columnId === "distance") {
     const assemblyDropoffAddress = getFocusedAssemblyDropoffAddress();
@@ -1335,6 +1336,74 @@ function openSpedicioPartnerPicker(initialPartner = "") {
     renderPartnerList();
     searchInput.focus();
   });
+}
+
+function buildFuvarDetailsFieldRows(fuvar, context) {
+  return FUVAR_CARD_COLUMN_OPTIONS.map((option) => {
+    const value = option.excelLabel
+      ? getExcelFieldValue(fuvar, option.excelLabel, context)
+      : getBaseColumnDisplayValue(fuvar, option.id, context);
+
+    return `
+      <div class="fuvar-details-row">
+        <div class="fuvar-details-label">${escapeHtml(option.label)}</div>
+        <div class="fuvar-details-value">${escapeHtml(value)}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function openFuvarDetailsModal(fuvar, context) {
+  const overlay = document.createElement("div");
+  overlay.className = "spediccio-modal-overlay fuvar-details-overlay";
+
+  const tagsHtml = getFuvarTags(fuvar)
+    .map((tag) => renderTag(tag, "fuvar-card-tag"))
+    .join("");
+
+  overlay.innerHTML = `
+    <div class="spediccio-modal fuvar-details-modal" role="dialog" aria-modal="true" aria-label="Fuvar adatlap">
+      <div class="spediccio-modal-header fuvar-details-header">
+        <div>
+          <h3>${escapeHtml(fuvar.megnevezes || fuvar.id || "Fuvar adatlap")}</h3>
+          <div class="spediccio-modal-subtitle">${escapeHtml(fuvar.id || "-")}</div>
+        </div>
+        <button type="button" class="spediccio-modal-close" aria-label="Bezárás">✕</button>
+      </div>
+      <div class="fuvar-details-summary">
+        <div class="fuvar-tag-list fuvar-details-tag-list">${tagsHtml || '<span class="fuvar-details-empty">Nincs badge.</span>'}</div>
+      </div>
+      <div class="fuvar-details-grid">
+        ${buildFuvarDetailsFieldRows(fuvar, context)}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const dialog = overlay.querySelector(".fuvar-details-modal");
+  const closeBtn = overlay.querySelector(".spediccio-modal-close");
+
+  const finish = () => {
+    closeSpedicioModal(overlay, onKeyDown);
+  };
+
+  const onKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      finish();
+    }
+  };
+
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) {
+      finish();
+    }
+  });
+
+  dialog.addEventListener("click", (event) => event.stopPropagation());
+  closeBtn.addEventListener("click", finish);
+  document.addEventListener("keydown", onKeyDown);
 }
 
 export function openSpedicioOrderFormModal(fuvar) {
@@ -2316,7 +2385,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
       ${hasAssemblyDistanceContext ? "" : "disabled"}
       title="${hasAssemblyDistanceContext ? "Rendezés a kijelölt szerelvénytől mért távolság alapján" : "Válassz ki egy szerelvényt a rendezéshez"}"
     >
-      Szerelvénytől km${assemblyDistanceIndicator}
+      KM${assemblyDistanceIndicator}
     </button>
   `;
   
@@ -2420,6 +2489,11 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
 
       document.querySelectorAll(".menu-card").forEach((element) => element.classList.remove("active-fuvar"));
       card.classList.add("active-fuvar");
+    });
+
+    card.addEventListener("dblclick", (event) => {
+      event.preventDefault();
+      openFuvarDetailsModal(fuvar, context);
     });
 
     const removeSpediccioBtn = card.querySelector('[data-action="remove-spediccio"]');

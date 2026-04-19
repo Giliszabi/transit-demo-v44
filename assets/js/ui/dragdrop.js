@@ -11,6 +11,7 @@ import { distanceKm, formatDate } from "../utils.js";
 import { evaluateSoforForFuvar, evaluateVontatoForFuvar, evaluatePotkocsiForFuvar } from "./matching.js";
 import { addFuvarBlockToTimeline, hasCollision, refreshAutoDriverStatesForLinkedConvoys, refreshAutoTransitBlocksForResource } from "./timeline.js";
 import { assignFuvarToSpedicioPartner } from "./spedicio-partners.js";
+import { stageFuvarAssemblyDraft } from "./szerelveny-timeline.js";
 
 const dragState = {
   kind: null,
@@ -992,8 +993,7 @@ async function handleFuvarDropOnResource(targetType, targetId, explicitFuvarId =
     return false;
   }
 
-  applyFuvarAssignment(fuvar, assignment);
-  return true;
+  return stageFuvarAssemblyDraft(fuvar.id, assignment);
 }
 
 // DRAG START – FUVAR KÁRTYÁK
