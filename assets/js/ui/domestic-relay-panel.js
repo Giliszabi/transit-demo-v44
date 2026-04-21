@@ -129,7 +129,7 @@ function sortEntries(entries, sortKey) {
 
 function getAssignmentStatus(fuvar) {
   if (isFullyAssignedFuvar(fuvar)) {
-    return { label: "Kész", className: "ready" };
+    return { label: "Erőforrás társítva", className: "ready" };
   }
 
   const assignedCount = [fuvar?.assignedSoforId, fuvar?.assignedVontatoId, fuvar?.assignedPotkocsiId]
@@ -166,7 +166,7 @@ function renderTableRows(role, entries, selectedFuvarId) {
     const linkedActiveClass = selectedFuvarId === linkedFuvar?.id ? " linked-active" : "";
 
     return `
-      <tr class="domestic-relay-row${activeClass}${linkedActiveClass}" data-fuvar-id="${escapeHtml(domesticFuvar.id)}">
+      <tr class="domestic-relay-row domestic-relay-card${activeClass}${linkedActiveClass}" data-fuvar-id="${escapeHtml(domesticFuvar.id)}" draggable="true">
         <td class="col-relay-status">
           <span class="domestic-relay-status-badge ${assignmentStatus.className}">${assignmentStatus.label}</span>
         </td>
@@ -328,6 +328,11 @@ export function renderTransitTaskBoard(containerId, options = {}) {
   container.querySelectorAll(".domestic-relay-row").forEach((row) => {
     row.addEventListener("click", () => {
       const fuvarId = row.dataset.fuvarId || "";
+      if (fuvarId && typeof options.onSelectLinkedFuvar === "function") {
+        options.onSelectLinkedFuvar(fuvarId);
+        return;
+      }
+
       if (fuvarId && typeof options.onSelectFuvar === "function") {
         options.onSelectFuvar(fuvarId);
       }

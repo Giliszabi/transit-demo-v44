@@ -31,7 +31,7 @@ export const SOFOROK = [
   { id: "S2", nev: "Bodnár Péter", tipus: "belföldes", kezes: "1", adr: false, jelenlegi_pozicio: { hely: "Budapest" },
     timeline: [tb("BF-001","Környe → Esztergom","2026-04-13T06:00","2026-04-13T08:30","Környe","Esztergom","belfold")],
     driving: generateDrivingMetrics("belfoldes") },
-  { id: "S3", nev: "Csonka Tamás", tipus: "belföldes", kezes: "1", adr: true, jelenlegi_pozicio: { hely: "Győr" }, timeline: [], driving: generateDrivingMetrics("belfoldes") },
+  { id: "S3", nev: "Csonka Tamás", tipus: "belföldes", kezes: "1", adr: true, jelenlegi_pozicio: { hely: "Környe" }, timeline: [], driving: generateDrivingMetrics("belfoldes") },
   { id: "S15", nev: "Szűcs Gábor", tipus: "belföldes", kezes: "1", adr: false, jelenlegi_pozicio: { hely: "Debrecen" },
     timeline: [tb("BF-002","Debrecen → Budapest","2026-04-14T08:00","2026-04-14T12:00","Debrecen","Budapest","belfold")],
     driving: generateDrivingMetrics("belfoldes") },

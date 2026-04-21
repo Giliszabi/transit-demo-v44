@@ -43,6 +43,117 @@ function shiftFuvarDatesInPlace(fuvarokList, days) {
   });
 }
 
+function moveFuvarToPickupDate(fuvar, targetDate) {
+  if (!fuvar?.felrakas?.ido || !fuvar?.lerakas?.ido || !targetDate) {
+    return;
+  }
+
+  const pickupDate = new Date(fuvar.felrakas.ido);
+  const dropoffDate = new Date(fuvar.lerakas.ido);
+  if (!Number.isFinite(pickupDate.getTime()) || !Number.isFinite(dropoffDate.getTime())) {
+    return;
+  }
+
+  const durationMs = dropoffDate.getTime() - pickupDate.getTime();
+  const [year, month, day] = String(targetDate).split("-").map(Number);
+  if (!year || !month || !day) {
+    return;
+  }
+
+  const nextPickup = new Date(pickupDate);
+  nextPickup.setFullYear(year, month - 1, day);
+
+  const nextDropoff = new Date(nextPickup.getTime() + durationMs);
+  fuvar.felrakas.ido = nextPickup.toISOString().slice(0, 16);
+  fuvar.lerakas.ido = nextDropoff.toISOString().slice(0, 16);
+}
+
+function getFuvarDurationMinutes(fuvar) {
+  const pickupMs = new Date(fuvar?.felrakas?.ido || "").getTime();
+  const dropoffMs = new Date(fuvar?.lerakas?.ido || "").getTime();
+  if (!Number.isFinite(pickupMs) || !Number.isFinite(dropoffMs) || dropoffMs <= pickupMs) {
+    return 0;
+  }
+
+  return Math.round((dropoffMs - pickupMs) / 60000);
+}
+
+function shiftIsoByMinutes(isoValue, deltaMinutes) {
+  const baseMs = new Date(isoValue || "").getTime();
+  if (!Number.isFinite(baseMs)) {
+    return isoValue;
+  }
+
+  return new Date(baseMs + deltaMinutes * 60 * 1000).toISOString().slice(0, 16);
+}
+
+function syncLinkedRelayWindow(relayFuvar, linkedFuvar, mode) {
+  if (!relayFuvar?.felrakas?.ido || !relayFuvar?.lerakas?.ido || !linkedFuvar?.felrakas?.ido || !linkedFuvar?.lerakas?.ido) {
+    return;
+  }
+
+  const relayDurationMinutes = getFuvarDurationMinutes(relayFuvar);
+  if (mode === "export") {
+    relayFuvar.lerakas.ido = linkedFuvar.felrakas.ido;
+    relayFuvar.felrakas.ido = shiftIsoByMinutes(linkedFuvar.felrakas.ido, -relayDurationMinutes);
+    return;
+  }
+
+  relayFuvar.felrakas.ido = linkedFuvar.lerakas.ido;
+  relayFuvar.lerakas.ido = shiftIsoByMinutes(linkedFuvar.lerakas.ido, relayDurationMinutes);
+}
+
+function assignFocusedFuvarDays(fuvarokList) {
+  const exportRelayList = fuvarokList.filter((fuvar) => fuvar?.viszonylat === "belfold" && fuvar?.elofutasExportFuvarId).slice(0, 2);
+  const importRelayList = fuvarokList.filter((fuvar) => fuvar?.viszonylat === "belfold" && fuvar?.utofutasImportFuvarId).slice(0, 2);
+  const regularDomesticList = fuvarokList
+    .filter((fuvar) => fuvar?.viszonylat === "belfold" && !fuvar?.elofutasExportFuvarId && !fuvar?.utofutasImportFuvarId)
+    .slice(0, 2);
+
+  exportRelayList.forEach((relayFuvar) => {
+    const linkedExport = fuvarokList.find((fuvar) => fuvar.id === relayFuvar.elofutasExportFuvarId);
+    moveFuvarToPickupDate(linkedExport, "2026-04-21");
+    syncLinkedRelayWindow(relayFuvar, linkedExport, "export");
+  });
+
+  importRelayList.forEach((relayFuvar) => {
+    const linkedImport = fuvarokList.find((fuvar) => fuvar.id === relayFuvar.utofutasImportFuvarId);
+    moveFuvarToPickupDate(linkedImport, "2026-04-22");
+    syncLinkedRelayWindow(relayFuvar, linkedImport, "import");
+  });
+
+  regularDomesticList.forEach((fuvar, index) => {
+    moveFuvarToPickupDate(fuvar, index % 2 === 0 ? "2026-04-21" : "2026-04-22");
+  });
+}
+
+function setFuvarScheduleById(fuvarokList, fuvarId, pickupIso, dropoffIso) {
+  const fuvar = fuvarokList.find((item) => item.id === fuvarId);
+  if (!fuvar || !pickupIso || !dropoffIso) {
+    return;
+  }
+
+  fuvar.felrakas = {
+    ...(fuvar.felrakas || {}),
+    ido: pickupIso
+  };
+  fuvar.lerakas = {
+    ...(fuvar.lerakas || {}),
+    ido: dropoffIso
+  };
+}
+
+function applyOptimalDemoScenario(fuvarokList) {
+  setFuvarScheduleById(fuvarokList, "FF-26-0004814", "2026-04-20T19:30", "2026-04-21T09:15");
+  setFuvarScheduleById(fuvarokList, "UTO-FF-26-0004814", "2026-04-21T09:15", "2026-04-21T10:00");
+
+  setFuvarScheduleById(fuvarokList, "FF-26-0004137", "2026-04-21T13:00", "2026-04-22T02:00");
+  setFuvarScheduleById(fuvarokList, "ELO-FF-26-0004137", "2026-04-21T12:15", "2026-04-21T13:00");
+
+  setFuvarScheduleById(fuvarokList, "FF-26-0004019", "2026-04-22T00:30", "2026-04-22T15:30");
+  setFuvarScheduleById(fuvarokList, "UTO-FF-26-0004019", "2026-04-22T15:30", "2026-04-22T16:15");
+}
+
 function getStableCompanyIndex(seed) {
   return Array.from(String(seed || ""))
     .reduce((sum, char, index) => sum + (char.charCodeAt(0) * (index + 1)), 0);
@@ -151,8 +262,8 @@ function generateRelayFuvarok(fuvarokList) {
         megnevezes: `Előfutás – ${felC} → Környe [${fuvar.id}]`,
         viszonylat: "belfold",
         fixedDomestic: true,
-        felrakas: { cim: felC, ido: startIdo },
-        lerakas: { cim: "Környe, Telephely", ido: addMinutes(startIdo, travelMinutes) },
+        felrakas: { cim: felC, ido: addMinutes(startIdo, -travelMinutes) },
+        lerakas: { cim: "Környe, Telephely", ido: startIdo },
         tavolsag_km: distanceKm,
         adr: false,
         surgos: false,
@@ -170,8 +281,8 @@ function generateRelayFuvarok(fuvarokList) {
         megnevezes: `Utófutás – Környe → ${leC} [${fuvar.id}]`,
         viszonylat: "belfold",
         fixedDomestic: true,
-        felrakas: { cim: "Környe, Telephely", ido: addMinutes(endIdo, -travelMinutes) },
-        lerakas: { cim: leC, ido: endIdo },
+        felrakas: { cim: "Környe, Telephely", ido: endIdo },
+        lerakas: { cim: leC, ido: addMinutes(endIdo, travelMinutes) },
         tavolsag_km: distanceKm,
         adr: false,
         surgos: false,
@@ -336,6 +447,8 @@ export const FUVAROK = [
 ];
 
 shiftFuvarDatesInPlace(FUVAROK, FUVAR_DATE_SHIFT_DAYS);
+assignFocusedFuvarDays(FUVAROK);
+applyOptimalDemoScenario(FUVAROK);
 assignMegbizoCompanies(FUVAROK);
 
 function resetInitialSpedicioState() {

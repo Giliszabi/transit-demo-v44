@@ -2660,6 +2660,31 @@ function renderResourceRow(parent, r, type) {
       div.title = blockTooltip;
       bindTimelineBlockHoverTooltip(div, blockTooltip);
 
+      if (visibleBlock.type === "fuvar") {
+        const linkedFuvar = findFuvarByTimelineBlock(visibleBlock) || findFuvarByTimelineBlock(block);
+        if (linkedFuvar) {
+          const focusFuvarBlock = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            window.dispatchEvent(new CustomEvent("fuvar:focus", {
+              detail: {
+                fuvarId: linkedFuvar.id,
+                source: "timeline"
+              }
+            }));
+            dispatchResourceSelection();
+          };
+
+          div.tabIndex = 0;
+          div.addEventListener("click", focusFuvarBlock);
+          div.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              focusFuvarBlock(event);
+            }
+          });
+        }
+      }
+
       if (type === "sofor" && block.type === "piheno") {
         const restFlag = document.createElement("div");
         restFlag.className = "timeline-rest-flag";

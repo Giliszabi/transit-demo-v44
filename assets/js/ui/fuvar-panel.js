@@ -955,7 +955,141 @@ function getRecommendationResourceByScope(scope) {
   return null;
 }
 
-function getRecommendationAnchorForResource(resource) {
+function getRecommendationResourceContext(scope) {
+  const primaryResource = getRecommendationResourceByScope(scope);
+  if (!primaryResource || !scope?.type) {
+    return null;
+  }
+
+  const resources = [];
+  const seen = new Set();
+  const pushResource = (type, resource) => {
+    if (!type || !resource?.id) {
+      return;
+    }
+
+    const key = `${type}:${resource.id}`;
+    if (seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    resources.push({ type, resource });
+  };
+
+  pushResource(scope.type, primaryResource);
+
+  if (scope.type === "sofor") {
+    const linkedVontato = primaryResource.linkedVontatoId
+      ? VONTATOK.find((item) => item.id === primaryResource.linkedVontatoId) || null
+      : VONTATOK.find((item) => item.linkedSoforId === primaryResource.id) || null;
+    pushResource("vontato", linkedVontato);
+
+    const linkedPotkocsi = linkedVontato?.linkedPotkocsiId
+      ? POTKOCSIK.find((item) => item.id === linkedVontato.linkedPotkocsiId) || null
+      : linkedVontato
+        ? POTKOCSIK.find((item) => item.linkedVontatoId === linkedVontato.id) || null
+        : null;
+    pushResource("potkocsi", linkedPotkocsi);
+  }
+
+  if (scope.type === "vontato") {
+    const linkedSofor = primaryResource.linkedSoforId
+      ? SOFOROK.find((item) => item.id === primaryResource.linkedSoforId) || null
+      : SOFOROK.find((item) => item.linkedVontatoId === primaryResource.id) || null;
+    const linkedPotkocsi = primaryResource.linkedPotkocsiId
+      ? POTKOCSIK.find((item) => item.id === primaryResource.linkedPotkocsiId) || null
+      : POTKOCSIK.find((item) => item.linkedVontatoId === primaryResource.id) || null;
+    pushResource("sofor", linkedSofor);
+    pushResource("potkocsi", linkedPotkocsi);
+  }
+
+  if (scope.type === "potkocsi") {
+    const linkedVontato = primaryResource.linkedVontatoId
+      ? VONTATOK.find((item) => item.id === primaryResource.linkedVontatoId) || null
+      : null;
+    const linkedSofor = linkedVontato?.linkedSoforId
+      ? SOFOROK.find((item) => item.id === linkedVontato.linkedSoforId) || null
+      : linkedVontato
+        ? SOFOROK.find((item) => item.linkedVontatoId === linkedVontato.id) || null
+        : null;
+    pushResource("vontato", linkedVontato);
+    pushResource("sofor", linkedSofor);
+  }
+
+  return {
+    primaryType: scope.type,
+    primaryResource,
+    resources
+  };
+}
+
+function isResourceAssignedToFuvar(resource, scopeType, fuvar) {
+  if (!resource?.id || !scopeType || !fuvar) {
+    return false;
+  }
+
+  if (scopeType === "sofor") {
+    return fuvar.assignedSoforId === resource.id;
+  }
+
+  if (scopeType === "vontato") {
+    return fuvar.assignedVontatoId === resource.id;
+  }
+
+  if (scopeType === "potkocsi") {
+    return fuvar.assignedPotkocsiId === resource.id;
+  }
+
+  return false;
+}
+
+function getFocusedFuvarForResource(resource, scopeType) {
+  if (!resource || !scopeType || !focusedFuvarId) {
+    return null;
+  }
+
+  const focusedFuvar = FUVAROK.find((item) => item.id === focusedFuvarId) || null;
+  if (!focusedFuvar) {
+    return null;
+  }
+
+  if (isResourceAssignedToFuvar(resource, scopeType, focusedFuvar)) {
+    return focusedFuvar;
+  }
+
+  const hasTimelineBlock = (resource.timeline || []).some((block) => {
+    return block?.type === "fuvar"
+      && !block?.synthetic
+      && block?.fuvarId === focusedFuvar.id;
+  });
+
+  return hasTimelineBlock ? focusedFuvar : null;
+}
+
+function getFocusedFuvarForContext(context) {
+  if (!context || !focusedFuvarId) {
+    return null;
+  }
+
+  const focusedFuvar = FUVAROK.find((item) => item.id === focusedFuvarId) || null;
+  if (!focusedFuvar) {
+    return null;
+  }
+
+  const matchedResource = context.resources.find(({ type, resource }) => {
+    return isResourceAssignedToFuvar(resource, type, focusedFuvar)
+      || (resource.timeline || []).some((block) => {
+        return block?.type === "fuvar"
+          && !block?.synthetic
+          && block?.fuvarId === focusedFuvar.id;
+      });
+  });
+
+  return matchedResource ? focusedFuvar : null;
+}
+
+function getLatestAnchorCandidateForResource(resource) {
   const fuvarBlocks = (resource?.timeline || [])
     .filter((block) => block?.type === "fuvar" && !block?.synthetic)
     .sort((left, right) => new Date(right.end || right.start) - new Date(left.end || left.start));
@@ -965,14 +1099,44 @@ function getRecommendationAnchorForResource(resource) {
     ? FUVAROK.find((item) => item.id === latestBlock.fuvarId) || null
     : null;
 
+  const anchorEndMs = Number.isFinite(new Date(latestBlock?.end || latestBlock?.start || "").getTime())
+    ? new Date(latestBlock.end || latestBlock.start).getTime()
+    : Number.NaN;
+
   return {
-    anchorEndMs: Number.isFinite(new Date(latestBlock?.end || latestBlock?.start || "").getTime())
-      ? new Date(latestBlock.end || latestBlock.start).getTime()
-      : Date.now(),
+    anchorEndMs,
     anchorDropAddress: latestBlock?.lerakasCim
       || linkedFuvar?.lerakas?.cim
       || resource?.jelenlegi_pozicio?.hely
-      || ""
+      || "",
+    anchorFuvar: linkedFuvar,
+    latestBlock
+  };
+}
+
+function getRecommendationAnchorForContext(context) {
+  const focusedFuvar = getFocusedFuvarForContext(context);
+  if (focusedFuvar) {
+    const focusedEndMs = new Date(focusedFuvar?.lerakas?.ido || "").getTime();
+    return {
+      anchorEndMs: Number.isFinite(focusedEndMs) ? focusedEndMs : Date.now(),
+      anchorDropAddress: focusedFuvar?.lerakas?.cim || context?.primaryResource?.jelenlegi_pozicio?.hely || "",
+      anchorFuvar: focusedFuvar,
+      basedOnFocusedFuvar: true
+    };
+  }
+
+  const candidates = (context?.resources || [])
+    .map(({ resource }) => getLatestAnchorCandidateForResource(resource))
+    .filter((item) => Number.isFinite(item.anchorEndMs));
+
+  const bestCandidate = candidates.sort((left, right) => right.anchorEndMs - left.anchorEndMs)[0] || null;
+
+  return {
+    anchorEndMs: bestCandidate?.anchorEndMs || Date.now(),
+    anchorDropAddress: bestCandidate?.anchorDropAddress || context?.primaryResource?.jelenlegi_pozicio?.hely || "",
+    anchorFuvar: bestCandidate?.anchorFuvar || null,
+    basedOnFocusedFuvar: false
   };
 }
 
@@ -989,48 +1153,199 @@ function estimateResourceTransitHours(anchorDropAddress, pickupAddress) {
   return Math.max(0.5, roadKm / 67);
 }
 
-function buildResourceRecommendationOrderMap(resourceScope, fuvarList) {
-  const resource = getRecommendationResourceByScope(resourceScope);
-  if (!resource || !resourceScope?.type || !Array.isArray(fuvarList) || fuvarList.length === 0) {
+function getSafeTimeMs(value) {
+  const timeMs = new Date(value || "").getTime();
+  return Number.isFinite(timeMs) ? timeMs : Number.NaN;
+}
+
+function getRecommendationFuvarCategory(fuvar) {
+  return fuvar?.kategoria || fuvar?.viszonylat || "";
+}
+
+function isDomesticDriverContext(context) {
+  return (context?.resources || []).some(({ type, resource }) => {
+    return type === "sofor" && normalizeText(resource?.tipus || "").includes("belfold");
+  });
+}
+
+function buildTransitionMetrics(fromAddress, fromEndMs, toAddress, toPickupMs) {
+  const transitHours = estimateResourceTransitHours(fromAddress, toAddress);
+  const arrivalMs = Number.isFinite(fromEndMs)
+    ? fromEndMs + Math.round(transitHours * 3600 * 1000)
+    : Number.NaN;
+  const slackMs = Number.isFinite(toPickupMs) && Number.isFinite(arrivalMs)
+    ? (toPickupMs - arrivalMs)
+    : Number.NEGATIVE_INFINITY;
+  const reachable = slackMs >= 0;
+  const roadKm = getRoadDistanceKm(fromAddress, toAddress, { prime: true });
+  const normalizedDistance = Number.isFinite(roadKm) ? roadKm : 450;
+  const waitHours = reachable ? (slackMs / (1000 * 60 * 60)) : 0;
+  const missingHours = reachable ? 0 : (Math.abs(slackMs) / (1000 * 60 * 60));
+
+  return {
+    reachable,
+    pickupMs: Number.isFinite(toPickupMs) ? toPickupMs : Number.POSITIVE_INFINITY,
+    score: normalizedDistance + (waitHours * 6) + (missingHours * 95)
+  };
+}
+
+function getFocusedFuvarRecommendationMeta(anchorFuvar, candidateFuvar, context) {
+  if (!anchorFuvar || !candidateFuvar) {
     return null;
   }
 
-  const matchingResults = evaluateFuvarokForResource(resource, fuvarList, resourceScope.type);
-  const matchingByFuvarId = new Map(
-    matchingResults.map((entry) => [entry.fuvarId, entry.result || null])
+  if (anchorFuvar.id === candidateFuvar.id) {
+    return {
+      score: Number.POSITIVE_INFINITY,
+      reachable: false,
+      pickupMs: Number.POSITIVE_INFINITY,
+      selfReference: true
+    };
+  }
+
+  const anchorPickupMs = getSafeTimeMs(anchorFuvar?.felrakas?.ido);
+  const anchorDropoffMs = getSafeTimeMs(anchorFuvar?.lerakas?.ido);
+  const candidatePickupMs = getSafeTimeMs(candidateFuvar?.felrakas?.ido);
+  const candidateDropoffMs = getSafeTimeMs(candidateFuvar?.lerakas?.ido);
+
+  const forwardMetrics = buildTransitionMetrics(
+    anchorFuvar?.lerakas?.cim || "",
+    anchorDropoffMs,
+    candidateFuvar?.felrakas?.cim || "",
+    candidatePickupMs
   );
-  const anchor = getRecommendationAnchorForResource(resource);
+  const reverseMetrics = buildTransitionMetrics(
+    candidateFuvar?.lerakas?.cim || "",
+    candidateDropoffMs,
+    anchorFuvar?.felrakas?.cim || "",
+    anchorPickupMs
+  );
+
+  const anchorRole = getDomesticTransitRoleInfo(anchorFuvar)?.role || null;
+  const candidateRole = getDomesticTransitRoleInfo(candidateFuvar)?.role || null;
+  const shouldPreferForward = anchorRole === "utofutas" && candidateRole === "elofutas";
+  const shouldPreferReverse = anchorRole === "elofutas" && candidateRole === "utofutas";
+
+  let selectedMetrics = null;
+  if (shouldPreferForward) {
+    selectedMetrics = forwardMetrics;
+  } else if (shouldPreferReverse) {
+    selectedMetrics = reverseMetrics;
+  } else if (Number.isFinite(candidatePickupMs) && Number.isFinite(anchorDropoffMs) && candidatePickupMs >= anchorDropoffMs) {
+    selectedMetrics = forwardMetrics;
+  } else if (Number.isFinite(candidateDropoffMs) && Number.isFinite(anchorPickupMs) && candidateDropoffMs <= anchorPickupMs) {
+    selectedMetrics = reverseMetrics;
+  } else {
+    selectedMetrics = forwardMetrics.score <= reverseMetrics.score ? forwardMetrics : reverseMetrics;
+  }
+
+  let rolePenalty = 0;
+  if (isDomesticDriverContext(context) && getRecommendationFuvarCategory(anchorFuvar) === "belfold") {
+    if (shouldPreferForward || shouldPreferReverse) {
+      rolePenalty = -320;
+    } else if (anchorRole === "utofutas" && candidateRole === "utofutas") {
+      rolePenalty = 680;
+    } else if (anchorRole === "elofutas" && candidateRole === "elofutas") {
+      rolePenalty = 680;
+    } else if (anchorRole === "utofutas") {
+      rolePenalty = candidateRole ? 220 : 320;
+    } else if (anchorRole === "elofutas") {
+      rolePenalty = candidateRole ? 220 : 320;
+    } else if (candidateRole) {
+      rolePenalty = 120;
+    } else if (getRecommendationFuvarCategory(candidateFuvar) !== "belfold") {
+      rolePenalty = 220;
+    } else {
+      rolePenalty = 110;
+    }
+  }
+
+  return {
+    score: selectedMetrics.score + rolePenalty,
+    reachable: selectedMetrics.reachable,
+    pickupMs: selectedMetrics.pickupMs,
+    selfReference: false
+  };
+}
+
+function getAggregateMatchForFuvar(context, fuvar, matchMaps) {
+  const resourceMatches = (context?.resources || []).map(({ type, resource }, index) => {
+    const result = matchMaps[index]?.get(fuvar.id) || null;
+    return { type, resource, result };
+  });
+
+  const suitable = resourceMatches.every(({ result }) => result?.suitable !== false);
+  let grade = "ok";
+  let penalty = 0;
+
+  resourceMatches.forEach(({ result }, index) => {
+    if (!result) {
+      return;
+    }
+
+    if (result.grade === "bad") {
+      grade = "bad";
+    } else if (grade !== "bad" && result.grade === "warn") {
+      grade = "warn";
+    }
+
+    const gradePenalty = result.grade === "warn" ? 24 : result.grade === "bad" ? 80 : 0;
+    const mismatchPenalty = result.suitable ? 0 : 260;
+    penalty += index === 0 ? (gradePenalty + mismatchPenalty) : Math.round((gradePenalty + mismatchPenalty) * 0.8);
+  });
+
+  return {
+    suitable,
+    grade,
+    penalty
+  };
+}
+
+function buildResourceRecommendationOrderMap(resourceScope, fuvarList) {
+  const context = getRecommendationResourceContext(resourceScope);
+  if (!context || !resourceScope?.type || !Array.isArray(fuvarList) || fuvarList.length === 0) {
+    return null;
+  }
+
+  const matchMaps = context.resources.map(({ type, resource }) => {
+    const matches = evaluateFuvarokForResource(resource, fuvarList, type);
+    return new Map(matches.map((entry) => [entry.fuvarId, entry.result || null]));
+  });
+  const anchor = getRecommendationAnchorForContext(context);
   const orderMap = new Map();
 
   fuvarList.forEach((fuvar) => {
-    const match = matchingByFuvarId.get(fuvar.id);
+    const aggregateMatch = getAggregateMatchForFuvar(context, fuvar, matchMaps);
     const pickupMs = new Date(fuvar?.felrakas?.ido || "").getTime();
+    const focusedMeta = anchor.anchorFuvar && anchor.basedOnFocusedFuvar
+      ? getFocusedFuvarRecommendationMeta(anchor.anchorFuvar, fuvar, context)
+      : null;
     const transitHours = estimateResourceTransitHours(anchor.anchorDropAddress, fuvar?.felrakas?.cim || "");
     const arrivalMs = anchor.anchorEndMs + Math.round(transitHours * 3600 * 1000);
     const slackMs = Number.isFinite(pickupMs) ? (pickupMs - arrivalMs) : Number.NEGATIVE_INFINITY;
-    const reachable = slackMs >= 0;
+    const reachable = focusedMeta ? focusedMeta.reachable : slackMs >= 0;
     const actionable = !hasFullAssignment(fuvar);
     const roadKm = getRoadDistanceKm(anchor.anchorDropAddress, fuvar?.felrakas?.cim || "", { prime: true });
     const normalizedDistance = Number.isFinite(roadKm) ? roadKm : 450;
     const waitHours = reachable ? (slackMs / (1000 * 60 * 60)) : 0;
     const missingHours = reachable ? 0 : (Math.abs(slackMs) / (1000 * 60 * 60));
-    const gradePenalty = match?.grade === "warn" ? 24 : match?.grade === "bad" ? 80 : 0;
-    const mismatchPenalty = match?.suitable ? 0 : 260;
     const assignedPenalty = actionable ? 0 : 120;
 
-    const score = normalizedDistance
+    const fallbackScore = normalizedDistance
       + (waitHours * 6)
       + (missingHours * 95)
-      + gradePenalty
-      + mismatchPenalty
+      + assignedPenalty;
+    const score = (focusedMeta?.score ?? fallbackScore)
+      + aggregateMatch.penalty
       + assignedPenalty;
 
     orderMap.set(fuvar.id, {
       score,
-      suitable: Boolean(match?.suitable),
+      suitable: aggregateMatch.suitable,
       reachable,
       actionable,
-      pickupMs: Number.isFinite(pickupMs) ? pickupMs : Number.POSITIVE_INFINITY
+      pickupMs: Number.isFinite(focusedMeta?.pickupMs) ? focusedMeta.pickupMs : Number.isFinite(pickupMs) ? pickupMs : Number.POSITIVE_INFINITY,
+      selfReference: Boolean(focusedMeta?.selfReference)
     });
   });
 
@@ -1051,6 +1366,10 @@ function compareByResourceRecommendation(leftFuvar, rightFuvar, orderMap) {
 
   if (!right) {
     return -1;
+  }
+
+  if (left.selfReference !== right.selfReference) {
+    return left.selfReference ? 1 : -1;
   }
 
   if (left.suitable !== right.suitable) {
@@ -1728,6 +2047,83 @@ function getLinkedImportFromDomestic(domesticFuvar) {
   return FUVAROK.find((candidate) => candidate.id === linkedImportId) || null;
 }
 
+function addMinutesToIso(isoValue, minutes) {
+  const baseTime = new Date(isoValue).getTime();
+  if (!Number.isFinite(baseTime)) {
+    return isoValue;
+  }
+
+  return new Date(baseTime + minutes * 60 * 1000).toISOString().slice(0, 16);
+}
+
+function getFuvarDurationMinutes(fuvar) {
+  const startTime = new Date(fuvar?.felrakas?.ido || "").getTime();
+  const endTime = new Date(fuvar?.lerakas?.ido || "").getTime();
+  if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
+    return 40;
+  }
+
+  return Math.max(15, Math.round((endTime - startTime) / 60000));
+}
+
+function hasDomesticTransitLink(domesticFuvar) {
+  return Boolean(
+    domesticFuvar?.elofutasExportFuvarId
+    || domesticFuvar?.kapcsoltExportFuvarId
+    || domesticFuvar?.utofutasImportFuvarId
+    || domesticFuvar?.kapcsoltImportFuvarId
+  );
+}
+
+function rememberDomesticSchedule(domesticFuvar) {
+  if (domesticFuvar?.transitOriginalSchedule) {
+    return;
+  }
+
+  domesticFuvar.transitOriginalSchedule = {
+    felrakasIdo: domesticFuvar?.felrakas?.ido || "",
+    lerakasIdo: domesticFuvar?.lerakas?.ido || ""
+  };
+}
+
+function restoreDomesticSchedule(domesticFuvar) {
+  if (!domesticFuvar?.transitOriginalSchedule || hasDomesticTransitLink(domesticFuvar)) {
+    return;
+  }
+
+  if (domesticFuvar.felrakas && domesticFuvar.transitOriginalSchedule.felrakasIdo) {
+    domesticFuvar.felrakas.ido = domesticFuvar.transitOriginalSchedule.felrakasIdo;
+  }
+
+  if (domesticFuvar.lerakas && domesticFuvar.transitOriginalSchedule.lerakasIdo) {
+    domesticFuvar.lerakas.ido = domesticFuvar.transitOriginalSchedule.lerakasIdo;
+  }
+
+  delete domesticFuvar.transitOriginalSchedule;
+}
+
+function syncDomesticScheduleWithExport(domesticFuvar, exportFuvar) {
+  if (!domesticFuvar?.felrakas || !domesticFuvar?.lerakas || !exportFuvar?.felrakas?.ido) {
+    return;
+  }
+
+  rememberDomesticSchedule(domesticFuvar);
+  const durationMinutes = getFuvarDurationMinutes(domesticFuvar);
+  domesticFuvar.lerakas.ido = exportFuvar.felrakas.ido;
+  domesticFuvar.felrakas.ido = addMinutesToIso(exportFuvar.felrakas.ido, -durationMinutes);
+}
+
+function syncDomesticScheduleWithImport(domesticFuvar, importFuvar) {
+  if (!domesticFuvar?.felrakas || !domesticFuvar?.lerakas || !importFuvar?.lerakas?.ido) {
+    return;
+  }
+
+  rememberDomesticSchedule(domesticFuvar);
+  const durationMinutes = getFuvarDurationMinutes(domesticFuvar);
+  domesticFuvar.felrakas.ido = importFuvar.lerakas.ido;
+  domesticFuvar.lerakas.ido = addMinutesToIso(importFuvar.lerakas.ido, durationMinutes);
+}
+
 function clearDomesticExportLink(domesticFuvar) {
   const linkedExport = getLinkedExportFromDomestic(domesticFuvar);
   if (linkedExport && linkedExport.elofutasBelfoldFuvarId === domesticFuvar.id) {
@@ -1742,6 +2138,7 @@ function clearDomesticExportLink(domesticFuvar) {
 
   delete domesticFuvar.elofutasExportFuvarId;
   delete domesticFuvar.kapcsoltExportFuvarId;
+  restoreDomesticSchedule(domesticFuvar);
 }
 
 function clearDomesticImportLink(domesticFuvar) {
@@ -1758,6 +2155,7 @@ function clearDomesticImportLink(domesticFuvar) {
 
   delete domesticFuvar.utofutasImportFuvarId;
   delete domesticFuvar.kapcsoltImportFuvarId;
+  restoreDomesticSchedule(domesticFuvar);
 }
 
 function clearExportDomesticLink(exportFuvar) {
@@ -1770,6 +2168,7 @@ function clearExportDomesticLink(exportFuvar) {
   if (linkedDomestic && linkedDomestic.elofutasExportFuvarId === exportFuvar.id) {
     delete linkedDomestic.elofutasExportFuvarId;
     delete linkedDomestic.kapcsoltExportFuvarId;
+    restoreDomesticSchedule(linkedDomestic);
   }
 
   delete exportFuvar.elofutasBelfoldFuvarId;
@@ -1785,6 +2184,7 @@ function clearImportDomesticLink(importFuvar) {
   if (linkedDomestic && linkedDomestic.utofutasImportFuvarId === importFuvar.id) {
     delete linkedDomestic.utofutasImportFuvarId;
     delete linkedDomestic.kapcsoltImportFuvarId;
+    restoreDomesticSchedule(linkedDomestic);
   }
 
   delete importFuvar.utofutasBelfoldFuvarId;
@@ -1805,6 +2205,7 @@ function setExportDomesticLink(exportFuvar, domesticFuvarId) {
   clearDomesticExportLink(domesticFuvar);
   exportFuvar.elofutasBelfoldFuvarId = domesticFuvar.id;
   domesticFuvar.elofutasExportFuvarId = exportFuvar.id;
+  syncDomesticScheduleWithExport(domesticFuvar, exportFuvar);
 }
 
 function setImportDomesticLink(importFuvar, domesticFuvarId) {
@@ -1822,6 +2223,7 @@ function setImportDomesticLink(importFuvar, domesticFuvarId) {
   clearDomesticImportLink(domesticFuvar);
   importFuvar.utofutasBelfoldFuvarId = domesticFuvar.id;
   domesticFuvar.utofutasImportFuvarId = importFuvar.id;
+  syncDomesticScheduleWithImport(domesticFuvar, importFuvar);
 }
 
 function getDomesticExportOptions(domesticFuvar) {

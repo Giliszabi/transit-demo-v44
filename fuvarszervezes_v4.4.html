@@ -2184,20 +2184,28 @@ function setupDockLayoutSync() {
 
 window.addEventListener("fuvar:focus", (event) => {
   selectedFuvarId = event?.detail?.fuvarId || null;
-  syncResourceFocusFromFuvarSelection();
-  updateAssemblyFocusIndicator();
+  const focusSource = event?.detail?.source || "";
+  const selectedFuvar = selectedFuvarId
+    ? FUVAROK.find((item) => item.id === selectedFuvarId)
+    : null;
 
-  // Ha belföldi (előfutás/utófutás) fuvar lett kijelölve az idővonalon →
-  // szűrjük le a fuvarlistát a kapcsolt export/import fuvar ID-jére
-  if (selectedFuvarId) {
-    const clickedFuvar = FUVAROK.find((f) => f.id === selectedFuvarId);
-    if (clickedFuvar?.kategoria === "belfold" || clickedFuvar?.viszonylat === "belfold") {
-      const roleInfo = getDomesticTransitRoleInfo(clickedFuvar, FUVAROK);
-      if (roleInfo?.linkedFuvar?.id) {
-        applyLinkedFuvarFocusFilter(roleInfo.linkedFuvar.id, { selectFuvar: false });
-      }
+  if (focusSource === "timeline" && getFuvarCategory(selectedFuvar) === "belfold") {
+    const linkedInternationalId = selectedFuvar?.elofutasExportFuvarId
+      || selectedFuvar?.kapcsoltExportFuvarId
+      || selectedFuvar?.utofutasImportFuvarId
+      || selectedFuvar?.kapcsoltImportFuvarId
+      || "";
+
+    if (linkedInternationalId) {
+      applyProgrammaticFuvarFilter({
+        ...createDefaultFuvarFilterState(),
+        idScope: [linkedInternationalId]
+      });
     }
   }
+
+  syncResourceFocusFromFuvarSelection();
+  updateAssemblyFocusIndicator();
 });
 
 window.addEventListener("assembly:focus", (event) => {
@@ -2322,26 +2330,20 @@ function syncResourceFocusFromFuvarSelection() {
 }
 
 function getVisibleResourcesByScope() {
-  const filterMatchingResources = (list) => {
-    if (!selectedFuvarId) {
-      return list;
-    }
-
-    return list.filter((item) => item?.matchSuitable !== false);
-  };
+  const normalizeResources = (list) => Array.isArray(list) ? list : [];
 
   if (!resourceFocusScope) {
     return {
-      soforok: filterMatchingResources(SOFOROK),
-      vontatok: filterMatchingResources(VONTATOK),
-      potkocsik: filterMatchingResources(POTKOCSIK)
+      soforok: normalizeResources(SOFOROK),
+      vontatok: normalizeResources(VONTATOK),
+      potkocsik: normalizeResources(POTKOCSIK)
     };
   }
 
   return {
-    soforok: filterMatchingResources(SOFOROK.filter((item) => resourceFocusScope.soforIds.has(item.id))),
-    vontatok: filterMatchingResources(VONTATOK.filter((item) => resourceFocusScope.vontatoIds.has(item.id))),
-    potkocsik: filterMatchingResources(POTKOCSIK.filter((item) => resourceFocusScope.potkocsiIds.has(item.id)))
+    soforok: normalizeResources(SOFOROK.filter((item) => resourceFocusScope.soforIds.has(item.id))),
+    vontatok: normalizeResources(VONTATOK.filter((item) => resourceFocusScope.vontatoIds.has(item.id))),
+    potkocsik: normalizeResources(POTKOCSIK.filter((item) => resourceFocusScope.potkocsiIds.has(item.id)))
   };
 }
 
@@ -3489,7 +3491,10 @@ function applyLinkedFuvarFocusFilter(fuvarId, options = {}) {
   if (!fuvarId) return;
 
   const { selectFuvar = true } = options;
-  const nextFilter = { ...createDefaultFuvarFilterState(), query: fuvarId };
+  const nextFilter = {
+    ...createDefaultFuvarFilterState(),
+    idScope: collectLinkedFuvarChainIds(fuvarId)
+  };
   applyProgrammaticFuvarFilter(nextFilter);
 
   if (selectFuvar) {

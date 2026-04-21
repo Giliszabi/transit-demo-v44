@@ -14,7 +14,7 @@ export const VONTATOK = [
   { id: "V1", rendszam: "ABCDEF123", tipus: "belföldi", kezes: "1", adr: true, jelenlegi_pozicio: { hely: "Környe" }, timeline: [] },
   { id: "V2", rendszam: "BKM-201", tipus: "belföldi", kezes: "1", adr: true, jelenlegi_pozicio: { hely: "Budapest" },
     timeline: [tb("BF-001","Környe → Esztergom","2026-04-13T06:00","2026-04-13T08:30","Környe","Esztergom","belfold")] },
-  { id: "V3", rendszam: "GYR-302", tipus: "belföldi", kezes: "1", adr: false, jelenlegi_pozicio: { hely: "Győr" }, timeline: [] },
+  { id: "V3", rendszam: "GYR-302", tipus: "belföldi", kezes: "1", adr: false, jelenlegi_pozicio: { hely: "Környe" }, timeline: [] },
   { id: "V12", rendszam: "DEB-120", tipus: "belföldi", kezes: "1", adr: true, jelenlegi_pozicio: { hely: "Debrecen" },
     timeline: [tb("BF-002","Debrecen → Budapest","2026-04-14T08:00","2026-04-14T12:00","Debrecen","Budapest","belfold")] },
 

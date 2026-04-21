@@ -8,13 +8,32 @@ import { evaluateDriverAgainstJob } from "../core/eligibility-engine.js";
 // Szabályalapú relevancia-értékelés
 // =======================================================
 
+function isSameFuvarTimelineBlock(block, fuvar) {
+  if (!block || !fuvar || block?.type !== "fuvar") {
+    return false;
+  }
+
+  if (block?.fuvarId && fuvar?.id) {
+    return block.fuvarId === fuvar.id;
+  }
+
+  return block?.label === fuvar?.megnevezes
+    && block?.start === fuvar?.felrakas?.ido
+    && block?.end === fuvar?.lerakas?.ido;
+}
+
 // Helper: time collision
-function hasCollision(timeline, start, end) {
+function hasCollision(timeline, start, end, options = {}) {
   const s = new Date(start);
   const e = new Date(end);
+  const ignoredFuvar = options?.ignoredFuvar || null;
 
   return timeline.some(b => {
     if (b.synthetic) {
+      return false;
+    }
+
+    if (ignoredFuvar && isSameFuvarTimelineBlock(b, ignoredFuvar)) {
       return false;
     }
 
@@ -187,7 +206,7 @@ export function evaluateSoforForFuvar(sofor, fuvar) {
   }
 
   // Időütközés – mindig kemény szabály
-  if (hasCollision(sofor.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido)) {
+  if (hasCollision(sofor.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido, { ignoredFuvar: fuvar })) {
     suitable = false;
     reasons.push("Időben ütközik meglévő foglalással");
   }
@@ -293,7 +312,7 @@ export function evaluateVontatoForFuvar(vontato, fuvar) {
   }
 
   // Időütközés
-  if (hasCollision(vontato.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido)) {
+  if (hasCollision(vontato.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido, { ignoredFuvar: fuvar })) {
     suitable = false;
     reasons.push("Időben ütközik meglévő foglalással");
   }
@@ -330,7 +349,7 @@ export function evaluatePotkocsiForFuvar(pk, fuvar) {
   }
 
   // Időütközés
-  if (hasCollision(pk.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido)) {
+  if (hasCollision(pk.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido, { ignoredFuvar: fuvar })) {
     suitable = false;
     reasons.push("Időben ütközik egy másik feladattal");
   }

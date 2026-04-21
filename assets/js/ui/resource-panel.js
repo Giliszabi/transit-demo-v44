@@ -283,11 +283,8 @@ export function renderResourcePanel(containerId, FUVAROK, onSelectResource, opti
 }
 
 function filterResourceListForSelectedFuvar(list, selectedFuvarId) {
-  if (!selectedFuvarId) {
-    return Array.isArray(list) ? list : [];
-  }
-
-  return (Array.isArray(list) ? list : []).filter((resource) => resource?.matchSuitable !== false);
+  void selectedFuvarId;
+  return Array.isArray(list) ? list : [];
 }
 
 function renderEmptyResourceState(target, message) {

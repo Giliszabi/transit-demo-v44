@@ -149,15 +149,35 @@ function getCountryTokens(job) {
     .filter(Boolean);
 }
 
-function hasTimelineCollision(timeline, startIso, endIso) {
+function isSameTimelineJobBlock(block, job) {
+  if (!block || !job) {
+    return false;
+  }
+
+  const jobId = getJobId(job);
+  if (jobId && (block?.jobId === jobId || block?.fuvarId === jobId)) {
+    return true;
+  }
+
+  return block?.start === getJobPickupAt(job)
+    && block?.end === getJobDropoffAt(job)
+    && String(block?.label || "") === String(job?.megnevezes || job?.label || "");
+}
+
+function hasTimelineCollision(timeline, startIso, endIso, options = {}) {
   const start = toDate(startIso);
   const end = toDate(endIso);
   if (!start || !end) {
     return false;
   }
 
+  const ignoredJob = options?.ignoredJob || null;
+
   return timeline.some((block) => {
     if (block?.synthetic) {
+      return false;
+    }
+    if (ignoredJob && isSameTimelineJobBlock(block, ignoredJob)) {
       return false;
     }
     const blockStart = toDate(block?.start);
@@ -169,16 +189,20 @@ function hasTimelineCollision(timeline, startIso, endIso) {
   });
 }
 
-function findBlockingTimelineEnd(timeline, startIso, endIso) {
+function findBlockingTimelineEnd(timeline, startIso, endIso, options = {}) {
   const start = toDate(startIso);
   const end = toDate(endIso);
   if (!start || !end) {
     return null;
   }
 
+  const ignoredJob = options?.ignoredJob || null;
   let latestEnd = null;
   timeline.forEach((block) => {
     if (block?.synthetic) {
+      return;
+    }
+    if (ignoredJob && isSameTimelineJobBlock(block, ignoredJob)) {
       return;
     }
     const blockStart = toDate(block?.start);
@@ -347,11 +371,11 @@ export function evaluateDriverAgainstJob({ driver, schedule, vehicles, job, plan
   }
 
   const timeline = getDriverTimeline(driver);
-  if (hasTimelineCollision(timeline, pickupAt, dropoffAt)) {
+  if (hasTimelineCollision(timeline, pickupAt, dropoffAt, { ignoredJob: job })) {
     reasons.push(createReason("TIMELINE_COLLISION", "A fuvar időben ütközik meglévő foglalással."));
   }
 
-  const blockingEnd = findBlockingTimelineEnd(timeline, pickupAt, dropoffAt);
+  const blockingEnd = findBlockingTimelineEnd(timeline, pickupAt, dropoffAt, { ignoredJob: job });
   const effectiveEarliestStart = blockingEnd && blockingEnd > globalState.earliestStart ? blockingEnd : globalState.earliestStart;
   if (pickupDate < effectiveEarliestStart) {
     reasons.push(createReason("JOB_TIME_WINDOW_MISS", "A fuvar indulási ideje korábbi, mint a sofőr első lehetséges indulása."));
