@@ -21,8 +21,10 @@ import { SPEDICIO_PARTNER_NAMES } from "../data/spedicio-partners.js";
 import {
   evaluateSoforForFuvar,
   evaluateVontatoForFuvar,
-  evaluatePotkocsiForFuvar
+  evaluatePotkocsiForFuvar,
+  setDispatchProfile as setMatchingDispatchProfile
 } from "../ui/matching.js";
+import { setSessionState, saveSessionState } from "./session-state.js";
 
 // ── Relay-generáló logika (inline, mert a fuvarok.js-ben nem exportált) ──────
 
@@ -145,6 +147,73 @@ function buildRelayForFuvar(fuvar) {
 function isoMs(isoStr) {
   const ms = new Date(isoStr || "").getTime();
   return Number.isFinite(ms) ? ms : 0;
+}
+
+function normalizeAutoAssignOptions(options = {}) {
+  const profileConfig = options?.profileConfig && typeof options.profileConfig === "object"
+    ? options.profileConfig
+    : null;
+
+  return {
+    profileConfig,
+    planningDate: options?.planningDate || null,
+    strictMode: Boolean(options?.strictMode)
+  };
+}
+
+function getMainFuvarForSorting(jarat) {
+  return jarat?.exportFuvar || jarat?.importFuvar || jarat?.belfoldiFuvar || null;
+}
+
+function sortJaratokByProfilePriority(jaratok, profileConfig) {
+  const profileId = profileConfig?.id || null;
+  const params = profileConfig?.params || {};
+
+  if (!profileId) {
+    return [...jaratok];
+  }
+
+  const sorted = [...jaratok];
+
+  sorted.sort((left, right) => {
+    const leftMain = getMainFuvarForSorting(left);
+    const rightMain = getMainFuvarForSorting(right);
+
+    if (!leftMain || !rightMain) {
+      return 0;
+    }
+
+    if (leftMain.surgos !== rightMain.surgos) {
+      return leftMain.surgos ? -1 : 1;
+    }
+
+    if (profileId === "service-focus") {
+      const delayAlertMinutes = Number(params.delayAlertMinutes);
+      const cutoffMs = Number.isFinite(delayAlertMinutes)
+        ? delayAlertMinutes * 60 * 1000
+        : 45 * 60 * 1000;
+      const leftPickup = isoMs(leftMain.felrakas?.ido);
+      const rightPickup = isoMs(rightMain.felrakas?.ido);
+      const now = Date.now();
+      const leftCritical = leftPickup > 0 && (leftPickup - now) <= cutoffMs;
+      const rightCritical = rightPickup > 0 && (rightPickup - now) <= cutoffMs;
+      if (leftCritical !== rightCritical) {
+        return leftCritical ? -1 : 1;
+      }
+    }
+
+    if (profileId === "quick-flow") {
+      const leftStart = isoMs(leftMain.felrakas?.ido);
+      const rightStart = isoMs(rightMain.felrakas?.ido);
+      return leftStart - rightStart;
+    }
+
+    const leftDistance = Number(leftMain.tavolsag_km) || 0;
+    const rightDistance = Number(rightMain.tavolsag_km) || 0;
+    return leftDistance - rightDistance;
+  });
+
+  return sorted;
 }
 
 /** Timeline blokkot ad egy erőforráshoz, ha nincs még ilyen fuvarId */
@@ -276,7 +345,14 @@ function assignResourcesToFuvar(fuvar, soforOverride = null, vontatoOverride = n
  *   stats: { total: number, assigned: number, partial: number, unassigned: number, jaratCount: number }
  * }}
  */
-export function runAutoAssign() {
+export function runAutoAssign(options = {}) {
+  const runOptions = normalizeAutoAssignOptions(options);
+  const profileConfig = runOptions.profileConfig;
+
+  if (profileConfig?.id && profileConfig?.params) {
+    setMatchingDispatchProfile(profileConfig.id, profileConfig.params);
+  }
+
   // ── 1. Nullázás (working copy) ─────────────────────────────────────────────
   // Mélymásolat a tényleges adatokon, hogy a "Mégsem" ne veszítsen el semmit.
   // A hívó felelős az eredmény tényleges FUVAROK-ba való visszaírásáért.
@@ -505,7 +581,9 @@ export function runAutoAssign() {
   }
 
   // ── 4. Erőforrás-kiosztás járásonként ─────────────────────────────────────
-  for (const jarat of jaratok) {
+  const prioritizedJaratok = sortJaratokByProfilePriority(jaratok, profileConfig);
+
+  for (const jarat of prioritizedJaratok) {
     const fuvarokInJarat = [
       jarat.elofutasFuvar,
       jarat.exportFuvar,
@@ -568,7 +646,10 @@ export function runAutoAssign() {
       unassigned: totalCount - assignedCount,
       jaratCount: jaratok.length
     },
-    spedicioPartners: SPEDICIO_PARTNER_NAMES.slice(0, 3)
+    spedicioPartners: SPEDICIO_PARTNER_NAMES.slice(0, 3),
+    profileConfig,
+    planningDate: runOptions.planningDate,
+    strictMode: runOptions.strictMode
   };
 }
 
@@ -609,4 +690,29 @@ export function applyAutoAssignResult(result) {
     const orig = POTKOCSIK.find((p) => p.id === snap.id);
     if (orig) orig.timeline = snap.timeline;
   }
+
+  const profileConfig = result?.profileConfig || null;
+  const fuvarAssignments = FUVAROK.map((fuvar) => ({
+    fuvarId: fuvar.id,
+    assignedSoforId: fuvar.assignedSoforId || null,
+    assignedVontatoId: fuvar.assignedVontatoId || null,
+    assignedPotkocsiId: fuvar.assignedPotkocsiId || null
+  }));
+
+  setSessionState({
+    schemaVersion: 1,
+    appliedAt: new Date().toISOString(),
+    profileId: profileConfig?.id || null,
+    profileName: profileConfig?.name || null,
+    profileSnapshot: profileConfig,
+    fuvarAssignments,
+    resourceTimelines: {
+      soforok: SOFOROK.map((sofor) => ({ id: sofor.id, timeline: sofor.timeline || [] })),
+      vontatok: VONTATOK.map((vontato) => ({ id: vontato.id, timeline: vontato.timeline || [] })),
+      potkocsik: POTKOCSIK.map((potkocsi) => ({ id: potkocsi.id, timeline: potkocsi.timeline || [] }))
+    },
+    stats: result?.stats || null,
+    warnings: result?.warnings || []
+  });
+  saveSessionState();
 }

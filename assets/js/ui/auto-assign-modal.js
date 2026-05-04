@@ -8,6 +8,7 @@ import { runAutoAssign, applyAutoAssignResult } from "../core/auto-assign.js";
 let _modalEl = null;
 let _pendingResult = null;
 let _onApplied = null;
+let _autoAssignOptions = null;
 
 // ── CSS stílus (egyszer injektálva) ──────────────────────────────────────────
 
@@ -254,15 +255,25 @@ function statusBadge(jarat) {
 }
 
 function buildModalHtml(result) {
-  const { jaratok, unassigned, warnings, stats, spedicioPartners } = result;
+  const { jaratok, unassigned, warnings, stats, spedicioPartners, profileConfig } = result;
+
+  const profileTitle = profileConfig?.name || "Alap (profil nélkül)";
+  const profileParams = profileConfig?.params && typeof profileConfig.params === "object"
+    ? Object.entries(profileConfig.params)
+      .slice(0, 3)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(" • ")
+    : "Nincs aktív profilparaméter";
 
   const statsHtml = `
     <div class="aa-stats-row">
+      <span class="aa-stat-chip blue">Profil: ${escHtml(profileTitle)}</span>
       <span class="aa-stat-chip blue">${stats.jaratCount} járat képzett</span>
       <span class="aa-stat-chip green">${stats.assigned} fuvar kiosztva</span>
       ${stats.partial > 0 ? `<span class="aa-stat-chip orange">${stats.partial} részleges</span>` : ""}
       ${stats.unassigned > 0 ? `<span class="aa-stat-chip red">${stats.unassigned} kiosztás nélkül</span>` : ""}
     </div>
+    <div class="aa-stats-row" style="padding-top:0;color:#9cb3c8;font-size:0.8rem;">${escHtml(profileParams)}</div>
   `;
 
   const jaratRows = jaratok.map((j) => {
@@ -371,6 +382,33 @@ function closeModal() {
   }
   _modalEl = null;
   _pendingResult = null;
+  _autoAssignOptions = null;
+}
+
+function showAutoAssignToast(message) {
+  const existing = document.getElementById("aa-toast");
+  if (existing) {
+    existing.remove();
+  }
+
+  const toast = document.createElement("div");
+  toast.id = "aa-toast";
+  toast.textContent = message;
+  toast.style.position = "fixed";
+  toast.style.right = "16px";
+  toast.style.bottom = "16px";
+  toast.style.padding = "10px 14px";
+  toast.style.borderRadius = "8px";
+  toast.style.background = "rgba(30, 111, 212, 0.95)";
+  toast.style.color = "#fff";
+  toast.style.fontSize = "0.85rem";
+  toast.style.zIndex = "10010";
+  toast.style.boxShadow = "0 6px 20px rgba(0,0,0,0.35)";
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 2500);
 }
 
 function createOverlay(innerHtml) {
@@ -390,7 +428,8 @@ function createOverlay(innerHtml) {
       if (_pendingResult) {
         applyAutoAssignResult(_pendingResult);
         closeModal();
-        if (typeof _onApplied === "function") _onApplied();
+        showAutoAssignToast("Kiosztás alkalmazva és sessionbe mentve");
+        if (typeof _onApplied === "function") _onApplied(_pendingResult);
       }
     }
   });
@@ -409,6 +448,10 @@ export function openAutoAssignModal(options = {}) {
   // Esetleges korábbi modal eltávolítása
   closeModal();
 
+  _autoAssignOptions = typeof options.getAutoAssignOptions === "function"
+    ? options.getAutoAssignOptions()
+    : (options.autoAssignOptions || null);
+
   // Loading állapot
   _modalEl = createOverlay(buildLoadingHtml());
   document.body.appendChild(_modalEl);
@@ -416,7 +459,7 @@ export function openAutoAssignModal(options = {}) {
   // Algoritmus async-szerűen lefuttatjuk (setTimeout 0 hogy a loading megjelenjen)
   setTimeout(() => {
     try {
-      _pendingResult = runAutoAssign();
+      _pendingResult = runAutoAssign(_autoAssignOptions || {});
     } catch (err) {
       console.error("[AutoAssign] Hiba az algoritmus futtatásakor:", err);
       if (_modalEl) {

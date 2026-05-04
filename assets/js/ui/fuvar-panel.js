@@ -2603,6 +2603,7 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
 
   cont.querySelector('[data-action="auto-assign"]')?.addEventListener("click", () => {
     openAutoAssignModal({
+      getAutoAssignOptions: options.getAutoAssignOptions,
       onApplied: () => {
         emit();
       }

@@ -8,6 +8,7 @@ import { ensureContinuousTimelines } from "./timeline-generator.js";
 import { renderTimeline } from "./timeline.js";
 import { renderSzerelvenyMap } from "./szerelveny-map.js";
 import { getAssemblyOperationLogEntries, renderSzerelvenyTimeline } from "./szerelveny-timeline.js";
+import { loadSessionState, applySessionStateSnapshots } from "../core/session-state.js";
 
 const CONTINUOUS_LIMIT_MIN = 4 * 60 + 30;
 const DAILY_LIMIT_NORMAL_MIN = 9 * 60;
@@ -244,13 +245,23 @@ async function initMenetiranyitasPanel() {
   ensureContinuousTimelines(SOFOROK, VONTATOK, POTKOCSIK);
   ensureDemoRigAssignments();
 
+  loadSessionState();
+  applySessionStateSnapshots({
+    fuvarok: FUVAROK,
+    soforok: SOFOROK,
+    vontatok: VONTATOK,
+    potkocsik: POTKOCSIK
+  });
+
   initTimelineDockLayout();
 
   renderSzerelvenyMap("monitor-map-container", SOFOROK, VONTATOK, POTKOCSIK);
   renderResourceTimelinePanel();
 
   if (document.getElementById("assembly-timeline-container")) {
-    renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK);
+    renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK, {
+      showDraftBoard: false
+    });
   }
 
   window.addEventListener("assembly:resources:changed", () => {
@@ -258,7 +269,9 @@ async function initMenetiranyitasPanel() {
     renderResourceTimelinePanel();
 
     if (document.getElementById("assembly-timeline-container")) {
-      renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK);
+      renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK, {
+        showDraftBoard: false
+      });
     }
 
     refreshDashboard({ preserveSelection: true, focusMode: "none" });

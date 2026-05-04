@@ -513,6 +513,12 @@ body.monitor-page::before {
   min-width: 0;
 }
 
+.monitor-page #assembly-timeline-container,
+.monitor-page #timeline-container {
+  min-height: min(52vh, 560px);
+  max-height: min(52vh, 560px);
+}
+
 .monitor-operation-panel .assembly-operation-log {
   max-height: 280px;
 }

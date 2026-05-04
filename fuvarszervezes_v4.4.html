@@ -955,6 +955,7 @@ import { FUVAROK } from "./assets/js/data/fuvarok.js";
 import { SOFOROK } from "./assets/js/data/soforok.js";
 import { VONTATOK } from "./assets/js/data/vontatok.js";
 import { POTKOCSIK } from "./assets/js/data/potkocsik.js";
+import { loadGeneratedPlanningData } from "./assets/js/data/generated-loader.js";
 
 /* ------------------------
    UI/MATCHING MODULOK
@@ -984,6 +985,11 @@ import {
   setDragDropRefreshHandler
 } from "./assets/js/ui/dragdrop.js";
 import { buildSpedicioPartnerResources } from "./assets/js/ui/spedicio-partners.js";
+import {
+  loadSessionState,
+  applySessionStateSnapshots,
+  clearSessionState
+} from "./assets/js/core/session-state.js";
 
 let currentFuvarFilter = createDefaultFuvarFilterState();
 let previousFuvarFilterBeforeDropoffMode = null;
@@ -992,6 +998,7 @@ let selectedAssemblyId = null;
 let selectedResourceFocus = null;
 let resourceFocusScope = null;
 let resourceFocusSource = "none";
+let sessionProfileMismatchText = "";
 
 const DISPATCH_PROFILE_STORAGE_KEY = "transit.v44.dispatchProfiles";
 const DISPATCH_PROFILE_DEFINITIONS = [
@@ -3204,13 +3211,52 @@ function getActiveDispatchProfileItems() {
   });
 }
 
+function getActiveDispatchProfileConfig() {
+  const activeDefinition = getActiveDispatchProfileItems()[0] || null;
+  if (!activeDefinition) {
+    return null;
+  }
+
+  const profileState = dispatchProfileState?.profiles?.[activeDefinition.id];
+  if (!profileState?.enabled) {
+    return null;
+  }
+
+  return {
+    id: activeDefinition.id,
+    name: activeDefinition.title,
+    params: { ...profileState.params }
+  };
+}
+
+function computeSessionProfileMismatch(sessionProfileId) {
+  if (!sessionProfileId) {
+    return "";
+  }
+
+  const activeProfile = getActiveDispatchProfileConfig();
+  if (activeProfile?.id === sessionProfileId) {
+    return "";
+  }
+
+  return "Sessionben mentett kiosztás más profil alatt készült.";
+}
+
 function buildDispatchSummaryHtml() {
   const activeItems = getActiveDispatchProfileItems();
+  const mismatchHtml = sessionProfileMismatchText
+    ? `<div class="dispatch-profile-summary" style="border-color: rgba(251,140,0,0.45); color: #fbb040; margin-top: 10px;"><strong>${sessionProfileMismatchText}</strong></div>`
+    : "";
+
   if (activeItems.length === 0) {
     return `
       <div class="dispatch-profile-summary">
         <strong>Aktív profilok:</strong> nincs bekapcsolva.
         <div>A rendszer alap módban fut, minden meglévő logika változatlan.</div>
+      </div>
+      ${mismatchHtml}
+      <div class="dispatch-profile-summary">
+        <button class="btn" type="button" data-dispatch-action="clear-session">Session kiosztás törlése</button>
       </div>
     `;
   }
@@ -3226,6 +3272,10 @@ function buildDispatchSummaryHtml() {
     <div class="dispatch-profile-summary">
       <strong>Aktív profilok:</strong> ${activeItems.length} db
       <ul>${listHtml}</ul>
+    </div>
+    ${mismatchHtml}
+    <div class="dispatch-profile-summary">
+      <button class="btn" type="button" data-dispatch-action="clear-session">Session kiosztás törlése</button>
     </div>
   `;
 }
@@ -3401,6 +3451,12 @@ function renderDispatchProfilePanel() {
 
     input.addEventListener("change", applyValue);
     input.addEventListener("blur", applyValue);
+  });
+
+  host.querySelector('[data-dispatch-action="clear-session"]')?.addEventListener("click", () => {
+    clearSessionState();
+    sessionProfileMismatchText = "";
+    refreshAllViews();
   });
 
   mountDispatchProfileIntoSettingsPanel();
@@ -3589,7 +3645,12 @@ function renderFuvarFiltersWithCurrentState() {
     refreshAllViews();
   }, {
     getTimelineReferenceDate: () => getTimelineFilterReferenceDate(),
-    initialFilterState: currentFuvarFilter
+    initialFilterState: currentFuvarFilter,
+    getAutoAssignOptions: () => ({
+      profileConfig: getActiveDispatchProfileConfig(),
+      planningDate: getTimelineFilterReferenceDate()?.toISOString?.().slice(0, 10) || null,
+      strictMode: getActiveDispatchProfileConfig()?.id === "safe-compliance"
+    })
   });
 }
 
@@ -3650,8 +3711,18 @@ function focusRecommendedFuvarChainById(fuvarId) {
 ------------------------- */
 window.addEventListener("DOMContentLoaded", async () => {
   initSidebarNavigation();
+  await loadGeneratedPlanningData();
   dispatchProfileState = loadDispatchProfileState();
   syncDispatchProfileToModules();
+
+  const loadedSession = loadSessionState();
+  const rehydrateResult = applySessionStateSnapshots({
+    fuvarok: FUVAROK,
+    soforok: SOFOROK,
+    vontatok: VONTATOK,
+    potkocsik: POTKOCSIK
+  });
+  sessionProfileMismatchText = computeSessionProfileMismatch(loadedSession?.profileId || rehydrateResult?.profileId);
 
   // Csak a lokális localStorage-t használjuk – a megosztott fájl nem írja felül a helyi mentést.
   dockProfilesState = loadDockProfiles();

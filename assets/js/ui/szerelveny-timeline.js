@@ -2374,6 +2374,27 @@ function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik, lifec
     (completedJaratInfo.segments || []).map((segment) => [segment.jaratId, segment])
   );
 
+  const latestClosedSummary = [...(completedJaratInfo.summaries || [])]
+    .filter((summary) => summary.status === "lezart")
+    .sort((left, right) => new Date(right.end) - new Date(left.end))[0] || null;
+  if (latestClosedSummary?.jaratId) {
+    const latestSegment = segmentByJaratId.get(latestClosedSummary.jaratId) || null;
+    if (latestSegment) {
+      const nameInfoBtn = document.createElement("button");
+      nameInfoBtn.type = "button";
+      nameInfoBtn.className = "jarat-row-info-btn";
+      nameInfoBtn.textContent = "i";
+      nameInfoBtn.title = `Járat részletek (${latestClosedSummary.jaratId})`;
+      nameInfoBtn.setAttribute("aria-label", nameInfoBtn.title);
+      nameInfoBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openJaratInfoModalForSegment(latestSegment, assembly);
+      });
+      name.querySelector(".assembly-main")?.appendChild(nameInfoBtn);
+    }
+  }
+
   assembly.fuvarBlocks.forEach((block) => {
     const visibleBlock = clipBlockToWindow(block);
     if (!visibleBlock) {
@@ -2425,30 +2446,6 @@ function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik, lifec
     const jaratMeta = completedJaratInfo.byBlock.get(block) || null;
     if (jaratMeta?.jaratId) {
       div.classList.add("jarat-complete");
-      div.classList.add("jarat-info-host");
-      const titleEl = div.querySelector(".timeline-block-title");
-      if (titleEl) {
-        const badge = document.createElement("span");
-        badge.className = "timeline-jarat-badge";
-        badge.textContent = jaratMeta.jaratId;
-        titleEl.appendChild(badge);
-      }
-
-      const segment = segmentByJaratId.get(jaratMeta.jaratId) || null;
-      if (segment) {
-        const infoBtn = document.createElement("button");
-        infoBtn.type = "button";
-        infoBtn.className = "jarat-info-trigger";
-        infoBtn.textContent = "i";
-        infoBtn.title = `Járat részletek (${jaratMeta.jaratId})`;
-        infoBtn.setAttribute("aria-label", infoBtn.title);
-        infoBtn.addEventListener("click", (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          openJaratInfoModalForSegment(segment, assembly);
-        });
-        div.appendChild(infoBtn);
-      }
     }
 
     const blockTooltip = buildAssemblyBlockTooltip(visibleBlock, jaratMeta);
@@ -3237,7 +3234,7 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
   const dropoffView = buildAssemblyDropoffView(spedicioOnlyAssemblies);
 
   renderAssemblyPager(container, containerId, soforok, vontatok, potkocsik, dropoffView);
-  if (mode === "timeline") {
+  if (mode === "timeline" && options?.showDraftBoard !== false) {
     renderDraftAssemblyBoard(container, soforok, vontatok, potkocsik);
   }
   if (mode === "timeline" || mode === "jarat") {
