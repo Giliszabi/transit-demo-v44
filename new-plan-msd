@@ -1,0 +1,158 @@
+Új terv – profilvezérelt auto-kiosztás + session-megőrzés (Menetirányítás kompatibilis)
+
+Célok:
+1) A "Fuvarok összerakása" algoritmus az aktív Beállítások profil szerint működjön.
+2) A lefuttatott kiosztás ugyanabban a böngésző sessionben megmaradjon, és modulváltás után is látszódjon az erőforrás/szerelvény idővonalakon.
+
+---
+
+1. Megoldási stratégia
+
+1.1 Profilparaméterek egységesítése
+- Bevezetünk egy központi profil-lekérő réteget, amely minden aktív paramétert egy objektumban ad vissza.
+- A kiosztó algoritmus futtatásakor ezt az objektumot átadjuk a runAutoAssign(profileConfig) hívásnak.
+
+1.2 Session state bevezetése
+- Bevezetünk egy központi session store modult (UI-állapothoz):
+  - autoAssignResult
+  - fuvar assignment snapshot
+  - resource timeline snapshot
+  - activeProfileSnapshot
+- Mentés sessionStorage-be minden sikeres "Alkalmaz" után.
+- Betöltés oldalnyitáskor és nézetváltáskor.
+
+1.3 Közös render trigger
+- Fuvarszervezés és Menetirányítás ugyanarról az állapotforrásról olvassa az assignment + timeline adatokat.
+- Modulváltáskor explicit rehydrate + refresh: fuvarlista, resource panel, szerelvény timeline.
+
+---
+
+2. Részletes feladatlista
+
+2.1 Profil integráció az auto-assignbe
+- assets/js/core/auto-assign.js:
+  - runAutoAssign kapjon options paramétert: { profileConfig, planningDate, strictMode }
+  - Soft/hard döntések profilfüggővé tétele:
+    - ADR szigor
+    - domestic/international rugalmasság
+    - pufferelt menetidő (ETA buffer)
+    - figyelmeztetési küszöbök
+  - Prioritási sorrend paraméterezése:
+    - sürgős első
+    - időablak súly
+    - párosítási score (export lerakás ↔ import felrakás)
+
+- assets/js/ui/auto-assign-modal.js:
+  - Futás előtt profil beolvasása
+  - Előnézetben megjeleníteni: melyik profil + fő paraméterek
+
+2.2 Központi session store
+- Új modul: assets/js/core/session-state.js
+  - API:
+    - getSessionState()
+    - setSessionState(partial)
+    - saveSessionState()
+    - loadSessionState()
+    - clearSessionState()
+  - Kulcs: transit.v44.dispatch.session
+
+- Mentendő adatok:
+  - appliedAt
+  - profileId
+  - fuvarAssignments: [{ fuvarId, assignedSoforId, assignedVontatoId, assignedPotkocsiId }]
+  - resourceTimelines:
+    - soforok: [{ id, timeline }]
+    - vontatok: [{ id, timeline }]
+    - potkocsik: [{ id, timeline }]
+  - stats + warnings (opcionális, UI összegzőhöz)
+
+2.3 Apply pipeline kiterjesztése
+- assets/js/core/auto-assign.js / applyAutoAssignResult:
+  - alkalmazás után hívja a session save réteget
+  - biztosítsa, hogy újonnan generált relay fuvarok is mentődjenek assignmenttel együtt
+
+2.4 Rehydrate pipeline oldalbetöltéskor és nézetváltáskor
+- fuvarszervezes_v4.4.html:
+  - init elején loadSessionState()
+  - ha van érvényes state: apply snapshots in-memory listákra
+  - utána refreshAllViews()
+
+- menetiranyitas.html:
+  - init elején loadSessionState()
+  - in-memory resource timeline-ok felülírása sessionből
+  - timeline és szerelvény panelek újrarenderelése
+
+2.5 Védelmek és érvényesítés
+- Verzió mező a session payloadban: schemaVersion
+- Safe merge szabály:
+  - csak létező fuvar/resource ID-kre alkalmazunk
+  - hiányzó ID log + skip
+- Profil mismatch esetén jelzés:
+  - "Sessionben mentett kiosztás más profil alatt készült"
+
+---
+
+3. UX döntések
+
+3.1 Modal kiegészítések
+- Előnézet fejléc: Aktív profil neve
+- Alkalmaz után toast:
+  - "Kiosztás alkalmazva és sessionbe mentve"
+
+3.2 Kézi reset opció
+- Új gomb javaslat Beállításokban:
+  - "Session kiosztás törlése"
+- Funkció: clearSessionState + teljes nézetfrissítés
+
+---
+
+4. Tesztterv
+
+4.1 Funkcionális
+- Profilváltás után auto-assign eltérő eredményt ad (legalább 1 döntési pont változik)
+- "Alkalmaz" után fuvarpanelen assignment látszik
+- Menetirányításra váltás után ugyanazok az assignmentek/timeline-ok látszanak
+
+4.2 Session életciklus
+- Ugyanabban a tabban route/module váltás: állapot megmarad
+- Hard reload: sessionStorage-ból visszatölt
+- Tab bezárás + új tab: állapot eltűnik (session scope)
+
+4.3 Robusztusság
+- Ismeretlen ID-k esetén nincs crash
+- Sérült payload esetén fallback alapállapot
+- Régi schemaVersion esetén migráció vagy reset
+
+---
+
+5. Kockázatok és mitigáció
+
+Kockázat: in-memory listák és session snapshot divergens állapota.
+Mitigáció: egyetlen apply entry point + kötelező saveSessionState hívás.
+
+Kockázat: profilparaméterek részben a matching engine-ben, részben auto-assignben élnek.
+Mitigáció: közös profileConfig adapter, egyetlen forrásból.
+
+Kockázat: Menetirányítás modul más adatforrást használ.
+Mitigáció: init során explicit state rehydrate adapter a helyi data modelre.
+
+---
+
+6. Implementációs sorrend (javasolt)
+
+1) session-state.js létrehozása + minimál API
+2) applyAutoAssignResult -> session mentés
+3) fuvarszervezes_v4.4.html init -> session visszatöltés
+4) menetiranyitas.html init -> session visszatöltés
+5) profileConfig bekötése runAutoAssign-ba
+6) modal profil-információ + figyelmeztetések
+7) regressziós tesztek + kézi validáció
+
+---
+
+7. Elfogadási kritériumok
+
+- Az auto-assign futás ténylegesen az aktív profil paramétereit használja.
+- Alkalmazás után modulváltáskor is konzisztens assignment/timeline jelenik meg.
+- A session állapot stabilan visszatöltődik hard reload után is ugyanabban a tabban.
+- Hibás session payload nem töri meg a UI-t.

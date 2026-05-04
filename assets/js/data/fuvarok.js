@@ -2,6 +2,7 @@ import { DEMO_NEARBY_FREE_PAIR_SCENARIO } from "./demo-warning-scenario.js";
 import { FUVAROK_REAL } from "./fuvarok-real.js";
 
 const FUVAR_DATE_SHIFT_DAYS = 15;
+const FINAL_FUVAR_DATE_SHIFT_DAYS = 10;
 const MEBIZO_COMPANIES = [
   "Hankook Tire Magyarorszag Kft",
   "NNOCORE VISION KFT",
@@ -449,6 +450,7 @@ export const FUVAROK = [
 shiftFuvarDatesInPlace(FUVAROK, FUVAR_DATE_SHIFT_DAYS);
 assignFocusedFuvarDays(FUVAROK);
 applyOptimalDemoScenario(FUVAROK);
+shiftFuvarDatesInPlace(FUVAROK, FINAL_FUVAR_DATE_SHIFT_DAYS);
 assignMegbizoCompanies(FUVAROK);
 
 function resetInitialSpedicioState() {
