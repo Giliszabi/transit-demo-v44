@@ -504,6 +504,11 @@
     .gear-settings-wrapper {
       position: relative;
       display: inline-block;
+      z-index: 120;
+    }
+
+    .gear-settings-wrapper[open] {
+      z-index: 5000;
     }
 
     .gear-settings-wrapper > summary {
@@ -535,7 +540,7 @@
       position: absolute;
       right: 0;
       top: calc(100% + 8px);
-      z-index: 40;
+      z-index: 5100;
       width: min(940px, 92vw);
       border: 1px solid #2e2f33;
       border-radius: 12px;
@@ -735,7 +740,7 @@
   <div class="header-copy">
     <div class="panel-title">🚛 Fuvarszervezés v4.4 (Advanced)</div>
     <p>
-      Sofőr • Vontató • Pótkocsi – idő + hely + relevancia illesztés
+      Gépjárművezető • Vontató • Pótkocsi – idő + hely + relevancia illesztés
     </p>
   </div>
   <div id="layout-profile-bar">
@@ -956,7 +961,7 @@ import { POTKOCSIK } from "./assets/js/data/potkocsik.js";
 ------------------------- */
 import { renderTimeline, getTimelineFilterReferenceDate, setTimelineWindowDayOffset, refreshAutoDriverStatesForLinkedConvoys, refreshAutoTransitBlocksForResource } from "./assets/js/ui/timeline.js";
 import { setDispatchProfile as setTimelineDispatchProfile } from "./assets/js/ui/timeline.js";
-import { getAssemblyOperationLogEntries, renderJaratTimeline, renderSzerelvenyTimeline, setAssemblyTimelineWindowDayOffset } from "./assets/js/ui/szerelveny-timeline.js";
+import { applyAssemblyAssignmentSync, getAssemblyOperationLogEntries, renderJaratTimeline, renderSzerelvenyTimeline, setAssemblyTimelineWindowDayOffset, stageFuvarAssemblyDraft } from "./assets/js/ui/szerelveny-timeline.js";
 import { renderSzerelvenyMap } from "./assets/js/ui/szerelveny-map.js";
 import { renderResourcePanel } from "./assets/js/ui/resource-panel.js";
 import { ensureContinuousTimelines } from "./assets/js/ui/timeline-generator.js";
@@ -969,7 +974,7 @@ import {
   createDefaultFuvarFilterState
 } from "./assets/js/ui/fuvar-panel.js";
 import { renderTransitTaskBoard } from "./assets/js/ui/domestic-relay-panel.js";
-import { getDomesticTransitRoleInfo } from "./assets/js/ui/transit-relations.js";
+import { getDomesticTransitRoleInfo, getFuvarCategoryFromFuvar } from "./assets/js/ui/transit-relations.js";
 import { evaluateAllResources, evaluateFuvarokForResource } from "./assets/js/ui/matching.js";
 import { setDispatchProfile as setMatchingDispatchProfile } from "./assets/js/ui/matching.js";
 import {
@@ -1097,6 +1102,7 @@ const RECOMMENDATION_ADDRESS_COORDS = {
 const PANEL_IDS = ["fuvar", "resource", "elofutas", "utofutas", "assembly-timeline", "jarat-timeline", "timeline", "map"];
 const DOCK_LAYOUT_KEY = "transit.v44.dockLayout";
 const DOCK_PROFILES_KEY = "transit.v44.dockProfiles";
+const DOCK_ASSIGNMENT_SYNC_KEY = "transit.v44.assignmentSync";
 const DOCK_CHANNEL_NAME = "transit.v44.dockLayout.channel";
 const SHARED_DOCK_PROFILES_URL = "assets/js/data/dock-profiles-shared.json";
 
@@ -1132,6 +1138,7 @@ let dockProfilesState = null;
 let activeUserId = null;
 let activeViewId = null;
 let isSyncingFuvarColumnsUi = false;
+let lastHandledAssignmentSyncToken = "";
 const LEGACY_DEFAULT_FUVAR_COLUMNS = [
   "route",
   "pickup",
@@ -2121,12 +2128,36 @@ function setupDockLayoutSync() {
 
       if (event.data.type === "fuvar:focus:update") {
         applyFuvarSelectionById(event.data.fuvarId || null, { broadcast: false });
+        return;
+      }
+
+      if (event.data.type === "assembly:draft-stage") {
+        stageFuvarAssemblyDraft(event.data.fuvarId || "", event.data.assignment || {});
+        return;
+      }
+
+      if (event.data.type === "assembly:assignment:save") {
+        applyIncomingAssignmentSync(event.data);
       }
     };
   }
 
   window.addEventListener("storage", (event) => {
-    if (event.key !== DOCK_PROFILES_KEY || !event.newValue) {
+    if (!event.newValue) {
+      return;
+    }
+
+    if (event.key === DOCK_ASSIGNMENT_SYNC_KEY) {
+      try {
+        const payload = JSON.parse(event.newValue);
+        applyIncomingAssignmentSync(payload);
+      } catch (_error) {
+        // no-op
+      }
+      return;
+    }
+
+    if (event.key !== DOCK_PROFILES_KEY) {
       return;
     }
 
@@ -2143,28 +2174,9 @@ function setupDockLayoutSync() {
     }
   });
 
+  // Refresh esetén ne dokkoljuk vissza automatikusan a detached paneleket.
+  // A panel-módú (egyetlen paneles) popup bezárásakor viszont visszadokkoljuk.
   window.addEventListener("beforeunload", () => {
-    if (detachedWindowMode && dockLayoutState?.detached?.length) {
-      const next = cloneLayout(dockLayoutState);
-
-      next.detached.forEach((detachedPanelId) => {
-        const zone = next.homeZone[detachedPanelId] || "left";
-        if (!next.zones[zone].includes(detachedPanelId)) {
-          next.zones[zone].push(detachedPanelId);
-        }
-      });
-      next.detached = [];
-
-      const userState = getActiveUserState();
-      const view = getActiveView();
-      if (userState && view) {
-        view.layout = sanitizeLayout(next);
-        userState.lastUsedViewId = view.id;
-        persistDockProfiles({ broadcast: true });
-      }
-      return;
-    }
-
     if (panelMode && PANEL_IDS.includes(panelMode) && dockLayoutState.detached.includes(panelMode)) {
       const next = cloneLayout(dockLayoutState);
       next.detached = next.detached.filter((id) => id !== panelMode);
@@ -2182,19 +2194,78 @@ function setupDockLayoutSync() {
   });
 }
 
+function applyIncomingAssignmentSync(payload) {
+  const token = String(payload?.token || "");
+  if (token && token === lastHandledAssignmentSyncToken) {
+    return;
+  }
+
+  const fuvarId = payload?.fuvarId || "";
+  const assignment = payload?.assignment || null;
+  if (!fuvarId || !assignment) {
+    return;
+  }
+
+  if (token) {
+    lastHandledAssignmentSyncToken = token;
+  }
+
+  applyAssemblyAssignmentSync(fuvarId, assignment, { emit: true });
+}
+
+function resolveLinkedInternationalFuvarIdForTimelineFocus(domesticFuvar, focusTransitRole = "") {
+  if (!domesticFuvar) {
+    return "";
+  }
+
+  const resolveExportId = () => {
+    return domesticFuvar?.elofutasExportFuvarId
+      || domesticFuvar?.kapcsoltExportFuvarId
+      || FUVAROK.find((candidate) => {
+        return getFuvarCategoryFromFuvar(candidate) === "export"
+          && candidate?.elofutasBelfoldFuvarId === domesticFuvar.id;
+      })?.id
+      || "";
+  };
+
+  const resolveImportId = () => {
+    return domesticFuvar?.utofutasImportFuvarId
+      || domesticFuvar?.kapcsoltImportFuvarId
+      || FUVAROK.find((candidate) => {
+        return getFuvarCategoryFromFuvar(candidate) === "import"
+          && candidate?.utofutasBelfoldFuvarId === domesticFuvar.id;
+      })?.id
+      || "";
+  };
+
+  if (focusTransitRole === "elofutas") {
+    return resolveExportId() || resolveImportId();
+  }
+
+  if (focusTransitRole === "utofutas") {
+    return resolveImportId() || resolveExportId();
+  }
+
+  const inferredTransitRoleInfo = getDomesticTransitRoleInfo(domesticFuvar, FUVAROK);
+  if (inferredTransitRoleInfo?.linkedFuvar?.id) {
+    return inferredTransitRoleInfo.linkedFuvar.id;
+  }
+
+  return resolveExportId() || resolveImportId();
+}
+
 window.addEventListener("fuvar:focus", (event) => {
   selectedFuvarId = event?.detail?.fuvarId || null;
   const focusSource = event?.detail?.source || "";
+  const focusTransitRole = event?.detail?.transitRole || "";
+  const explicitLinkedFuvarId = event?.detail?.linkedFuvarId || "";
   const selectedFuvar = selectedFuvarId
     ? FUVAROK.find((item) => item.id === selectedFuvarId)
     : null;
 
-  if (focusSource === "timeline" && getFuvarCategory(selectedFuvar) === "belfold") {
-    const linkedInternationalId = selectedFuvar?.elofutasExportFuvarId
-      || selectedFuvar?.kapcsoltExportFuvarId
-      || selectedFuvar?.utofutasImportFuvarId
-      || selectedFuvar?.kapcsoltImportFuvarId
-      || "";
+  if (focusSource === "timeline" && getFuvarCategoryFromFuvar(selectedFuvar) === "belfold") {
+    const linkedInternationalId = explicitLinkedFuvarId
+      || resolveLinkedInternationalFuvarIdForTimelineFocus(selectedFuvar, focusTransitRole);
 
     if (linkedInternationalId) {
       applyProgrammaticFuvarFilter({
@@ -2701,7 +2772,7 @@ function getResourceByTypeAndId(type, resourceId) {
 
 function getResourceRecommendationLabel(type, resource) {
   if (type === "sofor") {
-    return resource?.nev || resource?.id || "Sofőr";
+    return resource?.nev || resource?.id || "Gépjárművezető";
   }
 
   if (type === "vontato" || type === "potkocsi") {
@@ -2712,7 +2783,7 @@ function getResourceRecommendationLabel(type, resource) {
 }
 
 function getResourceRecommendationTypeLabel(type) {
-  if (type === "sofor") return "sofőr";
+  if (type === "sofor") return "gépjárművezető";
   if (type === "vontato") return "vontató";
   if (type === "potkocsi") return "pótkocsi";
   return "erőforrás";
@@ -3382,6 +3453,53 @@ function broadcastFuvarSelection(fuvarId) {
   });
 }
 
+function broadcastAssemblyDraftStage(fuvarId, assignment) {
+  if (!dockChannel || !fuvarId || !assignment) {
+    return;
+  }
+
+  dockChannel.postMessage({
+    type: "assembly:draft-stage",
+    fuvarId,
+    assignment: {
+      soforId: assignment.soforId || null,
+      vontatoId: assignment.vontatoId || null,
+      potkocsiId: assignment.potkocsiId || null
+    }
+  });
+}
+
+function broadcastAssemblyAssignmentSave(fuvarId, assignment) {
+  if (!fuvarId || !assignment) {
+    return;
+  }
+
+  const payload = {
+    type: "assembly:assignment:save",
+    token: `asg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    fuvarId,
+    assignment: {
+      soforId: assignment.soforId || null,
+      vontatoId: assignment.vontatoId || null,
+      potkocsiId: assignment.potkocsiId || null
+    }
+  };
+
+  lastHandledAssignmentSyncToken = payload.token;
+
+  try {
+    localStorage.setItem(DOCK_ASSIGNMENT_SYNC_KEY, JSON.stringify(payload));
+  } catch (_error) {
+    // no-op
+  }
+
+  if (!dockChannel) {
+    return;
+  }
+
+  dockChannel.postMessage(payload);
+}
+
 function applyFuvarSelectionById(fuvarId, options = { broadcast: true }) {
   selectedFuvarId = fuvarId || null;
   updateTimelineFocusIndicator();
@@ -3595,13 +3713,31 @@ window.addEventListener("DOMContentLoaded", async () => {
   ensureContinuousTimelines(SOFOROK, VONTATOK, POTKOCSIK);
   setDragDropRefreshHandler(refreshAllViews);
 
-  window.addEventListener("assembly:resources:changed", () => {
+  window.addEventListener("assembly:resources:changed", (event) => {
+    const operation = event?.detail?.operation || "";
+    const fuvarId = event?.detail?.fuvarId || "";
+    const assignment = event?.detail?.assignment || null;
+    if (operation === "assembly-save" && fuvarId && assignment) {
+      broadcastAssemblyAssignmentSave(fuvarId, assignment);
+    }
+
     if (resourceFocusSource === "assembly" && selectedAssemblyId) {
       applyResourceFocusScope(buildResourceFocusScopeFromAssemblyId(selectedAssemblyId), "assembly");
+      refreshAllViews();
       return;
     }
 
     refreshAllViews();
+  });
+
+  window.addEventListener("assembly:draft:staged", (event) => {
+    const fuvarId = event?.detail?.fuvarId || "";
+    const assignment = event?.detail?.assignment || null;
+    if (!fuvarId || !assignment) {
+      return;
+    }
+
+    broadcastAssemblyDraftStage(fuvarId, assignment);
   });
 
   window.addEventListener("timeline:window-change", () => {
@@ -3817,6 +3953,8 @@ function restoreElementScrollPosition(element, position) {
       renderTransitTaskBoard("transit-task-board-elofutas", {
         role: "elofutas",
         hidden: spedicioMode,
+        idScope: currentFuvarFilter?.idScope || [],
+        query: currentFuvarFilter?.query || "",
         selectedFuvarId,
         onSelectFuvar: (fuvarId) => applyFuvarSelectionById(fuvarId),
         onSelectLinkedFuvar: (fuvarId) => applyLinkedFuvarFocusFilter(fuvarId)
@@ -3827,6 +3965,8 @@ function restoreElementScrollPosition(element, position) {
       renderTransitTaskBoard("transit-task-board-utofutas", {
         role: "utofutas",
         hidden: spedicioMode,
+        idScope: currentFuvarFilter?.idScope || [],
+        query: currentFuvarFilter?.query || "",
         selectedFuvarId,
         onSelectFuvar: (fuvarId) => applyFuvarSelectionById(fuvarId),
         onSelectLinkedFuvar: (fuvarId) => applyLinkedFuvarFocusFilter(fuvarId)
@@ -3860,11 +4000,11 @@ function restoreElementScrollPosition(element, position) {
     if (document.getElementById("timeline-container")) {
       if (spedicioMode) {
         renderTimeline("timeline-container", [
-          { icon: "🤝", name: "Spediciós partnerek", type: "partner", list: spedicioPartners }
+          { icon: "🤝", name: "Spedíciós partnerek", type: "partner", list: spedicioPartners }
         ]);
       } else {
         renderTimeline("timeline-container", [
-          { icon: "👤", name: "Sofőrök",    list: visibleResources.soforok },
+          { icon: "👤", name: "Gépjárművezetők",    list: visibleResources.soforok },
           { icon: "🚛", name: "Vontatók",   list: visibleResources.vontatok },
           { icon: "🚚", name: "Pótkocsik",  list: visibleResources.potkocsik }
         ]);

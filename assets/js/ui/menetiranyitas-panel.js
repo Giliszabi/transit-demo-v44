@@ -39,7 +39,7 @@ const RISK_META = {
 const RISK_FILTER_META = {
   all: {
     label: "Összes",
-    shortLabel: "Minden sofőr",
+    shortLabel: "Minden gépjárművezető",
     description: "A teljes heatmap lista megjelenítése szűrés nélkül.",
     className: "risk-filter-all"
   },
@@ -513,7 +513,7 @@ function renderResourceTimelinePanel() {
   }
 
   renderTimeline("timeline-container", [
-    { icon: "👤", name: "Sofőrök", list: SOFOROK },
+    { icon: "👤", name: "Gépjárművezetők", list: SOFOROK },
     { icon: "🚛", name: "Vontatók", list: VONTATOK },
     { icon: "🚚", name: "Pótkocsik", list: POTKOCSIK }
   ]);
@@ -834,7 +834,7 @@ function resolveAssignmentDriverMatch(assignment, profiles) {
     confidenceTone,
     matchedDriverLabel: matchedProfiles.length
       ? matchedProfiles.map((match) => match.name).join(", ")
-      : "nincs felismert sofőr"
+      : "nincs felismert gépjárművezető"
   };
 }
 
@@ -860,7 +860,7 @@ function renderExportTableFilters(profiles) {
   container.innerHTML = `
     <div class="export-filter-grid">
       <label class="export-filter-field">
-        <span>Sofőr kereső</span>
+        <span>Gépjárművezető kereső</span>
         <input type="search" value="${escapeHtml(appState.exportFilters.driverQuery)}" data-export-filter="driverQuery" placeholder="név vagy részlet" />
       </label>
       <label class="export-filter-field">
@@ -1319,7 +1319,7 @@ function evaluateFuvarCompatibility(activeFuvar, metrics, eta, risk, seed, now) 
   let recommendation = "A fuvar a jelenlegi időablak szerint teljesíthető.";
 
   if (!windowCompatible && suggestSwap) {
-    recommendation = "Sofőrcsere javasolt vagy pickup ablak újratervezése szükséges.";
+    recommendation = "Gépjárművezetőcsere javasolt vagy pickup ablak újratervezése szükséges.";
   } else if (requiresMandatoryRest) {
     recommendation = "Kötelező pihenő beiktatása szükséges a lerakás előtt.";
   }
@@ -1433,7 +1433,7 @@ function buildAlerts(profiles) {
         focusMode: "assembly",
         fuvarId: profile.activeFuvar.fuvar?.id || null,
         etaMin: profile.metrics.breakDueMin,
-        message: `Sofőr ${driverId}: ${formatDuration(profile.metrics.breakDueMin)} múlva kötelező szünet`
+        message: `Gépjárművezető ${driverId}: ${formatDuration(profile.metrics.breakDueMin)} múlva kötelező szünet`
       });
     }
 
@@ -1444,7 +1444,7 @@ function buildAlerts(profiles) {
         focusMode: "assembly",
         fuvarId: profile.activeFuvar.fuvar?.id || null,
         etaMin: Math.max(5, profile.metrics.dailyRemainingMin),
-        message: `Sofőr ${driverId}: Napi vezetési limit ${Math.round(profile.metrics.dailyUtilization * 100)}%-on`
+        message: `Gépjárművezető ${driverId}: Napi vezetési limit ${Math.round(profile.metrics.dailyUtilization * 100)}%-on`
       });
     }
 
@@ -1455,7 +1455,7 @@ function buildAlerts(profiles) {
         focusMode: "assembly",
         fuvarId: profile.activeFuvar.fuvar?.id || null,
         etaMin: Math.max(5, profile.metrics.weeklyRestDeadlineMin),
-        message: `Sofőr ${driverId}: Heti pihenő ${formatDuration(profile.metrics.weeklyRestDeadlineMin)} múlva esedékes`
+        message: `Gépjárművezető ${driverId}: Heti pihenő ${formatDuration(profile.metrics.weeklyRestDeadlineMin)} múlva esedékes`
       });
     }
 
@@ -1466,7 +1466,7 @@ function buildAlerts(profiles) {
         focusMode: "fuvar",
         fuvarId: profile.activeFuvar.fuvar?.id || null,
         etaMin: Math.max(5, profile.metrics.breakDueMin),
-        message: `Sofőr ${driverId}: Possible breach ${formatDuration(Math.max(5, profile.metrics.breakDueMin))} múlva`
+        message: `Gépjárművezető ${driverId}: Possible breach ${formatDuration(Math.max(5, profile.metrics.breakDueMin))} múlva`
       });
     }
   });
@@ -1509,7 +1509,7 @@ function renderKpiStrip(profiles) {
     <article class="kpi-card">
       <div class="kpi-label">Kockázatos fuvarok</div>
       <div class="kpi-value">🟢 ${greenCount} • 🟡 ${yellowCount} • 🔴 ${redCount}</div>
-      <div class="kpi-note">sofőr kockázati állapot valós időben</div>
+      <div class="kpi-note">gépjárművezető kockázati állapot valós időben</div>
     </article>
     <article class="kpi-card">
       <div class="kpi-label">Átlagos szünet-kényszer</div>
@@ -1523,7 +1523,7 @@ function renderKpiStrip(profiles) {
     </article>
     <article class="kpi-card">
       <div class="kpi-label">Kötelező pihenő ≤ 2h</div>
-      <div class="kpi-value">${mandatoryRestSoon} sofőr</div>
+      <div class="kpi-value">${mandatoryRestSoon} gépjárművezető</div>
       <div class="kpi-note">diszpécseri beavatkozásra jelölt</div>
     </article>
   `;
@@ -1640,7 +1640,7 @@ function renderPlanningContextStrip() {
     </article>
     <article class="planning-context-card">
       <div class="planning-context-label">Erőforrás készlet</div>
-      <div class="planning-context-value">${driverCount} sofőr • ${vehicleCount} vontató</div>
+      <div class="planning-context-value">${driverCount} gépjárművezető • ${vehicleCount} vontató</div>
       <div class="planning-context-note">generated planning állapot</div>
     </article>
   `;
@@ -1754,7 +1754,7 @@ function renderExportTable(profiles, selectedDriverId) {
           <tr>
             <th>MI neve</th>
             <th>Vontató rendszám</th>
-            <th>Sofőr(ök)</th>
+            <th>Gépjárművezető(ök)</th>
             <th>SZF-SZÁM</th>
             <th>Jani megjegyzés</th>
             <th>Menetirányító megjegyzés</th>
@@ -1796,7 +1796,7 @@ function renderDriverStateList(profiles, selectedDriverId) {
 
   if (!profiles.length) {
     const label = RISK_FILTER_META[appState.riskFilter]?.label || "szűrt";
-    container.innerHTML = `<div class="empty-message">Nincs megjeleníthető sofőr a kiválasztott ${escapeHtml(label)} szűrővel.</div>`;
+    container.innerHTML = `<div class="empty-message">Nincs megjeleníthető gépjárművezető a kiválasztott ${escapeHtml(label)} szűrővel.</div>`;
     return;
   }
 
@@ -1827,7 +1827,7 @@ function renderDriverStateList(profiles, selectedDriverId) {
           data-driver-id="${escapeHtml(profile.driver.id)}"
           role="button"
           tabindex="0"
-          aria-label="Sofőr kiválasztása: ${escapeHtml(profile.driver.nev)}"
+          aria-label="Gépjárművezető kiválasztása: ${escapeHtml(profile.driver.nev)}"
         >
           <div class="driver-state-top">
             <span class="risk-dot ${profile.risk.className}" aria-hidden="true"></span>
@@ -1887,7 +1887,7 @@ function renderExportDriverList(profiles, selectedDriverId) {
     .sort((left, right) => right.exportAssignments.length - left.exportAssignments.length);
 
   if (!exportProfiles.length) {
-    container.innerHTML = '<div class="empty-message">Az effektív Export napon nincs sofőrhöz köthető kiosztási sor.</div>';
+    container.innerHTML = '<div class="empty-message">Az effektív Export napon nincs gépjárművezetőhöz köthető kiosztási sor.</div>';
     return;
   }
 
@@ -1904,7 +1904,7 @@ function renderExportDriverList(profiles, selectedDriverId) {
           data-driver-id="${escapeHtml(profile.driver.id)}"
           role="button"
           tabindex="0"
-          aria-label="Export sofőr kiválasztása: ${escapeHtml(profile.driver.nev)}"
+          aria-label="Export gépjárművezető kiválasztása: ${escapeHtml(profile.driver.nev)}"
         >
           <div class="export-driver-top">
             <strong>${escapeHtml(profile.driver.nev)}</strong>
@@ -1965,7 +1965,7 @@ function renderMainPanel(profile, now) {
     </div>
 
     <section class="tacho-strip-wrap ${profile.risk.className}">
-      <div class="tacho-strip-label">1) Sofőr időállapot-sáv (Tacho Timeline Strip)</div>
+      <div class="tacho-strip-label">1) Gépjárművezető időállapot-sáv (Tacho Timeline Strip)</div>
       <div class="tacho-strip">
         ${stripSegmentsHtml}
         <div class="strip-now">MOST</div>
@@ -2107,8 +2107,8 @@ function renderInsightsPanel(profile) {
     .join("");
 
   const rigLabel = profile.rig.vontato
-    ? `Rig #${profile.rig.vontato.id} (Sofőr: ${profile.driver.id})`
-    : `Rig #N/A (Sofőr: ${profile.driver.id})`;
+    ? `Rig #${profile.rig.vontato.id} (Gépjárművezető: ${profile.driver.id})`
+    : `Rig #N/A (Gépjárművezető: ${profile.driver.id})`;
 
   const rigStatus = `${profile.status.label} (${formatDuration(profile.metrics.continuousRemainingMin)} left)`;
 
@@ -2132,8 +2132,8 @@ function renderInsightsPanel(profile) {
   const exportAssignmentBlock = profile.exportAssignments?.length
     ? `
       <article class="insight-card">
-        <h4>Export napi kiosztás a sofőrhöz</h4>
-        <p class="insight-subline">Az Excel EXPORT lap betöltött, sofőrhöz rendelt sorai.</p>
+        <h4>Export napi kiosztás a gépjárművezetőhöz</h4>
+        <p class="insight-subline">Az Excel EXPORT lap betöltött, gépjárművezetőhöz rendelt sorai.</p>
         <ul class="insight-list export-assignment-list">
           ${exportAssignmentList}
         </ul>
@@ -2141,8 +2141,8 @@ function renderInsightsPanel(profile) {
     `
     : `
       <article class="insight-card">
-        <h4>Export napi kiosztás a sofőrhöz</h4>
-        <div class="empty-message">Ehhez a sofőrhöz nincs betöltött Export sor az effektív napon.</div>
+        <h4>Export napi kiosztás a gépjárművezetőhöz</h4>
+        <div class="empty-message">Ehhez a gépjárművezetőhöz nincs betöltött Export sor az effektív napon.</div>
       </article>
     `;
 
@@ -2157,7 +2157,7 @@ function renderInsightsPanel(profile) {
 
     <article class="insight-card">
       <h4>Következő pihenőpont ajánlások</h4>
-      <p class="insight-subline">A sofőr ${formatDuration(profile.metrics.breakDueMin)} múlva köteles pihenni. Elérhető opciók:</p>
+      <p class="insight-subline">A gépjárművezető ${formatDuration(profile.metrics.breakDueMin)} múlva köteles pihenni. Elérhető opciók:</p>
       <ul class="insight-list rest-list">
         ${restRecommendationList}
       </ul>
@@ -2182,7 +2182,7 @@ function renderInsightsPanel(profile) {
         <div class="compat-item ${profile.compatibility.canStartOnTime ? "ok" : "bad"}">Pickup időben indítható: ${profile.compatibility.canStartOnTime ? "Igen" : "Nem"}</div>
         <div class="compat-item ${profile.compatibility.canFinishInWindow ? "ok" : "bad"}">Delivery ablak tartható: ${profile.compatibility.canFinishInWindow ? "Igen" : "Nem"}</div>
         <div class="compat-item ${profile.compatibility.windowCompatible ? "ok" : "bad"}">Ablak-kompatibilitás: ${profile.compatibility.windowCompatible ? "Megfelel" : "Rizikós"}</div>
-        <div class="compat-item ${profile.compatibility.suggestSwap ? "bad" : "ok"}">Sofőrcsere javaslat: ${profile.compatibility.suggestSwap ? "Javasolt" : "Nem szükséges"}</div>
+        <div class="compat-item ${profile.compatibility.suggestSwap ? "bad" : "ok"}">Gépjárművezetőcsere javaslat: ${profile.compatibility.suggestSwap ? "Javasolt" : "Nem szükséges"}</div>
         <div class="compat-item ${profile.compatibility.requiresMandatoryRest ? "warn" : "ok"}">Kötelező pihenő beiktatás: ${profile.compatibility.requiresMandatoryRest ? "Szükséges" : "Nem szükséges"}</div>
       </div>
       <div class="compat-recommendation">${escapeHtml(profile.compatibility.recommendation)}</div>
@@ -2272,7 +2272,7 @@ function renderAlertsPanel(alerts, selectedDriverId) {
         >
           <div class="alert-top">
             <strong>${escapeHtml(alert.severity.toUpperCase())}</strong>
-            <span>Sofőr ${escapeHtml(alert.driverId)}</span>
+            <span>Gépjárművezető ${escapeHtml(alert.driverId)}</span>
           </div>
           <div class="alert-message">${escapeHtml(alert.message)}</div>
           <div class="alert-foot">Kattintás: timeline highlight + MapView fókusz</div>

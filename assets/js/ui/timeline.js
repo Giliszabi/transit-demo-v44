@@ -157,7 +157,7 @@ function bindTimelineBlockHoverTooltip(target, content) {
 
 window.addEventListener("fuvar:focus", (event) => {
   focusedFuvarId = event?.detail?.fuvarId || null;
-  rerenderCurrentTimeline();
+  focusTimelineToFuvarPickup(focusedFuvarId);
 });
 
 function normalizeSearchText(value) {
@@ -877,6 +877,63 @@ export function setTimelineWindowDayOffset(dayOffset = 0) {
   timelineOffsetHours = normalizedOffset * 24;
 }
 
+function getFuvarPickupDate(fuvarId) {
+  if (!fuvarId) {
+    return null;
+  }
+
+  const fuvar = FUVAROK.find((item) => item.id === fuvarId);
+  const pickupIso = fuvar?.felrakas?.ido;
+  if (!pickupIso) {
+    return null;
+  }
+
+  const pickupDate = new Date(pickupIso);
+  return Number.isFinite(pickupDate.getTime()) ? pickupDate : null;
+}
+
+function getTimelineWindowDayOffsetForDate(targetDate) {
+  const diffHours = (targetDate.getTime() - getBaseDate().getTime()) / (1000 * 60 * 60);
+  return Math.floor(diffHours / 24);
+}
+
+function getTimelineScrollTargetPx(targetDate, container) {
+  const targetX = dateToPosition(targetDate.toISOString());
+  const desiredLeft = targetX - (container.clientWidth * 0.35);
+  const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
+  return Math.max(0, Math.min(desiredLeft, maxScroll));
+}
+
+function focusTimelineToFuvarPickup(fuvarId) {
+  const pickupDate = getFuvarPickupDate(fuvarId);
+  if (!pickupDate) {
+    rerenderCurrentTimeline();
+    return;
+  }
+
+  const windowStart = getWindowStartDate();
+  const windowEnd = getWindowEndDate();
+  if (pickupDate < windowStart || pickupDate >= windowEnd) {
+    timelineOffsetHours = getTimelineWindowDayOffsetForDate(pickupDate) * 24;
+  }
+
+  rerenderCurrentTimeline();
+
+  requestAnimationFrame(() => {
+    const containerId = lastTimelineRenderState?.containerId;
+    if (!containerId) {
+      return;
+    }
+
+    const container = document.getElementById(containerId);
+    if (!container) {
+      return;
+    }
+
+    container.scrollLeft = getTimelineScrollTargetPx(pickupDate, container);
+  });
+}
+
 function notifyTimelineWindowChanged() {
   window.dispatchEvent(new CustomEvent("timeline:window-change", {
     detail: {
@@ -1097,6 +1154,38 @@ function getManualEventMeta(kind) {
     return { type: "standby", label: "Standby" };
   }
 
+  if (kind === "muszak") {
+    return { type: "muszak", label: "Műszak" };
+  }
+
+  if (kind === "elerhetoseg") {
+    return { type: "elerhetoseg", label: "Elérhetőség" };
+  }
+
+  if (kind === "rakodas") {
+    return { type: "rakodas", label: "Rakodás" };
+  }
+
+  if (kind === "varakozas") {
+    return { type: "varakozas", label: "Várakozás" };
+  }
+
+  if (kind === "vamkezeles") {
+    return { type: "vamkezeles", label: "Vámkezelés" };
+  }
+
+  if (kind === "tankolas") {
+    return { type: "tankolas", label: "Tankolás" };
+  }
+
+  if (kind === "muszaki_hiba") {
+    return { type: "muszaki_hiba", label: "Műszaki hiba" };
+  }
+
+  if (kind === "egyeb") {
+    return { type: "egyeb", label: "Egyéb esemény" };
+  }
+
   return { type: "beteg", label: "Betegszab." };
 }
 
@@ -1104,6 +1193,14 @@ function getDefaultDurationHours(eventKind) {
   if (eventKind === "piheno") return 9;
   if (eventKind === "szabadsag") return 24;
   if (eventKind === "beteg") return 24;
+  if (eventKind === "muszak") return 8;
+  if (eventKind === "elerhetoseg") return 8;
+  if (eventKind === "rakodas") return 2;
+  if (eventKind === "varakozas") return 2;
+  if (eventKind === "vamkezeles") return 2;
+  if (eventKind === "tankolas") return 1;
+  if (eventKind === "muszaki_hiba") return 4;
+  if (eventKind === "egyeb") return 2;
   if (eventKind === "szerviz") return 8;
   if (eventKind === "standby") return 8;
   if (eventKind === "allas") return 8;
@@ -1119,7 +1216,7 @@ function rerenderCurrentTimeline() {
   renderTimeline(lastTimelineRenderState.containerId, lastTimelineRenderState.groups);
 }
 
-function addManualDriverEvent(resource, eventKind, startDate, endDate) {
+function addManualDriverEvent(resource, eventKind, startDate, endDate, options = {}) {
   if (!resource.timeline) {
     resource.timeline = [];
   }
@@ -1138,11 +1235,12 @@ function addManualDriverEvent(resource, eventKind, startDate, endDate) {
   }
 
   const meta = getManualEventMeta(eventKind);
+  const customLabel = String(options.customLabel || "").trim();
   resource.timeline.push({
     start: startIso,
     end: endIso,
     type: meta.type,
-    label: meta.label,
+    label: customLabel || meta.label,
     synthetic: false,
     manual: true
   });
@@ -1194,7 +1292,7 @@ function setEndFromStart(startInput, endInput, durationHours) {
   endInput.value = formatLocalDateTimeInput(endDate);
 }
 
-function askAndCreateManualEvent(resource, eventKind, defaultStart) {
+function askAndCreateManualEvent(resource, eventKind, defaultStart, options = {}) {
   closeTimelineEventForm();
 
   const formHost = document.createElement("div");
@@ -1202,10 +1300,12 @@ function askAndCreateManualEvent(resource, eventKind, defaultStart) {
 
   const defaultDurationHours = getDefaultDurationHours(eventKind);
   const defaultEnd = new Date(defaultStart.getTime() + defaultDurationHours * 3600 * 1000);
+  const requireCustomLabel = Boolean(options.requireCustomLabel);
+  const formTitle = options.formTitle || `${getManualEventMeta(eventKind).label} hozzáadása`;
 
   formHost.innerHTML = `
     <div class="timeline-event-form" role="dialog" aria-modal="true" aria-label="Esemény hozzáadása">
-      <div class="timeline-event-form-title">${getManualEventMeta(eventKind).label} hozzáadása</div>
+      <div class="timeline-event-form-title">${formTitle}</div>
       <label class="timeline-event-form-label">
         Kezdés dátum és idő
         <input class="timeline-event-form-input" name="start" type="datetime-local" value="${formatLocalDateTimeInput(defaultStart)}" />
@@ -1214,6 +1314,12 @@ function askAndCreateManualEvent(resource, eventKind, defaultStart) {
         Befejezés dátum és idő
         <input class="timeline-event-form-input" name="end" type="datetime-local" value="${formatLocalDateTimeInput(defaultEnd)}" />
       </label>
+      ${requireCustomLabel ? `
+        <label class="timeline-event-form-label">
+          Esemény megnevezése
+          <input class="timeline-event-form-input" name="eventLabel" type="text" placeholder="Pl. Telephelyi adminisztráció" maxlength="80" />
+        </label>
+      ` : ""}
       ${eventKind === "piheno" ? `
         <div class="timeline-event-form-quick-title">Gyors időtartam</div>
         <div class="timeline-event-form-quick-grid">
@@ -1236,6 +1342,7 @@ function askAndCreateManualEvent(resource, eventKind, defaultStart) {
   const form = formHost.querySelector(".timeline-event-form");
   const startInput = formHost.querySelector('input[name="start"]');
   const endInput = formHost.querySelector('input[name="end"]');
+  const labelInput = formHost.querySelector('input[name="eventLabel"]');
   const cancelBtn = formHost.querySelector(".timeline-event-form-cancel");
   const saveBtn = formHost.querySelector(".timeline-event-form-save");
   const quickButtons = Array.from(formHost.querySelectorAll(".timeline-event-quick-btn"));
@@ -1303,7 +1410,15 @@ function askAndCreateManualEvent(resource, eventKind, defaultStart) {
       return;
     }
 
-    const added = addManualDriverEvent(resource, eventKind, parsedStart, parsedEnd);
+    const customLabel = String(labelInput?.value || "").trim();
+    if (requireCustomLabel && !customLabel) {
+      alert("Adj meg egy eseménynevet.");
+      return;
+    }
+
+    const added = addManualDriverEvent(resource, eventKind, parsedStart, parsedEnd, {
+      customLabel
+    });
     if (added) {
       closeTimelineEventForm();
     }
@@ -1331,12 +1446,57 @@ function buildContextActions(resource, resourceType, clickedDate) {
         action: () => askAndCreateManualEvent(resource, "piheno", clickedDate)
       },
       {
-        label: "Szabadság hozzáadása",
-        action: () => askAndCreateManualEvent(resource, "szabadsag", clickedDate)
+        label: "Státusz események",
+        children: [
+          {
+            label: "Szabadság",
+            action: () => askAndCreateManualEvent(resource, "szabadsag", clickedDate)
+          },
+          {
+            label: "Betegszabadság",
+            action: () => askAndCreateManualEvent(resource, "beteg", clickedDate)
+          },
+          {
+            label: "Műszak megjelölés",
+            action: () => askAndCreateManualEvent(resource, "muszak", clickedDate)
+          },
+          {
+            label: "Elérhetőség megjelölés",
+            action: () => askAndCreateManualEvent(resource, "elerhetoseg", clickedDate)
+          }
+        ]
       },
       {
-        label: "Betegszabadság hozzáadása",
-        action: () => askAndCreateManualEvent(resource, "beteg", clickedDate)
+        label: "Operatív események",
+        children: [
+          {
+            label: "Rakodás",
+            action: () => askAndCreateManualEvent(resource, "rakodas", clickedDate)
+          },
+          {
+            label: "Várakozás",
+            action: () => askAndCreateManualEvent(resource, "varakozas", clickedDate)
+          },
+          {
+            label: "Vámkezelés",
+            action: () => askAndCreateManualEvent(resource, "vamkezeles", clickedDate)
+          },
+          {
+            label: "Tankolás",
+            action: () => askAndCreateManualEvent(resource, "tankolas", clickedDate)
+          },
+          {
+            label: "Műszaki hiba",
+            action: () => askAndCreateManualEvent(resource, "muszaki_hiba", clickedDate)
+          }
+        ]
+      },
+      {
+        label: "Egyéb esemény",
+        action: () => askAndCreateManualEvent(resource, "egyeb", clickedDate, {
+          requireCustomLabel: true,
+          formTitle: "Egyéb esemény rögzítése"
+        })
       }
     ];
   }
@@ -1386,28 +1546,8 @@ function buildContextActions(resource, resourceType, clickedDate) {
 function showTimelineContextMenu(event, resource, resourceType, clickedDate) {
   closeTimelineContextMenu();
 
-  const menu = document.createElement("div");
-  menu.className = "timeline-context-menu";
-
   const actions = buildContextActions(resource, resourceType, clickedDate);
-  actions.forEach((item) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "timeline-context-menu-item";
-    btn.textContent = item.label;
-
-    if (item.disabled) {
-      btn.disabled = true;
-      btn.classList.add("disabled");
-    } else {
-      btn.addEventListener("click", () => {
-        closeTimelineContextMenu();
-        item.action();
-      });
-    }
-
-    menu.appendChild(btn);
-  });
+  const menu = buildTimelineContextMenu(actions);
 
   menu.style.left = `${event.pageX}px`;
   menu.style.top = `${event.pageY}px`;
@@ -1418,34 +1558,59 @@ function showTimelineContextMenu(event, resource, resourceType, clickedDate) {
 
 function showTimelineCustomContextMenu(event, actions) {
   closeTimelineContextMenu();
-
-  const menu = document.createElement("div");
-  menu.className = "timeline-context-menu";
-
-  actions.forEach((item) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "timeline-context-menu-item";
-    btn.textContent = item.label;
-
-    if (item.disabled) {
-      btn.disabled = true;
-      btn.classList.add("disabled");
-    } else {
-      btn.addEventListener("click", () => {
-        closeTimelineContextMenu();
-        item.action();
-      });
-    }
-
-    menu.appendChild(btn);
-  });
+  const menu = buildTimelineContextMenu(actions);
 
   menu.style.left = `${event.pageX}px`;
   menu.style.top = `${event.pageY}px`;
 
   document.body.appendChild(menu);
   openTimelineContextMenu = menu;
+}
+
+function buildTimelineContextMenu(actions = []) {
+  const menu = document.createElement("div");
+  menu.className = "timeline-context-menu";
+
+  const appendAction = (parent, item) => {
+    const entry = document.createElement("div");
+    entry.className = "timeline-context-menu-entry";
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "timeline-context-menu-item";
+    btn.textContent = item.label;
+
+    const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+    if (hasChildren) {
+      btn.classList.add("has-submenu");
+      btn.setAttribute("aria-haspopup", "menu");
+    }
+
+    if (item.disabled) {
+      btn.disabled = true;
+      btn.classList.add("disabled");
+    } else if (!hasChildren && typeof item.action === "function") {
+      btn.addEventListener("click", () => {
+        closeTimelineContextMenu();
+        item.action();
+      });
+    }
+
+    entry.appendChild(btn);
+
+    if (hasChildren) {
+      const submenu = document.createElement("div");
+      submenu.className = "timeline-context-submenu";
+
+      item.children.forEach((child) => appendAction(submenu, child));
+      entry.appendChild(submenu);
+    }
+
+    parent.appendChild(entry);
+  };
+
+  actions.forEach((item) => appendAction(menu, item));
+  return menu;
 }
 
 function enableTimelineRowContextMenu(bar, resource, resourceType) {
@@ -2663,13 +2828,16 @@ function renderResourceRow(parent, r, type) {
       if (visibleBlock.type === "fuvar") {
         const linkedFuvar = findFuvarByTimelineBlock(visibleBlock) || findFuvarByTimelineBlock(block);
         if (linkedFuvar) {
+          const transitRoleInfo = getDomesticTransitRoleInfoForBlock(visibleBlock) || getDomesticTransitRoleInfo(linkedFuvar);
           const focusFuvarBlock = (event) => {
             event.preventDefault();
             event.stopPropagation();
             window.dispatchEvent(new CustomEvent("fuvar:focus", {
               detail: {
                 fuvarId: linkedFuvar.id,
-                source: "timeline"
+                source: "timeline",
+                transitRole: transitRoleInfo?.role || null,
+                linkedFuvarId: transitRoleInfo?.linkedFuvar?.id || null
               }
             }));
             dispatchResourceSelection();
@@ -2731,7 +2899,7 @@ export function renderTimeline(containerId, groups) {
   const isDayFilterActive = dayVehicleFilterMode !== "all";
   let hasAnyDayFilterMatch = false;
 
-  // Csoportok (sofőr / vontató / pótkocsi)
+  // Csoportok (gépjárművezető / vontató / pótkocsi)
   groups.forEach(g => {
     const group = document.createElement("section");
     group.className = "timeline-group";
@@ -2933,7 +3101,7 @@ function clipBlockToWindow(block) {
 }
 
 function getKindFromGroupName(name) {
-  if (name.includes("Sofőr")) return "sofor";
+  if (name.includes("Gépjárművezető")) return "sofor";
   if (name.includes("Vontató")) return "vontato";
   return "potkocsi";
 }

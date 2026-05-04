@@ -81,7 +81,7 @@ function buildFuvarBlockForPartner(fuvar) {
     partnerSummaryParts.push(`Ar: ${priceLabel}`);
   }
   if (driverLabel !== "-") {
-    partnerSummaryParts.push(`Sofor: ${driverLabel}`);
+    partnerSummaryParts.push(`Gépjárművezető: ${driverLabel}`);
   }
   if (tractor !== "-" || trailer !== "-") {
     partnerSummaryParts.push(`Jarmu: ${tractor} / ${trailer}`);

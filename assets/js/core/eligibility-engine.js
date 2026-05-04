@@ -290,15 +290,15 @@ function evaluateGlobalAvailability(driver, schedule, vehicles, planningDate) {
   earliestStart = addMinutes(earliestStart, 5 * 60) || earliestStart;
 
   if (!getDriverActive(driver)) {
-    reasons.push(createReason("INACTIVE", "A sofőr inaktív."));
+    reasons.push(createReason("INACTIVE", "A gépjárművezető inaktív."));
   }
 
   const scheduleState = getScheduleState(schedule, planningDate);
   if (scheduleState.state === "LEAVE") {
-    reasons.push(createReason("ON_LEAVE", "A sofőr szabadságon van."));
+    reasons.push(createReason("ON_LEAVE", "A gépjárművezető szabadságon van."));
     earliestStart = addDays(earliestStart, 1) || earliestStart;
   } else if (scheduleState.state === "SICK") {
-    reasons.push(createReason("SICK_LEAVE", "A sofőr betegállományban van."));
+    reasons.push(createReason("SICK_LEAVE", "A gépjárművezető betegállományban van."));
     earliestStart = addDays(earliestStart, 1) || earliestStart;
   } else if (scheduleState.state === "REST") {
     reasons.push(createReason("REST_DAY", "A mai nap a munkarend szerint pihenőnap."));
@@ -316,7 +316,7 @@ function evaluateGlobalAvailability(driver, schedule, vehicles, planningDate) {
 
   const driving = getDrivingProfile(driver);
   if ((driving.restMinutesEarned || 0) < 45 && (driving.dailyDrivenHours || 0) > 4.5) {
-    reasons.push(createReason("REQUIRED_REST_PENDING", "A sofőrnek kötelező szünetet kell tartania."));
+    reasons.push(createReason("REQUIRED_REST_PENDING", "A gépjárművezetőnek kötelező szünetet kell tartania."));
     earliestStart = addMinutes(earliestStart, 45 - (driving.restMinutesEarned || 0)) || earliestStart;
   }
 
@@ -346,7 +346,7 @@ export function evaluateDriverAgainstJob({ driver, schedule, vehicles, job, plan
 
   const requiredHands = getJobRequiredHands(job);
   if (requiredHands !== getDriverRequiredHands(driver)) {
-    reasons.push(createReason("HAND_COUNT_MISMATCH", `A fuvar ${requiredHands} kezes, a sofőr ${getDriverRequiredHands(driver)} kezes.`));
+    reasons.push(createReason("HAND_COUNT_MISMATCH", `A fuvar ${requiredHands} kezes, a gépjárművezető ${getDriverRequiredHands(driver)} kezes.`));
   }
 
   if (getJobAdr(job) && !getDriverAdr(driver)) {
@@ -356,7 +356,7 @@ export function evaluateDriverAgainstJob({ driver, schedule, vehicles, job, plan
   const blockedCountries = new Set((driver?.blockedCountries || []).map((item) => normalizeText(item)));
   const countryTokens = getCountryTokens(job);
   if (countryTokens.some((token) => blockedCountries.has(token))) {
-    reasons.push(createReason("BLOCKED_COUNTRY", "A fuvar tiltott országot érint a sofőr számára."));
+    reasons.push(createReason("BLOCKED_COUNTRY", "A fuvar tiltott országot érint a gépjárművezető számára."));
   }
 
   const driving = getDrivingProfile(driver);
@@ -378,7 +378,7 @@ export function evaluateDriverAgainstJob({ driver, schedule, vehicles, job, plan
   const blockingEnd = findBlockingTimelineEnd(timeline, pickupAt, dropoffAt, { ignoredJob: job });
   const effectiveEarliestStart = blockingEnd && blockingEnd > globalState.earliestStart ? blockingEnd : globalState.earliestStart;
   if (pickupDate < effectiveEarliestStart) {
-    reasons.push(createReason("JOB_TIME_WINDOW_MISS", "A fuvar indulási ideje korábbi, mint a sofőr első lehetséges indulása."));
+    reasons.push(createReason("JOB_TIME_WINDOW_MISS", "A fuvar indulási ideje korábbi, mint a gépjárművezető első lehetséges indulása."));
   }
 
   return {

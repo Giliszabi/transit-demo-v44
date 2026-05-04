@@ -1,7 +1,7 @@
 import { DEMO_NEARBY_FREE_PAIR_SCENARIO } from "./demo-warning-scenario.js";
 import { FUVAROK_REAL } from "./fuvarok-real.js";
 
-const FUVAR_DATE_SHIFT_DAYS = 10;
+const FUVAR_DATE_SHIFT_DAYS = 15;
 const MEBIZO_COMPANIES = [
   "Hankook Tire Magyarorszag Kft",
   "NNOCORE VISION KFT",
@@ -144,14 +144,14 @@ function setFuvarScheduleById(fuvarokList, fuvarId, pickupIso, dropoffIso) {
 }
 
 function applyOptimalDemoScenario(fuvarokList) {
-  setFuvarScheduleById(fuvarokList, "FF-26-0004814", "2026-04-20T19:30", "2026-04-21T09:15");
-  setFuvarScheduleById(fuvarokList, "UTO-FF-26-0004814", "2026-04-21T09:15", "2026-04-21T10:00");
+  setFuvarScheduleById(fuvarokList, "FF-26-0004814", "2026-05-05T19:30", "2026-05-06T09:15");
+  setFuvarScheduleById(fuvarokList, "UTO-FF-26-0004814", "2026-05-06T09:15", "2026-05-06T10:00");
 
-  setFuvarScheduleById(fuvarokList, "FF-26-0004137", "2026-04-21T13:00", "2026-04-22T02:00");
-  setFuvarScheduleById(fuvarokList, "ELO-FF-26-0004137", "2026-04-21T12:15", "2026-04-21T13:00");
+  setFuvarScheduleById(fuvarokList, "FF-26-0004137", "2026-05-06T13:00", "2026-05-07T02:00");
+  setFuvarScheduleById(fuvarokList, "ELO-FF-26-0004137", "2026-05-06T12:15", "2026-05-06T13:00");
 
-  setFuvarScheduleById(fuvarokList, "FF-26-0004019", "2026-04-22T00:30", "2026-04-22T15:30");
-  setFuvarScheduleById(fuvarokList, "UTO-FF-26-0004019", "2026-04-22T15:30", "2026-04-22T16:15");
+  setFuvarScheduleById(fuvarokList, "FF-26-0004019", "2026-05-07T00:30", "2026-05-07T15:30");
+  setFuvarScheduleById(fuvarokList, "UTO-FF-26-0004019", "2026-05-07T15:30", "2026-05-07T16:15");
 }
 
 function getStableCompanyIndex(seed) {

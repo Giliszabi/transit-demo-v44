@@ -377,7 +377,7 @@ function createAssemblyTooltip(assembly, locationLabel, progressLabel = "-") {
       <div class="assembly-tooltip-title">Szerelveny • ${escapeHtml(assembly.id)}</div>
       <div>📍 ${escapeHtml(locationLabel)}</div>
       <div>🧭 Haladas: ${escapeHtml(progressLabel)}</div>
-      <div>👤 Sofor: ${escapeHtml(soforName)}</div>
+      <div>👤 Gépjárművezető: ${escapeHtml(soforName)}</div>
       <div>🚛 Vontato: ${escapeHtml(vontatoRendszam)}</div>
       <div>🚚 Potkocsi: ${escapeHtml(potkocsiRendszam)}</div>
       <div class="assembly-tooltip-sep">Fuvarok:</div>

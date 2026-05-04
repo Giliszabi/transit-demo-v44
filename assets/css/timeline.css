@@ -5,8 +5,8 @@
   max-width: 100%;
   overflow-x: auto;
   overflow-y: auto;
-  min-height: min(60vh, 680px);
-  max-height: min(60vh, 680px);
+  min-height: min(86vh, 1040px);
+  max-height: min(86vh, 1040px);
   position: relative;
   --timeline-nav-height: 46px;
   padding-bottom: 8px;
@@ -17,11 +17,16 @@
   max-width: 100%;
   overflow-x: auto;
   overflow-y: auto;
-  min-height: min(60vh, 680px);
-  max-height: min(60vh, 680px);
+  min-height: min(86vh, 1040px);
+  max-height: min(86vh, 1040px);
   position: relative;
   --timeline-nav-height: 46px;
   padding-bottom: 8px;
+}
+
+#assembly-timeline-container .timeline-timescale {
+  top: var(--timeline-nav-height);
+  z-index: 44;
 }
 
 #jarat-timeline-container {
@@ -545,6 +550,10 @@
   z-index: 1200;
 }
 
+.timeline-context-menu-entry {
+  position: relative;
+}
+
 .timeline-context-menu-item {
   border: 0;
   background: #1a212a;
@@ -558,6 +567,40 @@
 
 .timeline-context-menu-item:hover {
   background: #25313d;
+}
+
+.timeline-context-menu-item.has-submenu {
+  padding-right: 28px;
+}
+
+.timeline-context-menu-item.has-submenu::after {
+  content: "›";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.8;
+  font-size: 14px;
+}
+
+.timeline-context-submenu {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 6px);
+  min-width: 230px;
+  background: #0f131a;
+  border: 1px solid #3a4a58;
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+  display: none;
+  gap: 4px;
+  z-index: 1210;
+}
+
+.timeline-context-menu-entry:hover > .timeline-context-submenu,
+.timeline-context-menu-entry:focus-within > .timeline-context-submenu {
+  display: grid;
 }
 
 .timeline-context-menu-item.disabled,
@@ -1395,6 +1438,7 @@
   grid-template-columns: 214px max-content;
   cursor: pointer;
   transition: box-shadow 0.18s ease, border-color 0.18s ease;
+  background: #060a10;
 }
 
 .assembly-row-draft {
@@ -1464,6 +1508,9 @@
   align-items: center;
   justify-content: center;
   cursor: default;
+  background: inherit;
+  border-right: 0;
+  box-shadow: none;
 }
 
 .assembly-main {
@@ -1479,8 +1526,10 @@
 }
 
 .assembly-bar {
-  height: 46px;
-  background: #111317;
+  height: auto;
+  min-height: 46px;
+  align-self: stretch;
+  background: inherit;
 }
 
 .jarat-bar {
@@ -1577,6 +1626,10 @@
   border: 1px solid rgba(79, 195, 247, 0.18);
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(17, 23, 30, 0.96), rgba(11, 14, 18, 0.96));
+  position: sticky;
+  top: calc(var(--timeline-nav-height) + 40px);
+  left: 0;
+  z-index: 43;
 }
 
 .assembly-draft-board-header {

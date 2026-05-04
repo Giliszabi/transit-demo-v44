@@ -206,6 +206,51 @@ function getVisibleEntriesByRole(queue, role) {
   return sortEntries(filtered, state.sort);
 }
 
+function filterEntriesByIdScope(entries, idScope) {
+  if (!Array.isArray(idScope) || idScope.length === 0) {
+    return entries;
+  }
+
+  const allowed = new Set(idScope);
+  return entries.filter((entry) => {
+    const domesticId = entry?.domesticFuvar?.id || "";
+    const linkedId = entry?.linkedFuvar?.id || "";
+    return allowed.has(domesticId) || allowed.has(linkedId);
+  });
+}
+
+function matchesRelayQuery(entry, query) {
+  const term = normalizeSearchText(query);
+  if (!term) {
+    return true;
+  }
+
+  const domestic = entry?.domesticFuvar;
+  const linked = entry?.linkedFuvar;
+  const haystack = [
+    domestic?.id,
+    domestic?.megnevezes,
+    domestic?.felrakas?.cim,
+    domestic?.lerakas?.cim,
+    linked?.id,
+    linked?.megnevezes,
+    linked?.felrakas?.cim,
+    linked?.lerakas?.cim
+  ]
+    .map((value) => normalizeSearchText(value))
+    .join(" ");
+
+  return haystack.includes(term);
+}
+
+function filterEntriesByQuery(entries, query) {
+  if (!query) {
+    return entries;
+  }
+
+  return entries.filter((entry) => matchesRelayQuery(entry, query));
+}
+
 export function renderTransitTaskBoard(containerId, options = {}) {
   const container = document.getElementById(containerId);
   if (!container) {
@@ -213,7 +258,7 @@ export function renderTransitTaskBoard(containerId, options = {}) {
   }
 
   if (options.hidden) {
-    container.innerHTML = '<div class="domestic-relay-board-muted">A kapcsolt belföldi tervező spedicció szűrő mellett rejtve van.</div>';
+    container.innerHTML = '<div class="domestic-relay-board-muted">A kapcsolt belföldi tervező spedíció szűrő mellett rejtve van.</div>';
     return;
   }
 
@@ -225,15 +270,20 @@ export function renderTransitTaskBoard(containerId, options = {}) {
     state.scrollLeft = previousWrapper.scrollLeft;
   }
   const queue = buildDomesticTransitQueue(FUVAROK);
-  const source = role === "elofutas" ? queue.elofutas : queue.utofutas;
-  const visibleEntries = getVisibleEntriesByRole(queue, role);
+  const sourceAll = role === "elofutas" ? queue.elofutas : queue.utofutas;
+  const scopedById = filterEntriesByIdScope(sourceAll, options.idScope);
+  const scopedSource = filterEntriesByQuery(scopedById, options.query || "");
+  const scopedQueue = role === "elofutas"
+    ? { ...queue, elofutas: scopedSource }
+    : { ...queue, utofutas: scopedSource };
+  const visibleEntries = getVisibleEntriesByRole(scopedQueue, role);
   const title = getRoleTitle(role);
 
   container.innerHTML = `
     <div class="domestic-relay-board" data-relay-role="${role}">
       <div class="domestic-relay-column-head">
         <div class="domestic-relay-column-title">${title}</div>
-        <div class="domestic-relay-column-count">${visibleEntries.length}${visibleEntries.length !== source.length ? ` / ${source.length}` : ""} db</div>
+        <div class="domestic-relay-column-count">${visibleEntries.length}${visibleEntries.length !== scopedSource.length ? ` / ${scopedSource.length}` : ""} db</div>
       </div>
       <div class="domestic-relay-controls-row">
         <label class="domestic-relay-search-field">

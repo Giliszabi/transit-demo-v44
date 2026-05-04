@@ -1,5 +1,5 @@
 // ======================================================================
-// TransIT v4.4 – RESOURCE PANEL (Sofőr / Vontató / Pótkocsi)
+// TransIT v4.4 – RESOURCE PANEL (Gépjárművezető / Vontató / Pótkocsi)
 // 3 külön scrollos oszlop, mindegyik kattintható és matchinget indít
 // ======================================================================
 
@@ -222,14 +222,14 @@ export function renderResourcePanel(containerId, FUVAROK, onSelectResource, opti
 
       <details class="resource-column" data-resource-type="sofor" ${openState.sofor ? "open" : ""}>
         <summary class="resource-column-summary">
-          <span class="resource-column-title">👤 Sofőrök</span>
+          <span class="resource-column-title">👤 Gépjárművezetők</span>
           <span class="resource-column-controls">
             <input
               class="resource-search-input"
               data-resource-type="sofor"
               type="search"
               placeholder="Keresés"
-              aria-label="Sofőr keresés"
+              aria-label="Gépjárművezető keresés"
             />
             <span class="resource-toggle-icon" aria-hidden="true"></span>
           </span>
@@ -296,7 +296,7 @@ function renderSpedicioPartnerPanel(container, FUVAROK, onSelectResource, partne
     <div class="resource-columns">
       <details class="resource-column" data-resource-type="partner" open>
         <summary class="resource-column-summary">
-          <span class="resource-column-title">🤝 Spediciós partnerek</span>
+          <span class="resource-column-title">🤝 Spedíciós partnerek</span>
           <span class="resource-column-controls">
             <input
               class="resource-search-input"
@@ -418,7 +418,7 @@ function renderLinkedInfo(resourceType, resource) {
   if (resourceType === "vontato") {
     const linkedSofor = getResourceLabelByTypeAndId("sofor", resource.linkedSoforId);
     const linkedPotkocsi = getResourceLabelByTypeAndId("potkocsi", resource.linkedPotkocsiId);
-    lines.push(`👤 Sofőr: ${linkedSofor || "-"}`);
+    lines.push(`👤 Gépjárművezető: ${linkedSofor || "-"}`);
     lines.push(`🚚 Pótkocsi: ${linkedPotkocsi || "-"}`);
   }
 
@@ -505,7 +505,7 @@ function renderSoforList(targetId, list, FUVAROK, onSelectResource, selectedFuva
   const sortedList = applySoforSort(filteredList);
 
   if (sortedList.length === 0) {
-    renderEmptyResourceState(el, "Nincs megfelelő sofőr a kijelölt fuvarhoz.");
+    renderEmptyResourceState(el, "Nincs megfelelő gépjárművezető a kijelölt fuvarhoz.");
     return;
   }
 

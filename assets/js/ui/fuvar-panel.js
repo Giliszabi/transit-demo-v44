@@ -34,7 +34,7 @@ const BASE_CARD_COLUMN_OPTIONS = [
   { id: "distance", label: "Távolság" },
   { id: "type", label: "Típus" },
   { id: "status", label: "Státusz" },
-  { id: "driver", label: "Sofőr" },
+  { id: "driver", label: "Gépjárművezető" },
   { id: "tractor", label: "Vontató" },
   { id: "trailer", label: "Pótkocsi" }
 ];
@@ -74,7 +74,7 @@ const EXCEL_UNIFIED_FIELD_LABELS = [...new Set([
   "Hátralévő vezetési idő (valós)",
   "Összes költség",
   "Összes költség /KM",
-  "Összes sofőr költség /KM",
+  "Összes gépjárművezető költség /KM",
   "Összes vontató költség /KM",
   "Lerakó ország",
   "Akasztási magasság",
@@ -89,11 +89,11 @@ const EXCEL_UNIFIED_FIELD_LABELS = [...new Set([
   "Vontató amortizáció /KM",
   "Vontató biztosítás /KM",
   "Vontató ITS /KM",
-  "Sofőr napidíj /KM",
-  "Sofőr ADR költség /KM",
-  "Sofőr Forduló díj /KM",
-  "Sofőr távolság érték /KM",
-  "Sofőr hűség bónusz /KM",
+  "Gépjárművezető napidíj /KM",
+  "Gépjárművezető ADR költség /KM",
+  "Gépjárművezető Forduló díj /KM",
+  "Gépjárművezető távolság érték /KM",
+  "Gépjárművezető hűség bónusz /KM",
   "Foglaltság",
   "Rövid munka",
   "Rövid munka egyezőség",
@@ -496,7 +496,7 @@ function getExcelFieldValue(fuvar, excelLabel, context) {
   if (lowerLabel === normalizeText("Pót") || lowerLabel === normalizeText("Ráosztott Pót típus")) {
     return context.potkocsiName;
   }
-  if (lowerLabel === normalizeText("1. Sofőr") || lowerLabel === normalizeText("2. Sofőr") || lowerLabel === normalizeText("Nemzetközi sofőr 1") || lowerLabel === normalizeText("Nemzetközi sofőr 2")) {
+  if (lowerLabel === normalizeText("1. Gépjárművezető") || lowerLabel === normalizeText("2. Gépjárművezető") || lowerLabel === normalizeText("Nemzetközi gépjárművezető 1") || lowerLabel === normalizeText("Nemzetközi gépjárművezető 2")) {
     return context.soforName;
   }
   if (lowerLabel === normalizeText("Menetirányítás egység")) {
@@ -514,7 +514,7 @@ function getExcelFieldValue(fuvar, excelLabel, context) {
   if (lowerLabel === normalizeText("Összes költség /KM")) {
     return Number.isFinite(costPerKm) ? `${costPerKm.toFixed(0)} Ft/km` : "-";
   }
-  if (lowerLabel === normalizeText("Összes sofőr költség /KM")) {
+  if (lowerLabel === normalizeText("Összes gépjárművezető költség /KM")) {
     return Number.isFinite(costPerKm) ? `${(costPerKm * 0.44).toFixed(0)} Ft/km` : "-";
   }
   if (lowerLabel === normalizeText("Összes vontató költség /KM")) {
@@ -1577,7 +1577,7 @@ function openSpedicioPartnerPicker(initialPartner = "") {
     const overlay = document.createElement("div");
     overlay.className = "spediccio-modal-overlay";
     overlay.innerHTML = `
-      <div class="spediccio-modal spediccio-partner-modal" role="dialog" aria-modal="true" aria-label="Spediciós partner választása">
+      <div class="spediccio-modal spediccio-partner-modal" role="dialog" aria-modal="true" aria-label="Spedíciós partner választása">
         <div class="spediccio-modal-header">
           <h3>Partner kiválasztása</h3>
           <button type="button" class="spediccio-modal-close" aria-label="Bezárás">✕</button>
@@ -1750,7 +1750,7 @@ export function openSpedicioOrderFormModal(fuvar) {
           </label>
 
           <label>
-            <span>Spediciós partner</span>
+            <span>Spedíciós partner</span>
             <input name="partnerName" type="text" value="" />
           </label>
 
@@ -1773,12 +1773,12 @@ export function openSpedicioOrderFormModal(fuvar) {
           </label>
 
           <label>
-            <span>Sofőr 1</span>
+            <span>Gépjárművezető 1</span>
             <input name="driver1" type="text" value="" />
           </label>
 
           <label>
-            <span>Sofőr 2</span>
+            <span>Gépjárművezető 2</span>
             <input name="driver2" type="text" value="" />
           </label>
 
@@ -1886,8 +1886,8 @@ function renderTag(tag, extraClass = "") {
           type="button"
           class="fuvar-tag-remove"
           data-action="remove-spediccio"
-          aria-label="Spedició jelölés törlése"
-          title="Spedició jelölés törlése"
+          aria-label="Spedíció jelölés törlése"
+          title="Spedíció jelölés törlése"
         >x</button>
       </span>
     `;
@@ -2498,7 +2498,7 @@ function renderFuvarAssignment(fuvar) {
   return `
     <div class="fuvar-resource-assignment">
       <div class="fuvar-resource-assignment-title">Társított erőforrások</div>
-      <div class="fuvar-resource-assignment-row">👤 Sofőr: ${soforName}</div>
+      <div class="fuvar-resource-assignment-row">👤 Gépjárművezető: ${soforName}</div>
       <div class="fuvar-resource-assignment-row">🚛 Vontató: ${vontatoName}</div>
       <div class="fuvar-resource-assignment-row">🚚 Pótkocsi: ${potkocsiName}</div>
       <div class="fuvar-resource-assignment-actions">
@@ -2538,14 +2538,14 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
       </label>
       <label class="fuvar-filter-field fuvar-filter-search-field">
         <span>Keresés</span>
-        <input class="fuvar-filter-search" data-filter-role="query" type="search" placeholder="Fuvar, cím, sofőr, vontató..." />
+        <input class="fuvar-filter-search" data-filter-role="query" type="search" placeholder="Fuvar, cím, gépjárművezető, vontató..." />
       </label>
       <button class="btn fuvar-filter-toggle" type="button" data-toggle="adr"><span class="fuvar-filter-toggle-label">ADR</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
       <button class="btn fuvar-filter-toggle" type="button" data-toggle="surgos"><span class="fuvar-filter-toggle-label">Sürgős</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
       <button class="btn fuvar-filter-toggle" type="button" data-toggle="elapsed"><span class="fuvar-filter-toggle-label">Elmaradt</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
       <button class="btn fuvar-filter-toggle fuvar-filter-ready" type="button" data-toggle="ready"><span class="fuvar-filter-toggle-label">Kész</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
       <button class="btn fuvar-filter-toggle fuvar-filter-planning" type="button" data-toggle="planning"><span class="fuvar-filter-toggle-label">Tervezés alatt</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
-      <button class="btn fuvar-filter-toggle fuvar-filter-spediccio" type="button" data-toggle="spediccio"><span class="fuvar-filter-toggle-label">Spedicció</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
+      <button class="btn fuvar-filter-toggle fuvar-filter-spediccio" type="button" data-toggle="spediccio"><span class="fuvar-filter-toggle-label">Spedíció</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
       <button class="btn fuvar-filter-toggle" type="button" data-toggle="today"><span class="fuvar-filter-toggle-label">Ma</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
       <button class="btn fuvar-filter-toggle" type="button" data-toggle="tomorrow"><span class="fuvar-filter-toggle-label">Holnap</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
       <button class="btn fuvar-filter-toggle" type="button" data-toggle="day2"><span class="fuvar-filter-toggle-label">Holnapután</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>

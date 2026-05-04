@@ -4,7 +4,7 @@ import { evaluateDriverAgainstJob } from "../core/eligibility-engine.js";
 
 // =======================================================
 // TransIT v4.4 - MATCHING ENGINE (Bidirectional)
-// Sofőr / Vontató / Pótkocsi ↔ Fuvar
+// Gépjárművezető / Vontató / Pótkocsi ↔ Fuvar
 // Szabályalapú relevancia-értékelés
 // =======================================================
 
@@ -188,21 +188,21 @@ export function evaluateSoforForFuvar(sofor, fuvar) {
   }
 
   // Belföldi vs nemzetközi
-  // quick-flow profil: ha flexibility >= 70%, belföldes sofőr csak figyelmeztetés
+  // quick-flow profil: ha flexibility >= 70%, belföldes gépjárművezető csak figyelmeztetés
   if (!domesticEligibleFuvar && isDomesticOnlyTipus(soforTipus)) {
     const isFlexible = profile?._profileId === "quick-flow" && profile.flexibility >= 70;
     if (isFlexible) {
-      warnings.push(`⚠ Belföldes sofőr – rugalmas mód aktív (${profile.flexibility}%)`);
+      warnings.push(`⚠ Belföldes gépjárművezető – rugalmas mód aktív (${profile.flexibility}%)`);
     } else {
       suitable = false;
-      reasons.push("Belföldes sofőr nem vihet nemzetközi fuvart");
+      reasons.push("Belföldes gépjárművezető nem vihet nemzetközi fuvart");
     }
   }
 
   // Kezes kompatibilitás – mindig kemény szabály
   if (fuvar.kezes && fuvar.kezes !== sofor.kezes) {
     suitable = false;
-    reasons.push(`A fuvar ${fuvar.kezes} kezes, de a sofőr ${sofor.kezes} kezes`);
+    reasons.push(`A fuvar ${fuvar.kezes} kezes, de a gépjárművezető ${sofor.kezes} kezes`);
   }
 
   // Időütközés – mindig kemény szabály

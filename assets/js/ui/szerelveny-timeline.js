@@ -6,6 +6,9 @@
 
 import { distanceKm, formatDate } from "../utils.js";
 import { FUVAROK } from "../data/fuvarok.js";
+import { SOFOROK } from "../data/soforok.js";
+import { VONTATOK } from "../data/vontatok.js";
+import { POTKOCSIK } from "../data/potkocsik.js";
 import { addFuvarBlockToTimeline, hasCollision, refreshAutoDriverStatesForLinkedConvoys, refreshAutoTransitBlocksForResource } from "./timeline.js";
 import { getCategoryPalette } from "./colors.js";
 
@@ -106,6 +109,19 @@ function hideAssemblyHoverTooltip() {
   activeAssemblyHoverTooltip.hidden = true;
 }
 
+function syncPinnedAssemblyResourceNames(container) {
+  const updatePinned = () => {
+    const scrollLeft = container.scrollLeft;
+
+    container.querySelectorAll(".assembly-resource-name").forEach((el) => {
+      el.style.transform = `translate3d(${scrollLeft}px, 0, 0)`;
+    });
+  };
+
+  container.onscroll = updatePinned;
+  updatePinned();
+}
+
 function cloneAssignment(assignment = {}) {
   return {
     soforId: assignment.soforId || null,
@@ -190,7 +206,7 @@ function getAssemblyDisplayTitle(assembly) {
 
 function getAssemblyResourceSummary(assembly) {
   return [
-    `👤 ${assembly?.sofor?.nev || "nincs sofőr"}`,
+    `👤 ${assembly?.sofor?.nev || "nincs gépjárművezető"}`,
     `🚚 ${assembly?.potkocsi?.rendszam || "nincs pótkocsi"}`
   ].join(" • ");
 }
@@ -257,6 +273,45 @@ export function discardFuvarAssemblyDraft(fuvarId) {
   rerenderCurrentAssemblyTimeline();
 }
 
+export function applyAssemblyAssignmentSync(fuvarId, assignment, options = {}) {
+  const fuvar = findFuvarById(fuvarId);
+  if (!fuvar) {
+    return false;
+  }
+
+  const normalized = cloneAssignment(assignment || {});
+  applyFuvarAssignment(fuvar, normalized, SOFOROK, VONTATOK, POTKOCSIK);
+
+  const sofor = normalized.soforId
+    ? SOFOROK.find((item) => item.id === normalized.soforId) || null
+    : null;
+  const vontato = normalized.vontatoId
+    ? VONTATOK.find((item) => item.id === normalized.vontatoId) || null
+    : null;
+  const potkocsi = normalized.potkocsiId
+    ? POTKOCSIK.find((item) => item.id === normalized.potkocsiId) || null
+    : null;
+
+  if (sofor && vontato) {
+    linkSoforToVontato(sofor, vontato, SOFOROK, VONTATOK);
+  }
+
+  if (potkocsi && vontato) {
+    linkPotkocsiToVontato(potkocsi, vontato, POTKOCSIK, VONTATOK);
+  }
+
+  if (options?.emit !== false) {
+    emitAssemblyResourceChanged({
+      operation: "assembly-sync-apply",
+      fuvarId,
+      assignment: normalized
+    });
+  }
+
+  rerenderCurrentAssemblyTimeline();
+  return true;
+}
+
 function saveDraftAssembly(fuvarId, soforok, vontatok, potkocsik) {
   const entry = assemblyDraftAssignments.get(fuvarId);
   if (!entry) {
@@ -264,7 +319,7 @@ function saveDraftAssembly(fuvarId, soforok, vontatok, potkocsik) {
   }
 
   if (!hasCompleteAssignmentValue(entry.assignment)) {
-    return { ok: false, message: "A szerelvény csak akkor menthető, ha sofőr, vontató és pótkocsi is ki van választva." };
+    return { ok: false, message: "A szerelvény csak akkor menthető, ha gépjárművezető, vontató és pótkocsi is ki van választva." };
   }
 
   const fuvar = entry.fuvar;
@@ -277,7 +332,7 @@ function saveDraftAssembly(fuvarId, soforok, vontatok, potkocsik) {
   }
 
   if (!canAssignFuvarToResource(sofor, fuvar)) {
-    return { ok: false, message: "A kiválasztott sofőr időütközés miatt nem menthető." };
+    return { ok: false, message: "A kiválasztott gépjárművezető időütközés miatt nem menthető." };
   }
 
   if (!canAssignFuvarToResource(vontato, fuvar)) {
@@ -316,7 +371,7 @@ function renderDraftAssemblyBoard(container, soforok, vontatok, potkocsik) {
           <div class="assembly-draft-board-subtitle">A fuvar erőforrásra húzása először ideiglenes tervezetet készít.</div>
         </div>
       </div>
-      <div class="assembly-draft-empty">Nincs megkezdett szerelvény. Húzz egy fuvarfeladatot a sofőrre, vontatóra vagy pótkocsira az idővonalon.</div>
+      <div class="assembly-draft-empty">Nincs megkezdett szerelvény. Húzz egy fuvarfeladatot a gépjárművezetőre, vontatóra vagy pótkocsira az idővonalon.</div>
     `;
     container.appendChild(host);
     return;
@@ -352,7 +407,7 @@ function renderDraftAssemblyBoard(container, soforok, vontatok, potkocsik) {
         </div>
         <div class="assembly-draft-resource-grid">
           <div class="assembly-draft-resource-row">
-            <span class="assembly-draft-resource-label">👤 Sofőr</span>
+            <span class="assembly-draft-resource-label">👤 Gépjárművezető</span>
             <span class="assembly-draft-resource-value">${escapeHtml(soforLabel)}</span>
             <button type="button" class="assembly-draft-remove-btn" data-action="clear-resource" data-field="soforId">Törlés</button>
           </div>
@@ -571,9 +626,69 @@ export function setAssemblyTimelineWindowDayOffset(dayOffset = 0) {
   assemblyTimelineOffsetHours = normalizedOffset * 24;
 }
 
+function getFuvarPickupDate(fuvarId) {
+  if (!fuvarId) {
+    return null;
+  }
+
+  const fuvar = FUVAROK.find((item) => item.id === fuvarId);
+  const pickupIso = fuvar?.felrakas?.ido;
+  if (!pickupIso) {
+    return null;
+  }
+
+  const pickupDate = new Date(pickupIso);
+  return Number.isFinite(pickupDate.getTime()) ? pickupDate : null;
+}
+
+function getAssemblyWindowDayOffsetForDate(targetDate) {
+  const diffHours = (targetDate.getTime() - getBaseDate().getTime()) / (1000 * 60 * 60);
+  return Math.floor(diffHours / 24);
+}
+
+function getAssemblyScrollTargetPx(targetDate, container) {
+  const diffHours = (targetDate.getTime() - getWindowStartDate().getTime()) / (1000 * 60 * 60);
+  const targetX = diffHours * HOUR_WIDTH;
+  const desiredLeft = targetX - (container.clientWidth * 0.35);
+  const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
+  return Math.max(0, Math.min(desiredLeft, maxScroll));
+}
+
+function focusAssemblyTimelinesToFuvarPickup(fuvarId) {
+  const pickupDate = getFuvarPickupDate(fuvarId);
+  if (!pickupDate) {
+    rerenderCurrentAssemblyTimeline();
+    return;
+  }
+
+  const windowStart = getWindowStartDate();
+  const windowEnd = getWindowEndDate();
+  if (pickupDate < windowStart || pickupDate >= windowEnd) {
+    assemblyTimelineOffsetHours = getAssemblyWindowDayOffsetForDate(pickupDate) * 24;
+  }
+
+  rerenderCurrentAssemblyTimeline();
+
+  requestAnimationFrame(() => {
+    assemblyRenderStates.forEach((renderState) => {
+      const mode = renderState?.options?.mode || assemblyViewMode;
+      if (mode === "list") {
+        return;
+      }
+
+      const container = document.getElementById(renderState.containerId);
+      if (!container) {
+        return;
+      }
+
+      container.scrollLeft = getAssemblyScrollTargetPx(pickupDate, container);
+    });
+  });
+}
+
 window.addEventListener("fuvar:focus", (event) => {
   focusedFuvarId = event?.detail?.fuvarId || null;
-  rerenderCurrentAssemblyTimeline();
+  focusAssemblyTimelinesToFuvarPickup(focusedFuvarId);
 });
 
 window.addEventListener("assembly:focus", (event) => {
@@ -1442,6 +1557,21 @@ function canAssignFuvarToResource(resource, fuvar) {
   return !hasCollision(timelineWithoutCurrentFuvar, fuvar.felrakas.ido, fuvar.lerakas.ido);
 }
 
+function isAssemblyAvailableForFuvar(assembly, fuvar) {
+  if (!assembly || !fuvar) {
+    return false;
+  }
+
+  // Elérhető szerelvénynek csak a teljes (gépjárművezető + vontató + pótkocsi) kombinációt tekintjük.
+  if (!assembly.sofor || !assembly.vontato || !assembly.potkocsi) {
+    return false;
+  }
+
+  return canAssignFuvarToResource(assembly.sofor, fuvar)
+    && canAssignFuvarToResource(assembly.vontato, fuvar)
+    && canAssignFuvarToResource(assembly.potkocsi, fuvar);
+}
+
 function applyFuvarAssignment(fuvar, assignment, soforok, vontatok, potkocsik) {
   removeFuvarBlocksFromAllResources(fuvar.id, soforok, vontatok, potkocsik);
   saveFuvarAssignment(fuvar, assignment);
@@ -1665,7 +1795,7 @@ export function getAssemblyOperationLogEntries(limit = 80) {
 }
 
 function buildAssemblyLabel(assembly) {
-  const soforName = assembly.sofor?.nev || "nincs sofőr";
+  const soforName = assembly.sofor?.nev || "nincs gépjárművezető";
   return `${assembly.vontato.rendszam} • ${soforName}`;
 }
 
@@ -1715,7 +1845,7 @@ function openElakasztasModal(currentAssembly, block, soforok, vontatok, potkocsi
     .filter((assembly) => Boolean(assembly.sofor && assembly.potkocsi));
 
   if (allAssemblies.length === 0) {
-    alert("Nincs másik teljes (sofőr + vontató + pótkocsi) szerelvény az elakasztáshoz.");
+    alert("Nincs másik teljes (gépjárművezető + vontató + pótkocsi) szerelvény az elakasztáshoz.");
     return;
   }
 
@@ -1729,7 +1859,7 @@ function openElakasztasModal(currentAssembly, block, soforok, vontatok, potkocsi
 
       <label class="timeline-event-form-label">
         Melyik szerelvénnyel történjen a csere?
-        <input class="timeline-event-form-input" name="assemblySearch" type="search" placeholder="Keresés rendszám vagy sofőr alapján..." />
+        <input class="timeline-event-form-input" name="assemblySearch" type="search" placeholder="Keresés rendszám vagy gépjárművezető alapján..." />
       </label>
 
       <div class="assembly-op-list" data-role="assembly-list"></div>
@@ -1899,7 +2029,7 @@ function openEroforrasToresModal(currentAssembly, block, soforok, vontatok, potk
       <div class="assembly-op-meta">A fuvar új erőforrás-hozzárendelése</div>
 
       <label class="timeline-event-form-label">
-        Sofőr
+        Gépjárművezető
         <select class="timeline-event-form-input assembly-op-select" name="sofor">
           <option value="">Nincs hozzárendelve</option>
           ${soforOptions}
@@ -1995,7 +2125,7 @@ function openEroforrasToresModal(currentAssembly, block, soforok, vontatok, potk
     }
 
     if (assignment.soforId && !selectedSofor) {
-      alert("A kiválasztott sofőr nem található.");
+      alert("A kiválasztott gépjárművezető nem található.");
       return;
     }
 
@@ -2005,7 +2135,7 @@ function openEroforrasToresModal(currentAssembly, block, soforok, vontatok, potk
     }
 
     if (selectedSofor && !canAssignFuvarToResource(selectedSofor, fuvar)) {
-      alert("A kiválasztott sofőr foglalt a fuvar időszakában.");
+      alert("A kiválasztott gépjárművezető foglalt a fuvar időszakában.");
       return;
     }
 
@@ -2117,7 +2247,6 @@ function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik, lifec
   const bar = document.createElement("div");
   bar.className = "timeline-bar assembly-bar";
   bar.style.width = TIMELINE_WIDTH + "px";
-  bar.style.height = "40px";
   bar.style.position = "relative";
 
   let visibleBlocks = 0;
@@ -2328,6 +2457,10 @@ function renderAssemblyPager(container, containerId, soforok, vontatok, potkocsi
   if (showJaratStatusFilter && jaratTimelineStatusFilter !== "all") {
     activeFilters.push(`Státusz: ${JARAT_TIMELINE_STATUS_LABELS[jaratTimelineStatusFilter]}`);
   }
+  const focusedFuvar = findFuvarById(focusedFuvarId);
+  if (focusedFuvar?.id) {
+    activeFilters.push(`Fuvar fókusz: ${focusedFuvar.id} (elérhető)`);
+  }
 
   const activeBadge = document.createElement("div");
   activeBadge.className = "assembly-filter-active-badge";
@@ -2363,7 +2496,7 @@ function getJaratStatusMeta(status) {
 
   return {
     label: "Függő",
-    description: "A járat definíciója még nem teljes"
+    description: ""
   };
 }
 
@@ -2531,7 +2664,7 @@ function renderAssemblyListRow(parent, assembly, lifecycleFuvarIds = new Set()) 
       ${jaratBadgeHtml}
     </header>
     <div class="assembly-list-info-grid">
-      <div class="assembly-list-info-box assembly-list-meta">👤 Sofőr: ${escapeHtml(soforName)}<span>•</span>🚚 Pótkocsi: ${escapeHtml(potkocsiRendszam)}</div>
+      <div class="assembly-list-info-box assembly-list-meta">👤 Gépjárművezető: ${escapeHtml(soforName)}<span>•</span>🚚 Pótkocsi: ${escapeHtml(potkocsiRendszam)}</div>
       <div class="assembly-list-info-box assembly-list-route"><strong>${escapeHtml(fromAddress)}</strong><span>→</span><strong>${escapeHtml(toAddress)}</strong></div>
       <div class="assembly-list-info-box assembly-list-stats">
         <span>Fuvarok: ${metrics.fuvarCount}</span>
@@ -2625,7 +2758,7 @@ function renderAssemblyListView(parent, assemblies, lifecycleFuvarIds) {
 
 function getAssemblyTimelineResourceEvents(assembly, startMs, endMs) {
   const resources = [
-    { kind: "sofor", label: "Sofőr", resource: assembly.sofor },
+    { kind: "sofor", label: "Gépjárművezető", resource: assembly.sofor },
     { kind: "vontato", label: "Vontató", resource: assembly.vontato },
     { kind: "potkocsi", label: "Pótkocsi", resource: assembly.potkocsi }
   ];
@@ -2774,8 +2907,8 @@ function renderAssemblyJaratTimelineRow(parent, assembly, segment, lifecycleFuva
   name.className = "timeline-resource-name assembly-resource-name";
   name.innerHTML = `
     <div class="assembly-main">🧭 ${segment.jaratId} • 🚛 ${assembly.vontato.rendszam}</div>
-    <div class="assembly-meta"><span class="jarat-status-chip ${segment.status === "lezart" ? "done" : "pending"}">${statusMeta.label}</span> ${statusMeta.description} • ${formatDate(segment.start)} → ${formatDate(segment.end)}</div>
-    <div class="assembly-meta">👤 Sofőr: ${soforName} • 🚚 Pótkocsi: ${potkocsiRendszam}</div>
+    <div class="assembly-meta"><span class="jarat-status-chip ${segment.status === "lezart" ? "done" : "pending"}">${statusMeta.label}</span>${statusMeta.description ? ` ${statusMeta.description} •` : ""} ${formatDate(segment.start)} → ${formatDate(segment.end)}</div>
+    <div class="assembly-meta">👤 Gépjárművezető: ${soforName} • 🚚 Pótkocsi: ${potkocsiRendszam}</div>
   `;
 
   const bar = document.createElement("div");
@@ -2949,7 +3082,7 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
     const empty = document.createElement("div");
     empty.className = "assembly-empty-state";
     empty.textContent = options?.spedicioOnly
-      ? "Nincs olyan szerelvény, amelyen spediciós fuvar szerepel."
+      ? "Nincs olyan szerelvény, amelyen spedíciós fuvar szerepel."
       : "Nincs még összeállított szerelvény. Húzz egy fuvarfeladatot erőforrásra az idővonalon.";
     container.appendChild(empty);
     return;
@@ -2982,6 +3115,13 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
     : spedicioOnlyAssemblies;
 
   const filteredAssemblies = visibleAssemblies;
+  const focusedFuvar = findFuvarById(focusedFuvarId);
+  const shouldFilterByFocusedFuvarAvailability = Boolean(
+    focusedFuvar?.felrakas?.ido && focusedFuvar?.lerakas?.ido
+  );
+  const availabilityFilteredAssemblies = shouldFilterByFocusedFuvarAvailability
+    ? filteredAssemblies.filter((assembly) => isAssemblyAvailableForFuvar(assembly, focusedFuvar))
+    : filteredAssemblies;
 
   if (useDropoffFilter && visibleAssemblies.length === 0) {
     const info = document.createElement("div");
@@ -2991,13 +3131,21 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
     return;
   }
 
+  if (shouldFilterByFocusedFuvarAvailability && availabilityFilteredAssemblies.length === 0) {
+    const info = document.createElement("div");
+    info.className = "timeline-filter-empty";
+    info.textContent = "A fókuszált fuvar felrakási időpontjában nincs elérhető teljes szerelvény.";
+    container.appendChild(info);
+    return;
+  }
+
   const lifecycleFuvarIds = buildFocusedLifecycleFuvarIdSet();
   const lifecycleMatches = lifecycleFuvarIds.size > 0
-    ? filteredAssemblies.filter((assembly) => assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds))
+    ? availabilityFilteredAssemblies.filter((assembly) => assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds))
     : [];
   const lifecycleRemainder = lifecycleFuvarIds.size > 0
-    ? filteredAssemblies.filter((assembly) => !assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds))
-    : filteredAssemblies;
+    ? availabilityFilteredAssemblies.filter((assembly) => !assemblyContainsLifecycleFuvar(assembly, lifecycleFuvarIds))
+    : availabilityFilteredAssemblies;
   const orderedAssemblies = lifecycleFuvarIds.size > 0
     ? [...lifecycleMatches, ...lifecycleRemainder]
     : filteredAssemblies;
@@ -3009,12 +3157,15 @@ export function renderSzerelvenyTimeline(containerId, soforok, vontatok, potkocs
 
   if (mode === "jarat") {
     renderAssemblyJaratTimelineView(container, orderedAssemblies, lifecycleFuvarIds);
+    syncPinnedAssemblyResourceNames(container);
     return;
   }
 
   orderedAssemblies.forEach((assembly) => {
     renderAssemblyRow(container, assembly, soforok, vontatok, potkocsik, lifecycleFuvarIds);
   });
+
+  syncPinnedAssemblyResourceNames(container);
 }
 
 export function renderJaratTimeline(containerId, soforok, vontatok, potkocsik, options = {}) {

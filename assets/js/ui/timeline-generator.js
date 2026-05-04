@@ -2,7 +2,7 @@
 // TransIT v4.4 – Continuous Timeline Generator (72h)
 // - Minden erőforrásnak folyamatos timeline-t generál (ha üres)
 // - A szintetikus fuvar blokkokat automatikusan semleges eseményre cseréli
-// - Sofőr: piheno | szabadsag | beteg  (beteg >= 24h)
+// - Gépjárművezető: piheno | szabadsag | beteg  (beteg >= 24h)
 // - Vontató: szerviz | allas
 // - Pótkocsi: szerviz | standby
 // ============================================================

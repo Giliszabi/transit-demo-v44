@@ -50,6 +50,23 @@ function runRefreshViews() {
   }
 }
 
+function emitAssemblyDraftStaged(fuvarId, assignment) {
+  if (!fuvarId || !assignment) {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent("assembly:draft:staged", {
+    detail: {
+      fuvarId,
+      assignment: {
+        soforId: assignment.soforId || null,
+        vontatoId: assignment.vontatoId || null,
+        potkocsiId: assignment.potkocsiId || null
+      }
+    }
+  }));
+}
+
 function refreshAllAutoTransitSegments() {
   SOFOROK.forEach((sofor) => {
     refreshAutoTransitBlocksForResource(sofor, FUVAROK);
@@ -375,7 +392,7 @@ function askTraktorbanExitConfirmation(context) {
         <div class="timeline-event-form-title">Erőforrás helyeltérés</div>
         <div class="traktor-warning-question">Biztosan traktorban lépsz ki?</div>
         <div class="traktor-warning-details">
-          <div>👤 Sofőr + 🚛 Vontató helye: <strong>${context.comboLocation}</strong></div>
+          <div>👤 Gépjárművezető + 🚛 Vontató helye: <strong>${context.comboLocation}</strong></div>
           <div>🚚 Pótkocsi helye: <strong>${context.potkocsiLocation}</strong></div>
           <div class="traktor-warning-resources">${soforName} • ${vontatoName} • ${potkocsiName}</div>
         </div>
@@ -437,7 +454,7 @@ function askNearbyFreePairConfirmation(context) {
     overlay.innerHTML = `
       <div class="timeline-event-form traktor-warning-modal" role="dialog" aria-modal="true" aria-label="Közeli szabad erőforrás figyelmeztetés">
         <div class="timeline-event-form-title">Erőforrás alternatíva</div>
-        <div class="traktor-warning-question">A közelben hamarosan lesz egy szabad sofőr+vontató. Biztosan küldesz egy másikat?</div>
+        <div class="traktor-warning-question">A közelben hamarosan lesz egy szabad gépjárművezető+vontató. Biztosan küldesz egy másikat?</div>
         <div class="traktor-warning-details">
           <div>🚛 Rakott vontató helye: <strong>${context.tractorLocation}</strong></div>
           <div>📦 Érintett fuvar: <strong>${context.cargoBlock?.label || "-"}</strong></div>
@@ -494,7 +511,7 @@ function askSpedicioDropOperation(context) {
     const partnerLabel = context?.partnerName || "-";
 
     overlay.innerHTML = `
-      <div class="spediccio-modal spediccio-drop-action-modal" role="dialog" aria-modal="true" aria-label="Spediciós művelet választása">
+      <div class="spediccio-modal spediccio-drop-action-modal" role="dialog" aria-modal="true" aria-label="Spedíciós művelet választása">
         <div class="spediccio-modal-header">
           <h3>Milyen műveletet szeretnél végrehajtani?</h3>
         </div>
@@ -847,7 +864,7 @@ async function assignResourcePair(sourceType, sourceId, targetType, targetId) {
   }
 
   if (!isValidResourcePair(sourceType, targetType)) {
-    alert("Csak ezek a kapcsolások engedélyezettek: pótkocsi ↔ vontató, sofőr ↔ vontató.");
+    alert("Csak ezek a kapcsolások engedélyezettek: pótkocsi ↔ vontató, gépjárművezető ↔ vontató.");
     return false;
   }
 
@@ -958,7 +975,7 @@ async function handleFuvarDropOnResource(targetType, targetId, explicitFuvarId =
     }
 
     if (!fuvar.spediccio) {
-      alert("Partnerre csak spedició badge-es fuvar húzható.");
+      alert("Partnerre csak spedíció badge-es fuvar húzható.");
       return false;
     }
 
@@ -993,7 +1010,12 @@ async function handleFuvarDropOnResource(targetType, targetId, explicitFuvarId =
     return false;
   }
 
-  return stageFuvarAssemblyDraft(fuvar.id, assignment);
+  const staged = stageFuvarAssemblyDraft(fuvar.id, assignment);
+  if (staged) {
+    emitAssemblyDraftStaged(fuvar.id, assignment);
+  }
+
+  return staged;
 }
 
 // DRAG START – FUVAR KÁRTYÁK
@@ -1115,7 +1137,7 @@ export function enableTimelineDrop() {
 // ============================================================
 // ERŐFORRÁS KÁRTYÁKRA VALÓ DROP
 // - Fuvar → Erőforrás
-// - Erőforrás → Erőforrás (Sofőr↔Vontató, Pótkocsi↔Vontató)
+// - Erőforrás → Erőforrás (Gépjárművezető↔Vontató, Pótkocsi↔Vontató)
 // ============================================================
 export function enableResourceCardDrop() {
   document.querySelectorAll(".resource-card").forEach((card) => {

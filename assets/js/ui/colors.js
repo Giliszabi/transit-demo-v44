@@ -68,7 +68,7 @@ const FUVAR_TAG_META = {
     textColor: "#FFF6EC"
   },
   spediccio: {
-    label: "Spedicció",
+    label: "Spedíció",
     color: FIXED_CATEGORY_COLORS.spediccio,
     textColor: "#FCF5FF"
   },
