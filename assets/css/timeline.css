@@ -1485,6 +1485,117 @@
   color: #ffe3a3;
 }
 
+/* ===== Járat info modal ===== */
+.jarat-info-modal {
+  max-width: 680px;
+  width: 100%;
+}
+
+.jarat-info-section {
+  margin: 12px 0;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+}
+
+.jarat-info-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #90caf9;
+  margin-bottom: 8px;
+}
+
+.jarat-info-row,
+.jarat-info-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.jarat-info-label {
+  color: #b0bec5;
+  min-width: 180px;
+}
+
+.jarat-info-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.jarat-info-profit-pos strong {
+  color: #81c784;
+}
+
+.jarat-info-profit-neg strong {
+  color: #ef9a9a;
+}
+
+.jarat-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.jarat-info-table th {
+  text-align: left;
+  color: #90caf9;
+  font-weight: 600;
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.jarat-info-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+}
+
+.jarat-info-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.jarat-main-block,
+.jarat-info-host {
+  position: relative;
+  padding-right: 30px;
+  min-width: 34px;
+}
+
+.jarat-info-trigger {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  border-radius: 999px;
+  background: rgba(8, 16, 28, 0.82);
+  color: #d9ecff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.jarat-info-trigger:hover,
+.jarat-info-trigger:focus-visible {
+  border-color: #90caf9;
+  box-shadow: 0 0 0 2px rgba(144, 202, 249, 0.24);
+  transform: translateY(-1px);
+  outline: none;
+}
+
 .assembly-row:hover {
   border-color: #4fc3f7;
   box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.22);
@@ -1518,6 +1629,36 @@
   font-weight: 700;
 }
 
+.jarat-row-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jarat-row-info-btn {
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(144, 202, 249, 0.82);
+  border-radius: 999px;
+  background: rgba(10, 20, 34, 0.9);
+  color: #d9ecff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.jarat-row-info-btn:hover,
+.jarat-row-info-btn:focus-visible {
+  border-color: #b3e5fc;
+  box-shadow: 0 0 0 2px rgba(144, 202, 249, 0.28);
+  outline: none;
+}
+
 .assembly-resource-summary {
   margin-top: 3px;
   font-size: 11px;
@@ -1548,7 +1689,7 @@
   top: 8px;
   height: 34px;
   min-width: 34px;
-  padding: 4px 7px;
+  padding: 4px 30px 4px 7px;
 }
 
 .jarat-event-block {

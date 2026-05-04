@@ -1,5 +1,5 @@
 // ==============================================================
-// Fuvar kártyák + gyorsszűrők + MATCHING ENGINE integráció
+// Fuvar kártyák + gyorsszűrők + MATCHING ENGINE integráció + Auto-assign
 // ==============================================================
 
 import { FUVAROK } from "../data/fuvarok.js";
@@ -13,6 +13,7 @@ import { renderTimeline, refreshAutoDriverStatesForLinkedConvoys, refreshAutoTra
 import { getFuvarTagMeta, getCategoryPalette } from "./colors.js";
 import { enableFuvarDrag } from "./dragdrop.js";
 import { getDomesticTransitRoleInfo } from "./transit-relations.js";
+import { openAutoAssignModal } from "./auto-assign-modal.js";
 
 const FILTERS = ["all", "adr", "surgos", "belfold", "export", "import", "elofutas", "utofutas", "spediccio"];
 const DEFAULT_FUVAR_FILTER_STATE = Object.freeze({
@@ -2550,6 +2551,7 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
       <button class="btn fuvar-filter-toggle" type="button" data-toggle="tomorrow"><span class="fuvar-filter-toggle-label">Holnap</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
       <button class="btn fuvar-filter-toggle" type="button" data-toggle="day2"><span class="fuvar-filter-toggle-label">Holnapután</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
       <button class="btn fuvar-filter-reset" type="button" data-action="reset">Szűrők törlése</button>
+      <button class="btn" type="button" id="btn-auto-assign" data-action="auto-assign">Fuvarok összerakása</button>
     </div>
   `;
 
@@ -2597,6 +2599,14 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
   cont.querySelector('[data-action="reset"]')?.addEventListener("click", () => {
     filterState = createDefaultFuvarFilterState();
     emit();
+  });
+
+  cont.querySelector('[data-action="auto-assign"]')?.addEventListener("click", () => {
+    openAutoAssignModal({
+      onApplied: () => {
+        emit();
+      }
+    });
   });
 
   syncUnifiedFilterControls(cont, filterState, {

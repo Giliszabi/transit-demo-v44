@@ -22,6 +22,7 @@ let assemblyTimelineOffsetHours = 0;
 const assemblyRenderStates = new Map();
 let openAssemblyContextMenu = null;
 let openAssemblyOperationModal = null;
+let openJaratInfoModal = null;
 let transientHandlersBound = false;
 let focusedFuvarId = null;
 let focusedAssemblyId = null;
@@ -1698,9 +1699,127 @@ function closeAssemblyOperationModal() {
   openAssemblyOperationModal = null;
 }
 
+function closeJaratInfoModal() {
+  if (!openJaratInfoModal) {
+    return;
+  }
+
+  openJaratInfoModal.remove();
+  openJaratInfoModal = null;
+}
+
+function buildJaratSummaryData(segment, assembly) {
+  const fuvarKm = segment.blocks.reduce((sum, block) => {
+    const km = getAssemblyBlockDistanceKm(block);
+    return Number.isFinite(km) ? sum + km : sum;
+  }, 0);
+
+  const segmentStartMs = new Date(segment.start).getTime();
+  const segmentEndMs = new Date(segment.end).getTime();
+
+  const rezsiKm = (assembly?.vontato?.timeline || [])
+    .filter((block) => {
+      if (!block || block.type !== "rezsifutas") {
+        return false;
+      }
+      const blockStartMs = new Date(block.start).getTime();
+      const blockEndMs = new Date(block.end).getTime();
+      return blockStartMs >= segmentStartMs && blockEndMs <= segmentEndMs;
+    })
+    .reduce((sum, block) => {
+      const km = getAssemblyBlockDistanceKm(block);
+      return Number.isFinite(km) ? sum + km : sum;
+    }, 0);
+
+  const revenue = Math.round(fuvarKm * ASSEMBLY_FUVAR_REVENUE_PER_KM);
+  const cost = Math.round((fuvarKm + rezsiKm) * ASSEMBLY_FUVAR_COST_PER_KM);
+  const profit = revenue - cost;
+
+  return { fuvarKm, rezsiKm, revenue, cost, profit };
+}
+
+function openJaratInfoModalForSegment(segment, assembly) {
+  closeJaratInfoModal();
+
+  const host = document.createElement("div");
+  host.className = "timeline-event-form-overlay assembly-op-overlay jarat-info-overlay";
+
+  const soforName = assembly?.sofor?.nev || "nincs";
+  const vontatoRendszam = assembly?.vontato?.rendszam || "nincs";
+  const potkocsiRendszam = assembly?.potkocsi?.rendszam || "nincs";
+
+  const summary = buildJaratSummaryData(segment, assembly);
+  const statusMeta = getJaratStatusMeta(segment.status);
+
+  const fuvarBlockRows = segment.blocks.map((block) => {
+    const route = getAssemblyRouteForBlock(block);
+    const km = getAssemblyBlockDistanceKm(block);
+    const kmLabel = Number.isFinite(km) ? `${Math.round(km)} km` : "n/a";
+    return `<tr>
+      <td>${escapeHtml(route.pickup)} → ${escapeHtml(route.dropoff)}</td>
+      <td>${escapeHtml(formatDate(block.start))} – ${escapeHtml(formatDate(block.end))}</td>
+      <td>${kmLabel}</td>
+    </tr>`;
+  }).join("");
+
+  const profitClass = summary.profit >= 0 ? "jarat-info-profit-pos" : "jarat-info-profit-neg";
+
+  host.innerHTML = `
+    <div class="timeline-event-form assembly-op-form jarat-info-modal" role="dialog" aria-modal="true" aria-label="Járat részletek">
+      <div class="timeline-event-form-title">🧭 ${escapeHtml(segment.jaratId)} – Járat részletek <span class="jarat-status-chip ${segment.status === "lezart" ? "done" : "pending"}">${escapeHtml(statusMeta.label)}</span></div>
+
+      <div class="jarat-info-section">
+        <div class="jarat-info-row"><span class="jarat-info-label">🚛 Vontató:</span> <span>${escapeHtml(vontatoRendszam)}</span></div>
+        <div class="jarat-info-row"><span class="jarat-info-label">🚚 Pótkocsi:</span> <span>${escapeHtml(potkocsiRendszam)}</span></div>
+        <div class="jarat-info-row"><span class="jarat-info-label">👤 Gépjárművezető:</span> <span>${escapeHtml(soforName)}</span></div>
+        <div class="jarat-info-row"><span class="jarat-info-label">📅 Időszak:</span> <span>${escapeHtml(formatDate(segment.start))} → ${escapeHtml(formatDate(segment.end))}</span></div>
+      </div>
+
+      <div class="jarat-info-section">
+        <div class="jarat-info-section-title">Fuvarlábak (${segment.blocks.length} db)</div>
+        <table class="jarat-info-table">
+          <thead><tr><th>Útvonal</th><th>Időszak</th><th>Táv</th></tr></thead>
+          <tbody>${fuvarBlockRows}</tbody>
+        </table>
+      </div>
+
+      <div class="jarat-info-section jarat-info-metrics">
+        <div class="jarat-info-metric"><span class="jarat-info-label">📦 Fuvarral megtett km:</span> <strong>${Math.round(summary.fuvarKm)} km</strong></div>
+        <div class="jarat-info-metric"><span class="jarat-info-label">↩️ Rezsifutás km:</span> <strong>${Math.round(summary.rezsiKm)} km</strong></div>
+        <div class="jarat-info-metric"><span class="jarat-info-label">💰 Bevétel:</span> <strong>${formatMoneyHuf(summary.revenue)}</strong></div>
+        <div class="jarat-info-metric"><span class="jarat-info-label">💸 Költség:</span> <strong>${formatMoneyHuf(summary.cost)}</strong></div>
+        <div class="jarat-info-metric ${profitClass}"><span class="jarat-info-label">📊 Haszon:</span> <strong>${formatMoneyHuf(summary.profit)}</strong></div>
+      </div>
+
+      <div class="timeline-event-form-actions">
+        <button type="button" class="timeline-event-form-cancel" data-action="close">Bezárás</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(host);
+  openJaratInfoModal = host;
+
+  host.querySelector('[data-action="close"]').addEventListener("click", closeJaratInfoModal);
+  host.addEventListener("click", (event) => {
+    if (event.target === host) {
+      closeJaratInfoModal();
+    }
+  });
+
+  const closeOnEsc = (event) => {
+    if (event.key === "Escape") {
+      closeJaratInfoModal();
+      document.removeEventListener("keydown", closeOnEsc);
+    }
+  };
+  document.addEventListener("keydown", closeOnEsc);
+}
+
 function closeAssemblyTransientUi() {
   closeAssemblyContextMenu();
   closeAssemblyOperationModal();
+  closeJaratInfoModal();
 }
 
 function bindAssemblyTransientHandlers() {
@@ -2251,6 +2370,9 @@ function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik, lifec
 
   let visibleBlocks = 0;
   const completedJaratInfo = buildAssemblyCompletedJaratInfo(assembly.fuvarBlocks || [], assembly);
+  const segmentByJaratId = new Map(
+    (completedJaratInfo.segments || []).map((segment) => [segment.jaratId, segment])
+  );
 
   assembly.fuvarBlocks.forEach((block) => {
     const visibleBlock = clipBlockToWindow(block);
@@ -2303,12 +2425,29 @@ function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik, lifec
     const jaratMeta = completedJaratInfo.byBlock.get(block) || null;
     if (jaratMeta?.jaratId) {
       div.classList.add("jarat-complete");
+      div.classList.add("jarat-info-host");
       const titleEl = div.querySelector(".timeline-block-title");
       if (titleEl) {
         const badge = document.createElement("span");
         badge.className = "timeline-jarat-badge";
         badge.textContent = jaratMeta.jaratId;
         titleEl.appendChild(badge);
+      }
+
+      const segment = segmentByJaratId.get(jaratMeta.jaratId) || null;
+      if (segment) {
+        const infoBtn = document.createElement("button");
+        infoBtn.type = "button";
+        infoBtn.className = "jarat-info-trigger";
+        infoBtn.textContent = "i";
+        infoBtn.title = `Járat részletek (${jaratMeta.jaratId})`;
+        infoBtn.setAttribute("aria-label", infoBtn.title);
+        infoBtn.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          openJaratInfoModalForSegment(segment, assembly);
+        });
+        div.appendChild(infoBtn);
       }
     }
 
@@ -2906,10 +3045,23 @@ function renderAssemblyJaratTimelineRow(parent, assembly, segment, lifecycleFuva
   const name = document.createElement("div");
   name.className = "timeline-resource-name assembly-resource-name";
   name.innerHTML = `
-    <div class="assembly-main">🧭 ${segment.jaratId} • 🚛 ${assembly.vontato.rendszam}</div>
+    <div class="assembly-main jarat-row-main">🧭 ${segment.jaratId} • 🚛 ${assembly.vontato.rendszam}</div>
     <div class="assembly-meta"><span class="jarat-status-chip ${segment.status === "lezart" ? "done" : "pending"}">${statusMeta.label}</span>${statusMeta.description ? ` ${statusMeta.description} •` : ""} ${formatDate(segment.start)} → ${formatDate(segment.end)}</div>
     <div class="assembly-meta">👤 Gépjárművezető: ${soforName} • 🚚 Pótkocsi: ${potkocsiRendszam}</div>
   `;
+
+  const nameInfoBtn = document.createElement("button");
+  nameInfoBtn.type = "button";
+  nameInfoBtn.className = "jarat-row-info-btn";
+  nameInfoBtn.textContent = "i";
+  nameInfoBtn.title = `Járat részletek (${segment.jaratId})`;
+  nameInfoBtn.setAttribute("aria-label", nameInfoBtn.title);
+  nameInfoBtn.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openJaratInfoModalForSegment(segment, assembly);
+  });
+  name.querySelector(".jarat-row-main")?.appendChild(nameInfoBtn);
 
   const bar = document.createElement("div");
   bar.className = "timeline-bar assembly-bar jarat-bar";
@@ -2946,6 +3098,20 @@ function renderAssemblyJaratTimelineRow(parent, assembly, segment, lifecycleFuva
 
     const route = getAssemblyRouteForBlock(visibleBlock);
     div.innerHTML = `<div class="assembly-block-line-primary"><strong>${route.pickup} → ${route.dropoff}</strong><span class="timeline-compact-separator">•</span><span>${formatCompactAssemblyTime(visibleBlock.start)} → ${formatCompactAssemblyTime(visibleBlock.end)}</span></div>`;
+
+    const infoBtn = document.createElement("button");
+    infoBtn.type = "button";
+    infoBtn.className = "jarat-info-trigger";
+    infoBtn.textContent = "i";
+    infoBtn.title = `Járat részletek (${segment.jaratId})`;
+    infoBtn.setAttribute("aria-label", infoBtn.title);
+    infoBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openJaratInfoModalForSegment(segment, assembly);
+    });
+    div.appendChild(infoBtn);
+
     div.title = buildAssemblyBlockTooltip(visibleBlock, { jaratId: segment.jaratId });
     bindAssemblyBlockHoverTooltip(div, div.title);
     bar.appendChild(div);
