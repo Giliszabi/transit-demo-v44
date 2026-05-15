@@ -37,47 +37,47 @@
   </header>
 
   <main class="monitor-shell">
-    <section id="monitor-kpi-strip" class="monitor-kpi-strip"></section>
-
-    <section id="planning-context-strip" class="planning-context-strip"></section>
-
-    <section class="monitor-timelines-section">
-      <div id="monitor-dock-layout" class="dock-layout monitor-dock-layout">
-        <section class="dock-column" data-zone="full"></section>
-        <section class="dock-column" data-zone="left"></section>
-        <section class="dock-column" data-zone="right"></section>
+    <!-- Legfelső szekció - összecsukható, alapértelmezetten összecsukva -->
+    <section id="monitor-kpi-section" class="monitor-kpi-section collapsible-section collapsed">
+      <div class="collapsible-header">
+        <span class="collapse-toggle">▶</span>
+        <h2>Napi összesítés</h2>
       </div>
-
-      <section class="panel dock-panel monitor-timeline-panel" id="monitor-panel-assembly-timeline" data-panel-id="assembly-timeline" data-panel-title="Szerelvény idővonal">
-        <div class="panel-header-row">
-          <div class="panel-title">🧩 Szerelvény idővonal</div>
-          <div class="panel-dock-toolbar">
-            <button type="button" class="panel-dock-btn" data-action="move-up">Feljebb</button>
-            <button type="button" class="panel-dock-btn" data-action="move-down">Lejjebb</button>
-            <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
-            <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
-            <button type="button" class="panel-dock-btn" data-action="toggle-fullwidth">Teljes szélesség</button>
-          </div>
-        </div>
-        <div id="assembly-timeline-container">Betöltés...</div>
-      </section>
-
-      <section class="panel dock-panel monitor-timeline-panel" id="monitor-panel-resource-timeline" data-panel-id="resource-timeline" data-panel-title="Erőforrás idővonal">
-        <div class="panel-header-row">
-          <div class="panel-title">⏱️ Erőforrás idővonal</div>
-          <div class="panel-dock-toolbar">
-            <button type="button" class="panel-dock-btn" data-action="move-up">Feljebb</button>
-            <button type="button" class="panel-dock-btn" data-action="move-down">Lejjebb</button>
-            <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
-            <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
-            <button type="button" class="panel-dock-btn" data-action="toggle-fullwidth">Teljes szélesség</button>
-          </div>
-        </div>
-        <div id="timeline-container">Betöltés...</div>
-      </section>
+      <div class="collapsible-content">
+        <section id="monitor-kpi-strip" class="monitor-kpi-strip"></section>
+        <section id="planning-context-strip" class="planning-context-strip"></section>
+      </div>
     </section>
 
-    <section class="panel monitor-map-panel monitor-map-panel-promoted">
+    <!-- Erőforrás timeline - legfelül, teljes szélességben -->
+    <section class="panel dock-panel monitor-timeline-panel resource-timeline-fullwidth" id="monitor-panel-resource-timeline" data-panel-id="resource-timeline" data-panel-title="Erőforrás idővonal">
+      <div class="panel-header-row">
+        <div class="panel-title">⏱️ Erőforrás idővonal</div>
+      </div>
+      <div id="timeline-container">Betöltés...</div>
+    </section>
+
+    <!-- Fő munkaterület -->
+    <section class="monitor-workspace monitor-workspace-fullwidth">
+      <div class="monitor-main-column">
+        <!-- Napi gépjárművezető lista -->
+        <section class="panel export-table-panel export-table-fullwidth">
+          <div class="panel-title">📋 Napi gépjárművezető lista</div>
+          <div id="export-date-switcher" class="export-date-switcher"></div>
+          <div id="export-table-filters" class="export-table-filters"></div>
+          <div id="export-table-container" class="export-table-container"></div>
+        </section>
+
+        <!-- Tachográf monitor -->
+        <section id="monitor-main-panel" class="panel monitor-main-panel">
+          <div class="panel-title">⏱️ Tachográf monitor és timeline overlay</div>
+          <div id="tacho-main-content"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- Térkép - legalul -->
+    <section class="panel monitor-map-panel monitor-map-panel-bottom">
       <div class="panel-title">🗺️ MapView szinkron (Rig + Tacho)</div>
       <div class="monitor-map-layer-switch">
         <span class="monitor-map-layer-pill parking">🅿️ Truck parkolók</span>
@@ -88,7 +88,30 @@
       <div id="monitor-map-container"></div>
     </section>
 
-    <section class="monitor-workspace">
+    <!-- Predikció panel - összecsukható, alapértelmezetten összecsukva -->
+    <section class="panel monitor-insight-panel collapsible-section collapsed">
+      <div class="collapsible-header">
+        <span class="collapse-toggle">▶</span>
+        <div class="panel-title">🧠 Predikció + fuvar-kompatibilitás</div>
+      </div>
+      <div class="collapsible-content">
+        <div id="monitor-insight-grid"></div>
+      </div>
+    </section>
+
+    <!-- Alerts Panel - összecsukható, alapértelmezetten összecsukva -->
+    <section class="panel monitor-alerts-panel collapsible-section collapsed">
+      <div class="collapsible-header">
+        <span class="collapse-toggle">▶</span>
+        <div class="panel-title">🚨 Alerts Panel</div>
+      </div>
+      <div class="collapsible-content">
+        <div id="monitor-alerts-list" class="monitor-alerts-list"></div>
+      </div>
+    </section>
+
+    <!-- Rejtett szekciók: Export napi kiosztás és Gépjárművezető státusz -->
+    <!-- <section class="monitor-workspace">
       <aside class="panel monitor-column">
         <div class="panel-title">📤 Export napi kiosztás gépjárművezetőkre</div>
         <div id="export-driver-list" class="export-driver-list"></div>
@@ -97,36 +120,7 @@
         <div id="risk-legend" class="risk-legend"></div>
         <div id="driver-state-list" class="driver-state-list"></div>
       </aside>
-
-      <div class="monitor-main-column">
-        <section class="panel export-table-panel">
-          <div class="panel-title">📋 Export tábla nézet</div>
-          <div id="export-date-switcher" class="export-date-switcher"></div>
-          <div id="export-table-filters" class="export-table-filters"></div>
-          <div id="export-table-container" class="export-table-container"></div>
-        </section>
-
-        <section id="monitor-main-panel" class="panel monitor-main-panel">
-          <div class="panel-title">⏱️ Tachográf monitor és timeline overlay</div>
-          <div id="tacho-main-content"></div>
-        </section>
-
-        <section class="panel monitor-insight-panel">
-          <div class="panel-title">🧠 Predikció + fuvar-kompatibilitás</div>
-          <div id="monitor-insight-grid"></div>
-        </section>
-
-        <section class="panel monitor-operation-panel">
-          <div class="panel-title">🧾 Szerelvény műveleti napló</div>
-          <div id="monitor-operation-log" class="assembly-operation-log"></div>
-        </section>
-      </div>
-    </section>
-
-    <section class="panel monitor-alerts-panel monitor-alerts-bottom-panel">
-      <div class="panel-title">🚨 Alerts Panel</div>
-      <div id="monitor-alerts-list" class="monitor-alerts-list"></div>
-    </section>
+    </section> -->
   </main>
 
   <script

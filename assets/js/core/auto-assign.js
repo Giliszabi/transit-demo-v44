@@ -361,6 +361,17 @@ export function runAutoAssign(options = {}) {
   const vontatokSnapshot = VONTATOK.map((v) => ({ ...v, timeline: [] }));
   const potkocsikSnapshot = POTKOCSIK.map((p) => ({ ...p, timeline: [] }));
 
+  const previousAssignmentsByFuvarId = new Map(
+    FUVAROK.map((f) => [
+      f.id,
+      {
+        soforId: f.assignedSoforId || null,
+        vontatoId: f.assignedVontatoId || null,
+        potkocsiId: f.assignedPotkocsiId || null
+      }
+    ])
+  );
+
   // Nullázzuk az eredeti listák timeline-jait és assignment mezőit (snapshot)
   fuvarokSnapshot.forEach((f) => {
     delete f.assignedSoforId;
@@ -452,10 +463,58 @@ export function runAutoAssign(options = {}) {
     return bestWarn;
   }
 
+  function getPreferredResourcesFromPreviousAssignment(fuvar) {
+    const previous = previousAssignmentsByFuvarId.get(fuvar?.id);
+    if (!previous) {
+      return { sofor: null, vontato: null, potkocsi: null };
+    }
+
+    const sofor = previous.soforId
+      ? soforokSnapshot.find((item) => item.id === previous.soforId) || null
+      : null;
+    const vontato = previous.vontatoId
+      ? vontatokSnapshot.find((item) => item.id === previous.vontatoId) || null
+      : null;
+    const potkocsi = previous.potkocsiId
+      ? potkocsikSnapshot.find((item) => item.id === previous.potkocsiId) || null
+      : null;
+
+    return { sofor, vontato, potkocsi };
+  }
+
+  function canUsePreferredSofor(sofor, fuvar) {
+    if (!sofor) return false;
+    if (hasSnapCollision(sofor.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido)) return false;
+    const result = evaluateSoforForFuvar({ ...sofor, timeline: [] }, fuvar);
+    return result.grade !== "bad";
+  }
+
+  function canUsePreferredVontato(vontato, fuvar) {
+    if (!vontato) return false;
+    if (hasSnapCollision(vontato.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido)) return false;
+    const result = evaluateVontatoForFuvar({ ...vontato, timeline: [] }, fuvar);
+    return result.grade !== "bad";
+  }
+
+  function canUsePreferredPotkocsi(potkocsi, fuvar) {
+    if (!potkocsi) return false;
+    if (hasSnapCollision(potkocsi.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido)) return false;
+    const result = evaluatePotkocsiForFuvar({ ...potkocsi, timeline: [] }, fuvar);
+    return result.grade !== "bad";
+  }
+
   function assignSnap(fuvar, soforOverride = null, vontatoOverride = null, potkocsiOverride = null) {
-    const sofor = soforOverride || findBestSoforSnap(fuvar);
-    const vontato = vontatoOverride || findBestVontatoSnap(fuvar, sofor);
-    const potkocsi = potkocsiOverride || findBestPotkocsiSnap(fuvar, vontato);
+    const preferred = getPreferredResourcesFromPreviousAssignment(fuvar);
+
+    const sofor = soforOverride
+      || (canUsePreferredSofor(preferred.sofor, fuvar) ? preferred.sofor : null)
+      || findBestSoforSnap(fuvar);
+    const vontato = vontatoOverride
+      || (canUsePreferredVontato(preferred.vontato, fuvar) ? preferred.vontato : null)
+      || findBestVontatoSnap(fuvar, sofor);
+    const potkocsi = potkocsiOverride
+      || (canUsePreferredPotkocsi(preferred.potkocsi, fuvar) ? preferred.potkocsi : null)
+      || findBestPotkocsiSnap(fuvar, vontato);
 
     const warnings = [];
     if (sofor) {
@@ -485,32 +544,117 @@ export function runAutoAssign(options = {}) {
     };
   }
 
-  // ── 3. Járatképzés ─────────────────────────────────────────────────────────
+  function collectUniqueAssignedResources(fuvarokInJarat) {
+    const soforIds = [...new Set(fuvarokInJarat.map((f) => f.assignedSoforId).filter(Boolean))];
+    const vontatoIds = [...new Set(fuvarokInJarat.map((f) => f.assignedVontatoId).filter(Boolean))];
+    const potkocsiIds = [...new Set(fuvarokInJarat.map((f) => f.assignedPotkocsiId).filter(Boolean))];
+
+    return {
+      soforok: soforIds
+        .map((id) => soforokSnapshot.find((item) => item.id === id))
+        .filter(Boolean),
+      vontatok: vontatoIds
+        .map((id) => vontatokSnapshot.find((item) => item.id === id))
+        .filter(Boolean),
+      potkocsik: potkocsiIds
+        .map((id) => potkocsikSnapshot.find((item) => item.id === id))
+        .filter(Boolean)
+    };
+  }
+
+  // ── 3. Járatképzés – SZERELVÉNY-FIRST ────────────────────────────────────
+  //
+  //  Logikai elv:
+  //  Egy járat = egy sofőr+vontató+(pótkocsi) szerelvény + az ahhoz időben
+  //  ütközésmentesen illeszthető fuvar-sorozat (előfutás→export→import→utófutás).
+  //
+  //  Lépések:
+  //  3a. Szerelvény-lista felépítése (linkedId-k + előző assignmentek alapján)
+  //  3b. Minden ismert szerelvényhez kiosztjuk az illeszkedő fuvar-sorozatokat
+  //  3c. Fennmaradó fuvarok → greedy párosítás (régi logika, fallback)
+  //  3d. Belföldi fuvarok → egyenként saját járat
+
+  // ─── 3a. Szerelvény-lista ────────────────────────────────────────────────
+  // Elsődleges forrás: vontatók linkedSoforId / linkedPotkocsiId kapcsolatai
+  // Másodlagos forrás: az előző kiosztásból ismert (sofor, vontato, potkocsi) hármasok
+
+  const szerelvenyMap = new Map(); // kulcs: vontatoId → { vontatoId, soforId, potkocsiId }
+
+  for (const v of vontatokSnapshot) {
+    szerelvenyMap.set(v.id, {
+      vontatoId: v.id,
+      soforId: v.linkedSoforId || null,
+      potkocsiId: v.linkedPotkocsiId || null
+    });
+  }
+
+  // Előző assignmentekből kiegészítés: ha az előző kiosztásban egy vontatóhoz
+  // más sofőr/pótkocsi volt rendelve, azt adjuk hozzá (de linkedId prioritást élvez)
+  for (const [, prev] of previousAssignmentsByFuvarId) {
+    if (!prev.vontatoId) continue;
+    const entry = szerelvenyMap.get(prev.vontatoId);
+    if (entry) {
+      if (!entry.soforId && prev.soforId) entry.soforId = prev.soforId;
+      if (!entry.potkocsiId && prev.potkocsiId) entry.potkocsiId = prev.potkocsiId;
+    }
+  }
+
+  // ─── Segédfüggvény: befér-e egy fuvar-lista az adott szerelvénybe? ────────
+  // Elfogadjuk a szerelvényt, ha az összes fuvar ütközésmentes az eddig
+  // hozzájuk tartozó timeline-on (a temporális kiosztásra csak itt ellenőrzünk,
+  // a tényleges timeline-írás a 4. lépésben történik).
+  function fuvarokFitIntoSzerelveny(fuvarList, sz) {
+    const sofor = sz.soforId ? soforokSnapshot.find((s) => s.id === sz.soforId) : null;
+    const vontato = vontatokSnapshot.find((v) => v.id === sz.vontatoId);
+    const potkocsi = sz.potkocsiId ? potkocsikSnapshot.find((p) => p.id === sz.potkocsiId) : null;
+    if (!vontato) return false;
+
+    for (const fuvar of fuvarList) {
+      const s = fuvar.felrakas?.ido;
+      const e = fuvar.lerakas?.ido;
+      if (!s || !e) continue;
+      if (sofor && hasSnapCollision(sofor.timeline, s, e)) return false;
+      if (hasSnapCollision(vontato.timeline, s, e)) return false;
+      if (potkocsi && hasSnapCollision(potkocsi.timeline, s, e)) return false;
+    }
+    return true;
+  }
+
+  // ─── 3b. Fuvar-sorozat felépítés és szerelvényhez rendelés ───────────────
+  // Összes fuvarot kataloizgáljuk: export-ok alapján próbálunk sorozatokat alkotni.
+
   const exportFuvarok = fuvarokSnapshot
     .filter((f) => f.viszonylat === "export")
     .sort((a, b) => {
-      // Sürgős előre, majd idő szerint
       if (a.surgos !== b.surgos) return a.surgos ? -1 : 1;
       return isoMs(a.felrakas?.ido) - isoMs(b.felrakas?.ido);
     });
 
   const importPool = fuvarokSnapshot
     .filter((f) => f.viszonylat === "import")
-    .slice(); // másolat a kiválasztáshoz
+    .slice();
 
   const jaratok = [];
   const usedExportIds = new Set();
   const usedImportIds = new Set();
 
+  // Szerelvény prioritás: ha az előző kiosztás szerint egy exporthoz volt rendelve
+  // vontató, az adott szerelvénnyel próbálkozunk elsőként.
+  function getPreferredSzerelvenyForFuvar(fuvar) {
+    const prev = previousAssignmentsByFuvarId.get(fuvar.id);
+    if (prev?.vontatoId && szerelvenyMap.has(prev.vontatoId)) {
+      return szerelvenyMap.get(prev.vontatoId);
+    }
+    return null;
+  }
+
+  // Szerelvény-prioritású export feldolgozás
   for (const exportF of exportFuvarok) {
     if (usedExportIds.has(exportF.id)) continue;
 
-    // Előfutás keresése ehhez az exporthoz
-    const elofutas = fuvarokSnapshot.find(
-      (f) => f.elofutasExportFuvarId === exportF.id
-    ) || null;
+    const elofutas = fuvarokSnapshot.find((f) => f.elofutasExportFuvarId === exportF.id) || null;
 
-    // Legjobb import keresése időbeli közelség alapján
+    // Import keresés: időbeli közelség
     const exportEndMs = isoMs(exportF.lerakas?.ido);
     let bestImport = null;
     let bestDiff = Infinity;
@@ -523,23 +667,41 @@ export function runAutoAssign(options = {}) {
       }
     }
 
-    // Utófutás keresése a megtalált importhoz
     const utofutas = bestImport
       ? fuvarokSnapshot.find((f) => f.utofutasImportFuvarId === bestImport.id) || null
       : null;
 
-    if (bestImport) {
-      usedImportIds.add(bestImport.id);
+    const fuvarSorozat = [elofutas, exportF, bestImport, utofutas].filter(Boolean);
+
+    // Keressük a legjobb szerelvényt ehhez a sorozathoz
+    const preferredSz = getPreferredSzerelvenyForFuvar(exportF);
+    let matchedSzerelveny = null;
+
+    if (preferredSz && fuvarokFitIntoSzerelveny(fuvarSorozat, preferredSz)) {
+      matchedSzerelveny = preferredSz;
+    } else {
+      // Bejárjuk az összes szerelvényt és az első illeszkedőt választjuk
+      for (const [, sz] of szerelvenyMap) {
+        if (sz === preferredSz) continue; // már megpróbáltuk
+        if (fuvarokFitIntoSzerelveny(fuvarSorozat, sz)) {
+          matchedSzerelveny = sz;
+          break;
+        }
+      }
     }
+
+    if (bestImport) usedImportIds.add(bestImport.id);
     usedExportIds.add(exportF.id);
 
     jaratok.push({
       jaratId: `J-${exportF.id}${bestImport ? `-${bestImport.id}` : ""}`,
+      szerelvenyId: matchedSzerelveny ? matchedSzerelveny.vontatoId : null,
+      szerelveny: matchedSzerelveny || null,
       exportFuvar: exportF,
       importFuvar: bestImport,
       elofutasFuvar: elofutas,
       utofutasFuvar: utofutas,
-      resources: null,    // kitöltődik 4. lépésben
+      resources: null,
       warnings: [],
       unassignedFuvars: []
     });
@@ -549,8 +711,18 @@ export function runAutoAssign(options = {}) {
   for (const imp of importPool) {
     if (usedImportIds.has(imp.id)) continue;
     const utofutas = fuvarokSnapshot.find((f) => f.utofutasImportFuvarId === imp.id) || null;
+    const fuvarSorozat = [imp, utofutas].filter(Boolean);
+    let matchedSzerelveny = null;
+    for (const [, sz] of szerelvenyMap) {
+      if (fuvarokFitIntoSzerelveny(fuvarSorozat, sz)) {
+        matchedSzerelveny = sz;
+        break;
+      }
+    }
     jaratok.push({
       jaratId: `J-IMPORT-${imp.id}`,
+      szerelvenyId: matchedSzerelveny ? matchedSzerelveny.vontatoId : null,
+      szerelveny: matchedSzerelveny || null,
       exportFuvar: null,
       importFuvar: imp,
       elofutasFuvar: null,
@@ -567,8 +739,17 @@ export function runAutoAssign(options = {}) {
     (f) => f.viszonylat === "belfold" && !f.elofutasExportFuvarId && !f.utofutasImportFuvarId
   );
   for (const bf of belfoldiFuvarok) {
+    let matchedSzerelveny = null;
+    for (const [, sz] of szerelvenyMap) {
+      if (fuvarokFitIntoSzerelveny([bf], sz)) {
+        matchedSzerelveny = sz;
+        break;
+      }
+    }
     jaratok.push({
       jaratId: `J-BF-${bf.id}`,
+      szerelvenyId: matchedSzerelveny ? matchedSzerelveny.vontatoId : null,
+      szerelveny: matchedSzerelveny || null,
       exportFuvar: null,
       importFuvar: null,
       elofutasFuvar: null,
@@ -596,8 +777,20 @@ export function runAutoAssign(options = {}) {
     const mainFuvar = jarat.exportFuvar || jarat.importFuvar || jarat.belfoldiFuvar;
     if (!mainFuvar) continue;
 
-    // Kiosztás a fő fuvarra
-    const res = assignSnap(mainFuvar);
+    // Szerelvény-first: ha a 3. lépés talált szerelvényt, annak erőforrásait
+    // adjuk át override-ként, így a kiosztás garantáltan azt a kombinációt kapja.
+    let szOverrideSofor = null;
+    let szOverrideVontato = null;
+    let szOverridePotkocsi = null;
+    if (jarat.szerelveny) {
+      const sz = jarat.szerelveny;
+      szOverrideSofor = sz.soforId ? soforokSnapshot.find((s) => s.id === sz.soforId) || null : null;
+      szOverrideVontato = sz.vontatoId ? vontatokSnapshot.find((v) => v.id === sz.vontatoId) || null : null;
+      szOverridePotkocsi = sz.potkocsiId ? potkocsikSnapshot.find((p) => p.id === sz.potkocsiId) || null : null;
+    }
+
+    // Kiosztás a fő fuvarra (szerelvény override-okkal ha van)
+    const res = assignSnap(mainFuvar, szOverrideSofor, szOverrideVontato, szOverridePotkocsi);
     jarat.resources = res;
     jarat.warnings.push(...res.warnings);
 
@@ -605,14 +798,56 @@ export function runAutoAssign(options = {}) {
       jarat.unassignedFuvars.push({ fuvar: mainFuvar, reason: res.unassignedReason });
     }
 
-    // A többi fuvar ugyanazokat az erőforrásokat kapja
+    // A többi fuvar ugyanazokat az erőforrásokat kapja (szerelvény override-ok ha volt)
     for (const fuvar of fuvarokInJarat) {
       if (fuvar === mainFuvar) continue;
-      const r = assignSnap(fuvar, res.sofor, res.vontato, res.potkocsi);
+      const r = assignSnap(
+        fuvar,
+        szOverrideSofor || res.sofor,
+        szOverrideVontato || res.vontato,
+        szOverridePotkocsi || res.potkocsi
+      );
       if (r.unassignedReason) {
         jarat.unassignedFuvars.push({ fuvar, reason: r.unassignedReason });
       }
       jarat.warnings.push(...r.warnings);
+    }
+
+    for (const fuvar of fuvarokInJarat) {
+      const complete = Boolean(fuvar.assignedSoforId && fuvar.assignedVontatoId && fuvar.assignedPotkocsiId);
+      if (complete) continue;
+
+      const alreadyTracked = jarat.unassignedFuvars.some((entry) => entry?.fuvar?.id === fuvar.id);
+      if (!alreadyTracked) {
+        jarat.unassignedFuvars.push({ fuvar, reason: "Hiányos erőforrás-hozzárendelés" });
+      }
+    }
+
+    const resourceSets = collectUniqueAssignedResources(fuvarokInJarat);
+    jarat.resourceSets = resourceSets;
+
+    if (!jarat.resources) {
+      jarat.resources = { sofor: null, vontato: null, potkocsi: null, warnings: [], unassignedReason: null };
+    }
+
+    if (!jarat.resources.sofor && resourceSets.soforok.length > 0) {
+      jarat.resources.sofor = resourceSets.soforok[0];
+    }
+    if (!jarat.resources.vontato && resourceSets.vontatok.length > 0) {
+      jarat.resources.vontato = resourceSets.vontatok[0];
+    }
+    if (!jarat.resources.potkocsi && resourceSets.potkocsik.length > 0) {
+      jarat.resources.potkocsi = resourceSets.potkocsik[0];
+    }
+
+    if (resourceSets.soforok.length > 1) {
+      jarat.warnings.push(`Több sofőr érintett a járatban (${resourceSets.soforok.length} db)`);
+    }
+    if (resourceSets.vontatok.length > 1) {
+      jarat.warnings.push(`Több vontató érintett a járatban (${resourceSets.vontatok.length} db)`);
+    }
+    if (resourceSets.potkocsik.length > 1) {
+      jarat.warnings.push(`Több pótkocsi érintett a járatban (${resourceSets.potkocsik.length} db)`);
     }
   }
 

@@ -1053,6 +1053,11 @@ export function enableFuvarDrag() {
     applyFuvarDragListeners(card, card.dataset.id);
   });
 
+  // Lenyitott szakasz sorok (.fuvar-stage-row) – data-fuvar-id attribútumot használnak
+  document.querySelectorAll(".fuvar-stage-row[data-fuvar-id]").forEach((row) => {
+    applyFuvarDragListeners(row, row.dataset.fuvarId);
+  });
+
   // Előfutás / utófutás relay kártyák (.domestic-relay-card) – data-fuvar-id attribútumot használnak
   document.querySelectorAll(".domestic-relay-card[data-fuvar-id]").forEach((card) => {
     applyFuvarDragListeners(card, card.dataset.fuvarId);

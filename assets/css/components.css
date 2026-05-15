@@ -278,6 +278,108 @@ summary.btn {
   flex-wrap: nowrap;
 }
 
+.fuvar-chain-toggle {
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid rgba(79, 195, 247, 0.45);
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none;
+  color: #d6f2ff;
+  border-radius: 999px;
+  padding: 3px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.fuvar-chain-toggle:hover {
+  background: rgba(79, 195, 247, 0.12);
+}
+
+.fuvar-chain-toggle-arrow {
+  color: #8fdcff !important;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.fuvar-chain-toggle-count {
+  min-width: 16px;
+  text-align: center;
+  color: #d8f1ff !important;
+  font-weight: 800;
+}
+
+.fuvar-stage-list {
+  margin: -2px 0 8px 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.fuvar-stage-card {
+  margin-left: 14px;
+  width: calc(100% - 14px);
+}
+
+.fuvar-stage-card:hover {
+  border-color: rgba(79, 195, 247, 0.62);
+}
+
+.fuvar-stage-card.ready {
+  border-color: rgba(92, 201, 141, 0.65);
+  background: rgba(92, 201, 141, 0.14);
+}
+
+.fuvar-stage-card.planning {
+  border-color: rgba(255, 193, 7, 0.65);
+  background: rgba(255, 193, 7, 0.12);
+}
+
+.fuvar-stage-card.unassigned {
+  border-color: rgba(120, 132, 148, 0.42);
+}
+
+.fuvar-stage-tag-lane {
+  gap: 6px;
+  align-items: center;
+}
+
+.fuvar-stage-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(79, 195, 247, 0.45);
+  background: rgba(20, 22, 27, 0.95);
+  color: #d8f1ff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.fuvar-stage-label {
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: normal;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: none;
+}
+
+.fuvar-stage-card.active-fuvar-stage {
+  outline: 1px solid rgba(79, 195, 247, 0.78);
+  box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.24);
+}
+
 .fuvar-card-grid-inline {
   margin-top: 0;
   min-width: 0;

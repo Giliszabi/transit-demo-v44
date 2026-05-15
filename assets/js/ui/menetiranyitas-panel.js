@@ -253,29 +253,33 @@ async function initMenetiranyitasPanel() {
     potkocsik: POTKOCSIK
   });
 
-  initTimelineDockLayout();
+  // initTimelineDockLayout();  // NOT NEEDED - assembly timeline removed
 
   renderSzerelvenyMap("monitor-map-container", SOFOROK, VONTATOK, POTKOCSIK);
   renderResourceTimelinePanel();
 
-  if (document.getElementById("assembly-timeline-container")) {
-    renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK, {
-      showDraftBoard: false
-    });
-  }
+  // Assembly timeline rendering removed - not needed in menetirányítás
+  // if (document.getElementById("assembly-timeline-container")) {
+  //   renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK, {
+  //     showDraftBoard: false
+  //   });
+  // }
 
   window.addEventListener("assembly:resources:changed", () => {
     renderSzerelvenyMap("monitor-map-container", SOFOROK, VONTATOK, POTKOCSIK);
     renderResourceTimelinePanel();
 
-    if (document.getElementById("assembly-timeline-container")) {
-      renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK, {
-        showDraftBoard: false
-      });
-    }
+    // if (document.getElementById("assembly-timeline-container")) {
+    //   renderSzerelvenyTimeline("assembly-timeline-container", SOFOROK, VONTATOK, POTKOCSIK, {
+    //     showDraftBoard: false
+    //   });
+    // }
 
     refreshDashboard({ preserveSelection: true, focusMode: "none" });
   });
+
+  // Initialize collapsible sections
+  initCollapsibleSections();
 
   const driverList = document.getElementById("driver-state-list");
   const exportDriverList = document.getElementById("export-driver-list");
@@ -290,14 +294,22 @@ async function initMenetiranyitasPanel() {
     driverList.addEventListener("keydown", onDriverListKeydown);
   }
 
-  if (exportDriverList) {
-    exportDriverList.addEventListener("click", onDriverListClick);
-    exportDriverList.addEventListener("keydown", onDriverListKeydown);
-  }
+  // exportDriverList is hidden - not needed
+  // if (exportDriverList) {
+  //   exportDriverList.addEventListener("click", onDriverListClick);
+  //   exportDriverList.addEventListener("keydown", onDriverListKeydown);
+  // }
 
   if (exportTableContainer) {
     exportTableContainer.addEventListener("click", onDriverListClick);
     exportTableContainer.addEventListener("keydown", onDriverListKeydown);
+    
+    // Delegate blur event for note editing from input elements
+    exportTableContainer.addEventListener("blur", (event) => {
+      if (event.target.classList?.contains?.("export-note-edit")) {
+        onExportTableCellBlur(event);
+      }
+    }, true);
   }
 
   if (exportTableFilters) {
@@ -316,20 +328,52 @@ async function initMenetiranyitasPanel() {
     alertsList.addEventListener("keydown", onAlertListKeydown);
   }
 
-  if (riskLegend) {
-    riskLegend.addEventListener("click", onRiskLegendClick);
-    riskLegend.addEventListener("keydown", onRiskLegendKeydown);
-  }
+  // riskLegend is hidden - not needed
+  // if (riskLegend) {
+  //   riskLegend.addEventListener("click", onRiskLegendClick);
+  //   riskLegend.addEventListener("keydown", onRiskLegendKeydown);
+  // }
 
-  refreshDashboard({ preserveSelection: false, focusMode: "assembly" });
+  refreshDashboard({ preserveSelection: false, focusMode: "none" });
   startAutoRefresh();
 
   setTimeout(() => {
     const selectedProfile = getSelectedProfile();
     if (selectedProfile) {
-      syncMapFocus(selectedProfile, "assembly");
+      syncMapFocus(selectedProfile, "none");
     }
   }, 220);
+}
+
+function initCollapsibleSections() {
+  const collapsibleHeaders = document.querySelectorAll(".collapsible-header");
+  collapsibleHeaders.forEach((header) => {
+    header.addEventListener("click", () => {
+      const section = header.closest(".collapsible-section");
+      if (section) {
+        section.classList.toggle("collapsed");
+      }
+    });
+  });
+}
+
+function onExportTableCellBlur(event) {
+  if (event.target.classList?.contains?.("export-note-edit")) {
+    const input = event.target;
+    const assignmentId = input.getAttribute("data-assignment-id");
+    const newValue = input.value;
+    
+    if (assignmentId && appState.generatedPlanning?.exportAssignments) {
+      const assignment = appState.generatedPlanning.exportAssignments.find(
+        (a) => a.assignmentId === assignmentId
+      );
+      if (assignment) {
+        assignment.dispatchNote = newValue;
+        // Also save to session storage or backend if needed
+        console.log(`Updated assignment ${assignmentId} note: ${newValue}`);
+      }
+    }
+  }
 }
 
 function getTimelinePanelElement(panelId) {
@@ -561,21 +605,24 @@ function refreshDashboard(options = {}) {
   const selectedProfile = getSelectedProfile();
 
   renderKpiStrip(profiles);
-  renderRiskLegend(profiles);
+  // renderRiskLegend(profiles);  // HIDDEN - not needed in menetirányítás
   renderPlanningContextStrip();
   renderExportDateSwitcher();
   renderExportTableFilters(profiles);
   renderExportTable(profiles, appState.selectedDriverId);
-  renderExportDriverList(profiles, appState.selectedDriverId);
-  renderDriverStateList(filteredProfiles, appState.selectedDriverId);
+  // renderExportDriverList(profiles, appState.selectedDriverId);  // HIDDEN - not needed in menetirányítás
+  // renderDriverStateList(filteredProfiles, appState.selectedDriverId);  // HIDDEN - not needed in menetirányítás
   renderMainPanel(selectedProfile, now);
   renderInsightsPanel(selectedProfile);
-  renderOperationLogPanel();
+  // renderOperationLogPanel();  // HIDDEN - not needed in menetirányítás
   renderAlertsPanel(appState.alerts, appState.selectedDriverId);
 
   if (selectedProfile && focusMode !== "none") {
     syncMapFocus(selectedProfile, focusMode);
   }
+
+  // Re-initialize collapsible sections after rendering
+  initCollapsibleSections();
 }
 
 function ensureDemoRigAssignments() {
@@ -1736,23 +1783,24 @@ function renderExportTable(profiles, selectedDriverId) {
     .map(({ assignment, profile, match }) => {
       const selectedClass = profile?.driver.id === selectedDriverId ? "selected" : "";
       const driverNames = (assignment.driverNames || []).join(", ") || profile?.driver.nev || "-";
-      const workPattern = assignment.originalWorkPatternCode || assignment.workPatternCode || "-";
       const directProfile = match.primaryProfile || profile;
       const driverIdAttr = directProfile?.id ? ` data-driver-id="${escapeHtml(directProfile.id)}" role="button" tabindex="0"` : "";
-      const confidenceClass = `confidence-${match.confidenceTone}`;
-
+      const assignmentId = assignment.assignmentId || "";
+      const dispatchNote = assignment.dispatchNote || "";
+      
       return `
         <tr class="export-table-row ${selectedClass}"${driverIdAttr}>
-          <td>${escapeHtml(workPattern)}</td>
-          <td>${escapeHtml(assignment.vehiclePlate || "-")}</td>
           <td>${escapeHtml(driverNames)}</td>
           <td>${escapeHtml(assignment.jobId || "-")}</td>
           <td>${escapeHtml(assignment.plannerNote || "-")}</td>
-          <td>${escapeHtml(assignment.dispatchNote || "-")}</td>
-          <td>${escapeHtml(String(assignment.sourceRow || "-"))}</td>
           <td>
-            <span class="match-confidence-badge ${confidenceClass}">${escapeHtml(match.matchLabel)}</span>
-            <div class="match-confidence-detail">${escapeHtml(match.matchedDriverLabel)}</div>
+            <input 
+              type="text" 
+              class="export-note-edit" 
+              value="${escapeHtml(dispatchNote)}"
+              data-assignment-id="${escapeHtml(assignmentId)}"
+              placeholder="Megjegyzés..."
+            />
           </td>
         </tr>
       `;
@@ -1765,14 +1813,10 @@ function renderExportTable(profiles, selectedDriverId) {
       <table class="export-table-view">
         <thead>
           <tr>
-            <th>MI neve</th>
-            <th>Vontató rendszám</th>
             <th>Gépjárművezető(ök)</th>
-            <th>SZF-SZÁM</th>
-            <th>Jani megjegyzés</th>
-            <th>Menetirányító megjegyzés</th>
-            <th>Excel sor</th>
-            <th>Párosítás</th>
+            <th>Fuvarfeladatra</th>
+            <th>Megtett kilométer</th>
+            <th>Megjegyzés</th>
           </tr>
         </thead>
         <tbody>

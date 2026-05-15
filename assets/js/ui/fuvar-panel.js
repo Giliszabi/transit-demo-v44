@@ -126,14 +126,22 @@ export function createDefaultFuvarFilterState() {
   return { ...DEFAULT_FUVAR_FILTER_STATE };
 }
 const CITY_COORDS = {
+  // Core international hubs
   milano: { lat: 45.4642, lon: 9.19 },
   hamburg: { lat: 53.5511, lon: 9.9937 },
   lubeck: { lat: 53.8655, lon: 10.6866 },
   munchen: { lat: 48.1351, lon: 11.582 },
+  stuttgart: { lat: 48.7758, lon: 9.1829 },
+  dusseldorf: { lat: 51.2277, lon: 6.7735 },
+  rotterdam: { lat: 51.9244, lon: 4.4777 },
   frankfurt: { lat: 50.1109, lon: 8.6821 },
   wien: { lat: 48.2082, lon: 16.3738 },
+  bratislava: { lat: 48.1486, lon: 17.1077 },
+  praha: { lat: 50.0755, lon: 14.4378 },
   brno: { lat: 49.1951, lon: 16.6068 },
   linz: { lat: 48.3069, lon: 14.2858 },
+
+  // Domestic cities
   budapest: { lat: 47.4979, lon: 19.0402 },
   gyor: { lat: 47.6875, lon: 17.6504 },
   vac: { lat: 47.7826, lon: 19.1332 },
@@ -146,7 +154,202 @@ const CITY_COORDS = {
   kecskemet: { lat: 46.8964, lon: 19.6897 },
   esztergom: { lat: 47.7853, lon: 18.7423 },
   kornye: { lat: 47.5449, lon: 18.3188 },
-  szekesfehervar: { lat: 47.186, lon: 18.4221 }
+  szekesfehervar: { lat: 47.186, lon: 18.4221 },
+  paty: { lat: 47.5171, lon: 18.8287 },
+  tata: { lat: 47.6529, lon: 18.3184 },
+  komarom: { lat: 47.7432, lon: 18.1216 },
+  szigetszentmiklos: { lat: 47.3471, lon: 19.0430 },
+  racalmas: { lat: 47.0222, lon: 18.9405 },
+  berhida: { lat: 47.1110, lon: 18.1340 },
+  dunaharaszti: { lat: 47.3542, lon: 19.0912 },
+  kocs: { lat: 47.6070, lon: 18.2150 },
+  hatvan: { lat: 47.6676, lon: 19.6761 },
+  biatorbagy: { lat: 47.4739, lon: 18.8233 },
+  ecser: { lat: 47.4445, lon: 19.3240 },
+  gyal: { lat: 47.3820, lon: 19.2210 },
+  gyongyoshalasz: { lat: 47.7420, lon: 19.9290 },
+  jaszfenyszaru: { lat: 47.5710, lon: 19.7210 },
+  kincsesbanya: { lat: 47.2640, lon: 18.2790 },
+  nagykoros: { lat: 47.0340, lon: 19.7780 },
+  ocsa: { lat: 47.2990, lon: 19.2300 },
+  szalkszentmarton: { lat: 46.9760, lon: 19.0140 },
+  szazhalombatta: { lat: 47.3170, lon: 18.9130 },
+  zalacseb: { lat: 46.8610, lon: 16.6620 },
+
+  // Additional EU cities from current dataset
+  tilburg: { lat: 51.5555, lon: 5.0913 },
+  moerdijk: { lat: 51.7017, lon: 4.6289 },
+  oostrum: { lat: 51.5300, lon: 5.9500 },
+  nurnberg: { lat: 49.4521, lon: 11.0767 },
+  bjerringbro: { lat: 56.3779, lon: 9.6614 },
+  neutraubling: { lat: 48.9860, lon: 12.1960 },
+  grossmehring: { lat: 48.9350, lon: 11.5320 },
+  bitozeves: { lat: 50.4050, lon: 13.6200 },
+  eindhoven: { lat: 51.4416, lon: 5.4697 },
+  emmerich_am_rhein: { lat: 51.8390, lon: 6.2470 },
+  le_plessis_belleville: { lat: 49.0950, lon: 2.7440 },
+  antwerpen: { lat: 51.2194, lon: 4.4025 },
+  jelling: { lat: 55.7550, lon: 9.4250 },
+  fosse: { lat: 47.9030, lon: 1.2090 },
+  berkel_enschot: { lat: 51.5790, lon: 5.1400 },
+  enschede: { lat: 52.2215, lon: 6.8937 },
+  harderwijk: { lat: 52.3508, lon: 5.6222 },
+  hagen: { lat: 51.3670, lon: 7.4630 },
+  meinerzhagen: { lat: 51.1060, lon: 7.6400 },
+  seriate: { lat: 45.6850, lon: 9.7240 },
+  fraga: { lat: 41.5220, lon: 0.3500 },
+  gent: { lat: 51.0543, lon: 3.7174 },
+  kuurne: { lat: 50.8510, lon: 3.2830 },
+  turnhout: { lat: 51.3225, lon: 4.9447 },
+  willebroek: { lat: 51.0600, lon: 4.3600 },
+  ctverin: { lat: 50.5400, lon: 15.0100 },
+  klasterec_nad_ohri: { lat: 50.3890, lon: 13.1830 },
+  kojetice: { lat: 50.2380, lon: 14.5090 },
+  pardubice: { lat: 50.0340, lon: 15.7810 },
+  uzice_cz: { lat: 50.4300, lon: 14.3800 },
+  broby: { lat: 55.3320, lon: 10.2480 },
+  fredericia: { lat: 55.5650, lon: 9.7520 },
+  villamblain: { lat: 48.0060, lon: 1.6510 },
+  born_nl: { lat: 51.0310, lon: 5.8100 },
+  groot_ammers: { lat: 51.9230, lon: 4.8230 },
+  hasselt_nl: { lat: 52.5920, lon: 6.0950 },
+  maasvlakte: { lat: 51.9470, lon: 3.9970 },
+  sevenum: { lat: 51.4110, lon: 6.0380 },
+  sluis: { lat: 51.3090, lon: 3.3870 },
+  vianen: { lat: 51.9920, lon: 5.1000 },
+  jedlicze: { lat: 49.7170, lon: 21.6490 },
+  biwer: { lat: 49.7060, lon: 6.3730 },
+  hannover: { lat: 52.3759, lon: 9.7320 },
+  krefeld: { lat: 51.3388, lon: 6.5853 },
+  neunkirchen_am_sand: { lat: 49.5230, lon: 11.3200 },
+  regensburg: { lat: 49.0134, lon: 12.1016 },
+  sankt_egidien: { lat: 50.7860, lon: 12.6200 },
+  wedemark: { lat: 52.5600, lon: 9.7200 },
+  zwickau: { lat: 50.7180, lon: 12.4940 },
+  brescello: { lat: 44.8990, lon: 10.5160 },
+  benavente_pt: { lat: 38.9790, lon: -8.8070 },
+  setubal: { lat: 38.5240, lon: -8.8890 },
+  las_torres_de_cotillas: { lat: 38.0270, lon: -1.2410 },
+  munchwilen: { lat: 47.4480, lon: 8.9960 },
+  hlinik_nad_hronom: { lat: 48.6490, lon: 18.8070 }
+};
+const CITY_ALIASES = {
+  // Existing aliases
+  "budapest": "budapest",
+  "gyor": "gyor",
+  "vac": "vac",
+  "dunakeszi": "dunakeszi",
+  "debrecen": "debrecen",
+  "szeged": "szeged",
+  "miskolc": "miskolc",
+  "pecs": "pecs",
+  "tatabanya": "tatabanya",
+  "kecskemet": "kecskemet",
+  "esztergom": "esztergom",
+  "kornye": "kornye",
+  "szekesfehervar": "szekesfehervar",
+  "milano": "milano",
+  "milan": "milano",
+  "hamburg": "hamburg",
+  "lubeck": "lubeck",
+  "lubek": "lubeck",
+  "munchen": "munchen",
+  "munich": "munchen",
+  "stuttgart": "stuttgart",
+  "dusseldorf": "dusseldorf",
+  "duesseldorf": "dusseldorf",
+  "rotterdam": "rotterdam",
+  "frankfurt": "frankfurt",
+  "wien": "wien",
+  "vienna": "wien",
+  "bratislava": "bratislava",
+  "praha": "praha",
+  "prague": "praha",
+  "brno": "brno",
+  "linz": "linz",
+
+  // Domestic additions
+  "paty": "paty",
+  "tata": "tata",
+  "komarom": "komarom",
+  "szigetszentmiklos": "szigetszentmiklos",
+  "racalmas": "racalmas",
+  "berhida": "berhida",
+  "dunaharaszti": "dunaharaszti",
+  "kocs": "kocs",
+  "hatvan": "hatvan",
+  "biatorbagy": "biatorbagy",
+  "ecser": "ecser",
+  "gyal": "gyal",
+  "gyongyoshalasz": "gyongyoshalasz",
+  "jaszfenyszaru": "jaszfenyszaru",
+  "kincsesbanya": "kincsesbanya",
+  "nagykoros": "nagykoros",
+  "ocsa": "ocsa",
+  "szalkszentmarton": "szalkszentmarton",
+  "szazhalombatta": "szazhalombatta",
+  "zalacseb": "zalacseb",
+
+  // Foreign additions
+  "tilburg": "tilburg",
+  "moerdijk": "moerdijk",
+  "oostrum": "oostrum",
+  "nurnberg": "nurnberg",
+  "bjerringbro": "bjerringbro",
+  "neutraubling": "neutraubling",
+  "grossmehring": "grossmehring",
+  "bitozeves": "bitozeves",
+  "eindhoven": "eindhoven",
+  "emmerich am rhein": "emmerich_am_rhein",
+  "emmerich": "emmerich_am_rhein",
+  "le plessis-belleville": "le_plessis_belleville",
+  "le plessis belleville": "le_plessis_belleville",
+  "antwerpen": "antwerpen",
+  "jelling": "jelling",
+  "fosse": "fosse",
+  "berkel-enschot": "berkel_enschot",
+  "berkel enschot": "berkel_enschot",
+  "enschede": "enschede",
+  "harderwijk": "harderwijk",
+  "hagen": "hagen",
+  "meinerzhagen": "meinerzhagen",
+  "seriate": "seriate",
+  "fraga": "fraga",
+  "gent": "gent",
+  "kuurne": "kuurne",
+  "turnhout": "turnhout",
+  "willebroek": "willebroek",
+  "ctverin": "ctverin",
+  "klasterec nad ohri": "klasterec_nad_ohri",
+  "kojetice": "kojetice",
+  "pardubice": "pardubice",
+  "uzice": "uzice_cz",
+  "broby": "broby",
+  "fredericia": "fredericia",
+  "villamblain": "villamblain",
+  "born": "born_nl",
+  "groot-ammers": "groot_ammers",
+  "groot ammers": "groot_ammers",
+  "hasselt": "hasselt_nl",
+  "maasvlakte": "maasvlakte",
+  "sevenum": "sevenum",
+  "sluis": "sluis",
+  "vianen": "vianen",
+  "jedlicze": "jedlicze",
+  "biwer": "biwer",
+  "hannover": "hannover",
+  "krefeld": "krefeld",
+  "neunkirchen am sand": "neunkirchen_am_sand",
+  "regensburg": "regensburg",
+  "sankt egidien": "sankt_egidien",
+  "wedemark": "wedemark",
+  "zwickau": "zwickau",
+  "brescello": "brescello",
+  "benavente": "benavente_pt",
+  "setubal": "setubal",
+  "las torres de cotillas": "las_torres_de_cotillas",
+  "munchwilen": "munchwilen",
+  "hlinik nad hronom": "hlinik_nad_hronom"
 };
 const ROAD_DISTANCE_CACHE = new Map();
 const ROAD_DISTANCE_FALLBACK_MULTIPLIER = 1.2;
@@ -157,6 +360,7 @@ let currentFuvarSort = {
   columnId: null,
   direction: "asc"
 };
+const expandedFuvarChainIds = new Set();
 
 window.addEventListener("fuvar:focus", (event) => {
   focusedFuvarId = event?.detail?.fuvarId || null;
@@ -171,7 +375,11 @@ function normalizeText(value) {
   return String(value || "")
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ß/g, "ss")
+    .replace(/ø/g, "o")
+    .replace(/æ/g, "ae")
+    .replace(/œ/g, "oe");
 }
 
 function isDateLikeLabel(label) {
@@ -418,6 +626,33 @@ function formatCurrency(value) {
   return `${Math.round(value).toLocaleString("hu-HU")} Ft`;
 }
 
+function resolveFuvarDistanceKm(fuvar) {
+  const rawDistance = fuvar?.tavolsag_km;
+
+  if (typeof rawDistance === "number" && Number.isFinite(rawDistance) && rawDistance >= 0) {
+    return rawDistance;
+  }
+
+  if (typeof rawDistance === "string") {
+    const normalized = rawDistance.trim().toLowerCase();
+    if (normalized && normalized !== "undefined" && normalized !== "null" && normalized !== "nan" && normalized !== "-") {
+      const parsed = Number(normalized.replace(",", "."));
+      if (Number.isFinite(parsed) && parsed >= 0) {
+        return parsed;
+      }
+    }
+  }
+
+  const pickupAddress = fuvar?.felrakas?.cim;
+  const dropoffAddress = fuvar?.lerakas?.cim;
+  if (!pickupAddress || !dropoffAddress) {
+    return null;
+  }
+
+  const computedKm = getRoadDistanceKm(pickupAddress, dropoffAddress, { prime: true });
+  return Number.isFinite(computedKm) ? computedKm : null;
+}
+
 function getCountryFromAddress(address) {
   const normalized = normalizeText(address);
   if (normalized.includes("magyarorszag") || normalized.includes("hungary")) {
@@ -437,8 +672,11 @@ function getCountryFromAddress(address) {
 
 function getExcelFieldValue(fuvar, excelLabel, context) {
   const transitMinutes = getTransitMinutes(fuvar);
-  const estimatedCost = Number(fuvar?.osszkoltseg || fuvar?.onkoltseg || (fuvar?.tavolsag_km || 0) * 430);
-  const costPerKm = fuvar?.tavolsag_km ? estimatedCost / fuvar.tavolsag_km : null;
+  const resolvedDistanceKm = resolveFuvarDistanceKm(fuvar);
+  const estimatedCost = Number(fuvar?.osszkoltseg || fuvar?.onkoltseg || ((Number.isFinite(resolvedDistanceKm) ? resolvedDistanceKm : 0) * 430));
+  const costPerKm = Number.isFinite(resolvedDistanceKm) && resolvedDistanceKm > 0
+    ? estimatedCost / resolvedDistanceKm
+    : null;
   const lowerLabel = normalizeText(excelLabel);
 
   if (lowerLabel === normalizeText("Tervezett indulás")) {
@@ -483,7 +721,7 @@ function getExcelFieldValue(fuvar, excelLabel, context) {
     return formatMinutesToHours(remaining);
   }
   if (lowerLabel === normalizeText("KM")) {
-    return fuvar?.tavolsag_km ? `${fuvar.tavolsag_km} km` : "-";
+    return Number.isFinite(resolvedDistanceKm) ? `${Math.round(resolvedDistanceKm)} km` : "-";
   }
   if (lowerLabel === normalizeText("ADR")) {
     return fuvar?.adr ? "Igen" : "Nem";
@@ -565,7 +803,8 @@ function getBaseColumnDisplayValue(fuvar, columnId, context) {
       return `${Math.round(selectedAssemblyDistance)} km`;
     }
 
-    return `${fuvar.tavolsag_km} km`;
+    const resolvedDistanceKm = resolveFuvarDistanceKm(fuvar);
+    return Number.isFinite(resolvedDistanceKm) ? `${Math.round(resolvedDistanceKm)} km` : "-";
   }
   if (columnId === "type") {
     return context.viszonylatLabel;
@@ -605,7 +844,8 @@ function getBaseColumnSortValue(fuvar, columnId, context) {
       return selectedAssemblyDistance;
     }
 
-    return Number(fuvar.tavolsag_km || 0);
+    const resolvedDistanceKm = resolveFuvarDistanceKm(fuvar);
+    return Number.isFinite(resolvedDistanceKm) ? resolvedDistanceKm : 0;
   }
   if (columnId === "type") {
     return normalizeText(context.viszonylatLabel);
@@ -654,7 +894,12 @@ function getDisplayLocation(address) {
   }
 
   const first = normalizeText(parts[0]);
-  if ((first.includes("magyarorszag") || first.includes("hungary")) && parts[1]) {
+  const startsWithCountry = first.includes("magyarorszag")
+    || first.includes("hungary")
+    || KNOWN_FOREIGN_FIRST_PARTS.some((country) => first.includes(country))
+    || first.endsWith("orszag");
+
+  if (startsWithCountry && parts[1]) {
     return parts[1];
   }
 
@@ -704,36 +949,16 @@ function hasSameTrio(leftFuvar, rightFuvar) {
 
 function getCityKeyFromAddress(address) {
   const display = normalizeText(getDisplayLocation(address));
+  const normalizedAddress = normalizeText(address);
   if (!display) {
     return "";
   }
 
-  const aliases = {
-    "budapest": "budapest",
-    "gyor": "gyor",
-    "vac": "vac",
-    "dunakeszi": "dunakeszi",
-    "debrecen": "debrecen",
-    "szeged": "szeged",
-    "miskolc": "miskolc",
-    "pecs": "pecs",
-    "tatabanya": "tatabanya",
-    "kecskemet": "kecskemet",
-    "esztergom": "esztergom",
-    "kornye": "kornye",
-    "szekesfehervar": "szekesfehervar",
-    "milano": "milano",
-    "hamburg": "hamburg",
-    "lubeck": "lubeck",
-    "munchen": "munchen",
-    "frankfurt": "frankfurt",
-    "wien": "wien",
-    "brno": "brno",
-    "linz": "linz"
-  };
+  const matchedKey = Object.keys(CITY_ALIASES).find((alias) => {
+    return display.includes(alias) || normalizedAddress.includes(alias);
+  });
 
-  const matchedKey = Object.keys(aliases).find((alias) => display.includes(alias));
-  return matchedKey ? aliases[matchedKey] : "";
+  return matchedKey ? CITY_ALIASES[matchedKey] : "";
 }
 
 function estimateDistanceKm(addressA, addressB) {
@@ -2658,6 +2883,218 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
 // =============================================================
 //  FUVARKÁRTYÁK GENERÁLÁSA
 // =============================================================
+function buildFuvarChainModels(rowModels, visibleFuvarIds) {
+  const modelById = new Map(rowModels.map((model) => [model.fuvar.id, model]));
+  const exportRelayByRootId = new Map();
+  const importRelayByRootId = new Map();
+
+  const findRelayByNameReference = (rootId, type) => {
+    if (!rootId) {
+      return null;
+    }
+
+    const needle = `[${rootId}]`;
+    return rowModels.find((candidate) => {
+      const name = String(candidate?.fuvar?.megnevezes || "");
+      if (!name.includes(needle)) {
+        return false;
+      }
+
+      if (type === "export") {
+        return normalizeText(name).includes("elofutas");
+      }
+
+      if (type === "import") {
+        return normalizeText(name).includes("utofutas");
+      }
+
+      return false;
+    }) || null;
+  };
+
+  const findRelayByIdPattern = (rootId, type) => {
+    if (!rootId) {
+      return null;
+    }
+
+    if (type === "export") {
+      return modelById.get(`ELO-${rootId}`) || null;
+    }
+
+    if (type === "import") {
+      return modelById.get(`UTO-${rootId}`) || null;
+    }
+
+    return null;
+  };
+
+  rowModels.forEach((model) => {
+    const fuvar = model.fuvar;
+    if (fuvar?.elofutasExportFuvarId) {
+      exportRelayByRootId.set(fuvar.elofutasExportFuvarId, model);
+    }
+    if (fuvar?.utofutasImportFuvarId) {
+      importRelayByRootId.set(fuvar.utofutasImportFuvarId, model);
+    }
+  });
+
+  const chains = [];
+
+  rowModels.forEach((model) => {
+    const fuvar = model.fuvar;
+    const category = fuvar?.kategoria || fuvar?.viszonylat || "";
+    const isDomesticRelay = Boolean(fuvar?.elofutasExportFuvarId || fuvar?.utofutasImportFuvarId);
+
+    let stageModels = null;
+    if (category === "export") {
+      stageModels = [];
+      const relay = exportRelayByRootId.get(fuvar.id)
+        || rowModels.find((candidate) => candidate.fuvar?.elofutasExportFuvarId === fuvar.id)
+        || modelById.get(fuvar?.elofutasBelfoldFuvarId || "")
+        || findRelayByIdPattern(fuvar.id, "export")
+        || findRelayByNameReference(fuvar.id, "export");
+      if (relay) {
+        stageModels.push(relay);
+      }
+      stageModels.push(model);
+      if (stageModels.length < 2) {
+        return;
+      }
+    } else if (category === "import") {
+      stageModels = [model];
+      const relay = importRelayByRootId.get(fuvar.id)
+        || rowModels.find((candidate) => candidate.fuvar?.utofutasImportFuvarId === fuvar.id)
+        || modelById.get(fuvar?.utofutasBelfoldFuvarId || "")
+        || findRelayByIdPattern(fuvar.id, "import")
+        || findRelayByNameReference(fuvar.id, "import");
+      if (relay) {
+        stageModels.push(relay);
+      }
+      if (stageModels.length < 2) {
+        return;
+      }
+    } else if (category === "belfold" && !isDomesticRelay) {
+      stageModels = [model];
+    }
+
+    if (!stageModels || stageModels.length === 0) {
+      return;
+    }
+
+    const hasVisibleStage = stageModels.some((stageModel) => visibleFuvarIds.has(stageModel.fuvar.id));
+    if (!hasVisibleStage) {
+      return;
+    }
+
+    chains.push({
+      chainId: `chain:${fuvar.id}`,
+      rootModel: model,
+      stageModels
+    });
+  });
+
+  return chains;
+}
+
+function getFuvarStageLabel(stageFuvar, rootFuvar, index) {
+  if (stageFuvar?.elofutasExportFuvarId) {
+    return "Előfutás";
+  }
+
+  if (stageFuvar?.utofutasImportFuvarId) {
+    return "Utófutás";
+  }
+
+  const rootCategory = rootFuvar?.kategoria || rootFuvar?.viszonylat || "";
+  if (stageFuvar?.id === rootFuvar?.id && rootCategory === "export") {
+    return "Export";
+  }
+  if (stageFuvar?.id === rootFuvar?.id && rootCategory === "import") {
+    return "Import";
+  }
+
+  void index;
+  return "Belföld";
+}
+
+function buildChainRootDisplayData(rootModel, stageModels) {
+  const firstStage = stageModels[0] || rootModel;
+  const lastStage = stageModels[stageModels.length - 1] || rootModel;
+
+  const rootFuvar = rootModel.fuvar;
+  const displayFuvar = {
+    ...rootFuvar,
+    felrakas: {
+      ...(rootFuvar?.felrakas || {}),
+      cim: firstStage?.fuvar?.felrakas?.cim || rootFuvar?.felrakas?.cim,
+      ido: firstStage?.fuvar?.felrakas?.ido || rootFuvar?.felrakas?.ido
+    },
+    lerakas: {
+      ...(rootFuvar?.lerakas || {}),
+      cim: lastStage?.fuvar?.lerakas?.cim || rootFuvar?.lerakas?.cim,
+      ido: lastStage?.fuvar?.lerakas?.ido || rootFuvar?.lerakas?.ido
+    }
+  };
+
+  const totalDistanceKm = stageModels.reduce((sum, stageModel) => {
+    const km = resolveFuvarDistanceKm(stageModel?.fuvar);
+    return Number.isFinite(km) ? sum + km : sum;
+  }, 0);
+
+  if (totalDistanceKm > 0) {
+    displayFuvar.tavolsag_km = Math.round(totalDistanceKm);
+  }
+
+  const stageStatusKeys = stageModels.map((stageModel) => stageModel?.context?.assignmentStatusKey || "unassigned");
+  const aggregateStatusKey = stageStatusKeys.every((key) => key === "ready")
+    ? "ready"
+    : stageStatusKeys.some((key) => key === "ready" || key === "planning")
+      ? "planning"
+      : "unassigned";
+  const aggregateStatusLabel = aggregateStatusKey === "ready"
+    ? "✅ Kész"
+    : aggregateStatusKey === "planning"
+      ? "🔨 Tervezés alatt"
+      : "⬜ Szabad";
+
+  const displayContext = {
+    ...rootModel.context,
+    assignmentStatusKey: aggregateStatusKey,
+    statusLabel: aggregateStatusLabel,
+    isFullyAssigned: aggregateStatusKey === "ready"
+  };
+
+  return {
+    displayFuvar,
+    displayContext
+  };
+}
+
+function buildStageDisplaySegments(stageModels) {
+  const segments = [];
+
+  stageModels.forEach((stageModel, index) => {
+    const previousSegment = index > 0 ? segments[index - 1] : null;
+    const nextStageModel = index < stageModels.length - 1 ? stageModels[index + 1] : null;
+
+    const startAddress = previousSegment?.endAddress || stageModel?.fuvar?.felrakas?.cim || "";
+    const ownEndAddress = stageModel?.fuvar?.lerakas?.cim || "";
+    const chainedEndAddress = nextStageModel?.fuvar?.felrakas?.cim || "";
+
+    let endAddress = chainedEndAddress || ownEndAddress;
+    if (normalizeText(endAddress) === normalizeText(startAddress) && ownEndAddress) {
+      endAddress = ownEndAddress;
+    }
+
+    segments.push({
+      startAddress,
+      endAddress
+    });
+  });
+
+  return segments;
+}
+
 export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, options = {}) {
   const container = document.getElementById(containerId);
   const filterState = normalizeFuvarFilterState(filter);
@@ -2689,14 +3126,15 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
   const body = container.querySelector(".fuvar-card-table-body");
 
   const rowModels = [];
+  const visibleFuvarIds = new Set();
 
   renderList.forEach((fuvar) => {
     evaluateFuvarTags(fuvar);
 
-    if (!matchesUnifiedFuvarFilter(fuvar, filterState, {
+    if (matchesUnifiedFuvarFilter(fuvar, filterState, {
       timelineReferenceDate: options.timelineReferenceDate
     })) {
-      return;
+      visibleFuvarIds.add(fuvar.id);
     }
 
     const tagsHtml = [
@@ -2714,8 +3152,13 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     const potkocsiName = getAssignedResourceName("potkocsi", fuvar.assignedPotkocsiId);
 
     const viszonylatLabel = { export: "Export", import: "Import", belfold: "Belföld" }[fuvar.viszonylat] ?? fuvar.viszonylat;
-    const isFullyAssigned = fuvar.assignedSoforId && fuvar.assignedVontatoId && fuvar.assignedPotkocsiId;
-    const statusLabel = isFullyAssigned ? "✅ Kész" : (fuvar.assignedSoforId || fuvar.assignedVontatoId || fuvar.assignedPotkocsiId) ? "🔨 Tervezés" : "⬜ Szabad";
+    const assignmentStatusKey = getFuvarAssignmentStatusKey(fuvar);
+    const isFullyAssigned = assignmentStatusKey === "ready";
+    const statusLabel = assignmentStatusKey === "ready"
+      ? "✅ Kész"
+      : assignmentStatusKey === "planning"
+        ? "🔨 Tervezés alatt"
+        : "⬜ Szabad";
 
     const clearBtnHtml = isFullyAssigned
       ? `<button type="button" class="fuvar-resource-clear-btn fuvar-header-clear-btn" data-action="clear-fuvar-assignment">Erőforrás törlés</button>`
@@ -2731,7 +3174,8 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
       potkocsiName,
       statusLabel,
       viszonylatLabel,
-      isFullyAssigned
+      isFullyAssigned,
+      assignmentStatusKey
     };
 
     rowModels.push({
@@ -2742,14 +3186,16 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     });
   });
 
+  const chainModels = buildFuvarChainModels(rowModels, visibleFuvarIds);
+
   const recommendationOrderMap = buildResourceRecommendationOrderMap(
     options.recommendationResource,
-    rowModels.map((model) => model.fuvar)
+    chainModels.map((model) => model.rootModel.fuvar)
   );
 
   if (recommendationOrderMap) {
-    rowModels.sort((left, right) => {
-      return compareByResourceRecommendation(left.fuvar, right.fuvar, recommendationOrderMap);
+    chainModels.sort((left, right) => {
+      return compareByResourceRecommendation(left.rootModel.fuvar, right.rootModel.fuvar, recommendationOrderMap);
     });
   }
 
@@ -2757,19 +3203,21 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
   if (!recommendationOrderMap && currentFuvarSort.columnId && (effectiveColumns.includes(currentFuvarSort.columnId) || isAssemblyDistanceSort)) {
     const sortMeta = isAssemblyDistanceSort ? { sortType: "number" } : getColumnMeta(currentFuvarSort.columnId);
 
-    rowModels.sort((left, right) => {
+    chainModels.sort((left, right) => {
       const optionMeta = FUVAR_CARD_COLUMN_OPTION_MAP.get(currentFuvarSort.columnId);
+      const leftRoot = left.rootModel;
+      const rightRoot = right.rootModel;
 
       const leftValue = isAssemblyDistanceSort
-        ? getSelectedAssemblyDistanceKm(left.fuvar, assemblyDropoffAddress)
+        ? getSelectedAssemblyDistanceKm(leftRoot.fuvar, assemblyDropoffAddress)
         : optionMeta?.excelLabel
-          ? getExcelFieldSortValue(left.fuvar, optionMeta.excelLabel, left.context)
-          : getBaseColumnSortValue(left.fuvar, currentFuvarSort.columnId, left.context);
+          ? getExcelFieldSortValue(leftRoot.fuvar, optionMeta.excelLabel, leftRoot.context)
+          : getBaseColumnSortValue(leftRoot.fuvar, currentFuvarSort.columnId, leftRoot.context);
       const rightValue = isAssemblyDistanceSort
-        ? getSelectedAssemblyDistanceKm(right.fuvar, assemblyDropoffAddress)
+        ? getSelectedAssemblyDistanceKm(rightRoot.fuvar, assemblyDropoffAddress)
         : optionMeta?.excelLabel
-          ? getExcelFieldSortValue(right.fuvar, optionMeta.excelLabel, right.context)
-          : getBaseColumnSortValue(right.fuvar, currentFuvarSort.columnId, right.context);
+          ? getExcelFieldSortValue(rightRoot.fuvar, optionMeta.excelLabel, rightRoot.context)
+          : getBaseColumnSortValue(rightRoot.fuvar, currentFuvarSort.columnId, rightRoot.context);
 
       let result = 0;
       if (sortMeta.sortType === "number" || sortMeta.sortType === "date") {
@@ -2841,31 +3289,16 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     });
   });
 
-  rowModels.forEach(({ fuvar, tagsHtml, actionButtonsHtml, context }) => {
-    const card = document.createElement("div");
-    card.className = "menu-card";
-    card.style.marginBottom = "6px";
-    card.dataset.id = fuvar.id;
-
-    const categoryPalette = getCategoryPalette(fuvar.kategoria || fuvar.viszonylat || "all");
-    card.style.setProperty("--fuvar-card-bg", categoryPalette.softBg);
-    card.style.setProperty("--fuvar-card-bg-strong", categoryPalette.softBgStrong);
-    card.style.setProperty("--fuvar-card-border", categoryPalette.border);
-    card.style.setProperty("--fuvar-card-glow", categoryPalette.glow);
-
-    if (focusedFuvarId === fuvar.id) {
-      card.classList.add("active-fuvar");
-    }
-
-    const columnsHtml = effectiveColumns.map((columnId) => {
+  const renderColumnsHtml = (cardFuvar, cardContext) => {
+    return effectiveColumns.map((columnId) => {
       const optionMeta = FUVAR_CARD_COLUMN_OPTION_MAP.get(columnId);
       if (!optionMeta) {
         return "";
       }
 
       const value = optionMeta.excelLabel
-        ? getExcelFieldValue(fuvar, optionMeta.excelLabel, context)
-        : getBaseColumnDisplayValue(fuvar, columnId, context);
+        ? getExcelFieldValue(cardFuvar, optionMeta.excelLabel, cardContext)
+        : getBaseColumnDisplayValue(cardFuvar, columnId, cardContext);
 
       const extraClass = columnId === "distance"
         ? " fuvar-card-distance"
@@ -2879,16 +3312,80 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
         </div>
       `;
     }).join("");
+  };
+
+  chainModels.forEach(({ chainId, rootModel, stageModels }) => {
+    const { fuvar, tagsHtml, actionButtonsHtml } = rootModel;
+    const { displayFuvar, displayContext } = buildChainRootDisplayData(rootModel, stageModels);
+    const expanded = expandedFuvarChainIds.has(chainId);
+
+    const card = document.createElement("div");
+    card.className = "menu-card";
+    card.style.marginBottom = "6px";
+    card.dataset.id = fuvar.id;
+
+    const categoryPalette = getCategoryPalette(fuvar.kategoria || fuvar.viszonylat || "all");
+    card.style.setProperty("--fuvar-card-bg", categoryPalette.softBg);
+    card.style.setProperty("--fuvar-card-bg-strong", categoryPalette.softBgStrong);
+    card.style.setProperty("--fuvar-card-border", categoryPalette.border);
+    card.style.setProperty("--fuvar-card-glow", categoryPalette.glow);
+
+    if (displayContext.assignmentStatusKey === "ready") {
+      card.style.setProperty("--fuvar-card-bg", "rgba(92, 201, 141, 0.25)");
+      card.style.setProperty("--fuvar-card-bg-strong", "rgba(92, 201, 141, 0.34)");
+      card.style.setProperty("--fuvar-card-border", "rgba(92, 201, 141, 0.65)");
+      card.style.setProperty("--fuvar-card-glow", "rgba(92, 201, 141, 0.24)");
+    } else if (displayContext.assignmentStatusKey === "planning") {
+      card.style.setProperty("--fuvar-card-bg", "rgba(255, 193, 7, 0.24)");
+      card.style.setProperty("--fuvar-card-bg-strong", "rgba(255, 193, 7, 0.33)");
+      card.style.setProperty("--fuvar-card-border", "rgba(255, 193, 7, 0.6)");
+      card.style.setProperty("--fuvar-card-glow", "rgba(255, 193, 7, 0.22)");
+    }
+
+    if (focusedFuvarId === fuvar.id) {
+      card.classList.add("active-fuvar");
+    }
+
+    const columnsHtml = renderColumnsHtml(displayFuvar, displayContext);
+
+    const toggleHtml = `
+      <button
+        type="button"
+        class="fuvar-chain-toggle"
+        data-action="toggle-chain"
+        title="Részletek megjelenítése"
+      >
+        <span class="fuvar-chain-toggle-arrow">${expanded ? "▾" : "▸"}</span>
+        <span class="fuvar-chain-toggle-count">${stageModels.length}</span>
+      </button>
+    `;
 
     card.innerHTML = `
       <div class="fuvar-card-inline">
-        <div class="fuvar-tag-list fuvar-tag-list-inline">${tagsHtml}</div>
+        <div class="fuvar-tag-list fuvar-tag-list-inline">${toggleHtml}${tagsHtml}</div>
         <div class="fuvar-card-grid fuvar-card-grid-inline">
           ${columnsHtml}
         </div>
         <div class="fuvar-card-inline-actions">${actionButtonsHtml}</div>
       </div>
     `;
+
+    const toggleBtn = card.querySelector('[data-action="toggle-chain"]');
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (expandedFuvarChainIds.has(chainId)) {
+          expandedFuvarChainIds.delete(chainId);
+        } else {
+          expandedFuvarChainIds.add(chainId);
+        }
+
+        renderFuvarCards(containerId, filter, onSelectFuvar, options);
+        enableFuvarDrag();
+      });
+    }
 
     card.addEventListener("click", () => {
       window.dispatchEvent(new CustomEvent("fuvar:focus", {
@@ -2906,7 +3403,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
 
     card.addEventListener("dblclick", (event) => {
       event.preventDefault();
-      openFuvarDetailsModal(fuvar, context);
+      openFuvarDetailsModal(fuvar, displayContext);
     });
 
     const removeSpediccioBtn = card.querySelector('[data-action="remove-spediccio"]');
@@ -2982,5 +3479,94 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     }
 
     body.appendChild(card);
+
+    if (expanded) {
+      const stageContainer = document.createElement("div");
+      stageContainer.className = "fuvar-stage-list";
+      const stageSegments = buildStageDisplaySegments(stageModels);
+
+      stageModels.forEach((stageModel, index) => {
+        const stageFuvar = stageModel.fuvar;
+        const stageContext = stageModel.context;
+        const stageSegment = stageSegments[index] || {
+          startAddress: stageFuvar?.felrakas?.cim || "",
+          endAddress: stageFuvar?.lerakas?.cim || ""
+        };
+        const stageLabel = getFuvarStageLabel(stageFuvar, fuvar, index);
+
+        const stageDisplayFuvar = {
+          ...stageFuvar,
+          felrakas: {
+            ...(stageFuvar?.felrakas || {}),
+            cim: stageSegment.startAddress || stageFuvar?.felrakas?.cim
+          },
+          lerakas: {
+            ...(stageFuvar?.lerakas || {}),
+            cim: stageSegment.endAddress || stageFuvar?.lerakas?.cim
+          }
+        };
+
+        const stageDistanceKm = getRoadDistanceKm(
+          stageDisplayFuvar?.felrakas?.cim,
+          stageDisplayFuvar?.lerakas?.cim,
+          { prime: true }
+        );
+
+        if (Number.isFinite(stageDistanceKm)) {
+          stageDisplayFuvar.tavolsag_km = Math.round(stageDistanceKm);
+        }
+
+        const stageColumnsHtml = renderColumnsHtml(stageDisplayFuvar, stageContext);
+
+        const stageNode = document.createElement("div");
+        stageNode.className = `menu-card fuvar-stage-card ${stageContext?.assignmentStatusKey || "unassigned"}`;
+        stageNode.dataset.id = stageFuvar.id;
+        stageNode.dataset.fuvarId = stageFuvar.id;
+        stageNode.style.marginBottom = "0";
+        stageNode.innerHTML = `
+          <div class="fuvar-card-inline">
+            <div class="fuvar-tag-list fuvar-tag-list-inline fuvar-stage-tag-lane">
+              <span class="fuvar-stage-index">${index + 1}</span>
+              <span class="fuvar-stage-label">${stageLabel}</span>
+            </div>
+            <div class="fuvar-card-grid fuvar-card-grid-inline">
+              ${stageColumnsHtml}
+            </div>
+            <div class="fuvar-card-inline-actions"></div>
+          </div>
+        `;
+
+        if (focusedFuvarId === stageFuvar.id) {
+          stageNode.classList.add("active-fuvar-stage");
+        }
+
+        stageNode.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          window.dispatchEvent(new CustomEvent("fuvar:focus", {
+            detail: { fuvarId: stageFuvar.id }
+          }));
+
+          const results = evaluateAllResources(SOFOROK, VONTATOK, POTKOCSIK, stageFuvar);
+          if (typeof onSelectFuvar === "function") {
+            onSelectFuvar(results);
+          }
+
+          renderFuvarCards(containerId, filter, onSelectFuvar, options);
+          enableFuvarDrag();
+        });
+
+        stageNode.addEventListener("dblclick", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          openFuvarDetailsModal(stageDisplayFuvar, stageContext);
+        });
+
+        stageContainer.appendChild(stageNode);
+      });
+
+      body.appendChild(stageContainer);
+    }
   });
 }

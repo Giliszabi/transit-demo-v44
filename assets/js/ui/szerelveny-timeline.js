@@ -804,6 +804,20 @@ function getExportImportProximityHint(block, focusedImportFuvar) {
 const ASSEMBLY_FUVAR_REVENUE_PER_KM = 420;
 const ASSEMBLY_FUVAR_COST_PER_KM = 255;
 
+function getAssemblyBlockOperationalCost(block, distanceKm = null) {
+  const fuvar = findFuvarByBlock(block);
+  const explicitCost = Number(fuvar?.osszkoltseg ?? fuvar?.onkoltseg);
+  if (Number.isFinite(explicitCost) && explicitCost > 0) {
+    return Math.round(explicitCost);
+  }
+
+  if (Number.isFinite(distanceKm)) {
+    return Math.round(distanceKm * ASSEMBLY_FUVAR_COST_PER_KM);
+  }
+
+  return 0;
+}
+
 function getAssemblyBlockDistanceKm(block) {
   if (Number.isFinite(block?.tavolsagKm)) {
     return Number(block.tavolsagKm);
@@ -1010,7 +1024,7 @@ function buildAssemblyCompletedJaratInfo(fuvarBlocks, assembly = null) {
 function buildAssemblyBlockTooltip(block, jaratMeta = null) {
   const distanceKm = getAssemblyBlockDistanceKm(block);
   const revenue = Number.isFinite(distanceKm) ? distanceKm * ASSEMBLY_FUVAR_REVENUE_PER_KM : 0;
-  const cost = Number.isFinite(distanceKm) ? distanceKm * ASSEMBLY_FUVAR_COST_PER_KM : 0;
+  const cost = getAssemblyBlockOperationalCost(block, distanceKm);
   const profit = revenue - cost;
   const distanceLabel = Number.isFinite(distanceKm) ? `${Math.round(distanceKm)} km` : "n/a";
 
@@ -1362,6 +1376,46 @@ function resolveLinkedPotkocsi(vontato, potkocsik) {
   }) || null;
 }
 
+function resolveResourceFromFuvarBlocks(fuvarBlocks, resources, assignmentField) {
+  const statsById = new Map();
+
+  (fuvarBlocks || []).forEach((block) => {
+    const fuvar = findFuvarByBlock(block);
+    const resourceId = fuvar?.[assignmentField];
+    if (!resourceId) {
+      return;
+    }
+
+    const prev = statsById.get(resourceId) || { count: 0, latestStartMs: 0 };
+    const startMs = new Date(block?.start || fuvar?.felrakas?.ido || 0).getTime();
+    statsById.set(resourceId, {
+      count: prev.count + 1,
+      latestStartMs: Number.isFinite(startMs)
+        ? Math.max(prev.latestStartMs, startMs)
+        : prev.latestStartMs
+    });
+  });
+
+  const rankedIds = Array.from(statsById.entries())
+    .sort((left, right) => {
+      const countDiff = right[1].count - left[1].count;
+      if (countDiff !== 0) {
+        return countDiff;
+      }
+      return right[1].latestStartMs - left[1].latestStartMs;
+    })
+    .map(([id]) => id);
+
+  for (const id of rankedIds) {
+    const match = resources.find((resource) => resource.id === id) || null;
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
+}
+
 function findFuvarByBlock(block) {
   if (!block) {
     return null;
@@ -1709,10 +1763,15 @@ function closeJaratInfoModal() {
 }
 
 function buildJaratSummaryData(segment, assembly) {
-  const fuvarKm = segment.blocks.reduce((sum, block) => {
+  const fuvarMetrics = segment.blocks.reduce((acc, block) => {
     const km = getAssemblyBlockDistanceKm(block);
-    return Number.isFinite(km) ? sum + km : sum;
-  }, 0);
+    const cost = getAssemblyBlockOperationalCost(block, km);
+    if (Number.isFinite(km)) {
+      acc.fuvarKm += km;
+    }
+    acc.fuvarCost += cost;
+    return acc;
+  }, { fuvarKm: 0, fuvarCost: 0 });
 
   const segmentStartMs = new Date(segment.start).getTime();
   const segmentEndMs = new Date(segment.end).getTime();
@@ -1731,11 +1790,12 @@ function buildJaratSummaryData(segment, assembly) {
       return Number.isFinite(km) ? sum + km : sum;
     }, 0);
 
-  const revenue = Math.round(fuvarKm * ASSEMBLY_FUVAR_REVENUE_PER_KM);
-  const cost = Math.round((fuvarKm + rezsiKm) * ASSEMBLY_FUVAR_COST_PER_KM);
+  const revenue = Math.round(fuvarMetrics.fuvarKm * ASSEMBLY_FUVAR_REVENUE_PER_KM);
+  const rezsiCost = Math.round(rezsiKm * ASSEMBLY_FUVAR_COST_PER_KM);
+  const cost = Math.round(fuvarMetrics.fuvarCost + rezsiCost);
   const profit = revenue - cost;
 
-  return { fuvarKm, rezsiKm, revenue, cost, profit };
+  return { fuvarKm: fuvarMetrics.fuvarKm, rezsiKm, revenue, cost, profit };
 }
 
 function openJaratInfoModalForSegment(segment, assembly) {
@@ -2320,9 +2380,11 @@ function buildAssemblyBlockContextActions(assembly, block, soforok, vontatok, po
 function buildAssemblies(soforok, vontatok, potkocsik) {
   const persistedAssemblies = vontatok
     .map((vontato) => {
-      const sofor = resolveLinkedSofor(vontato, soforok);
-      const potkocsi = resolveLinkedPotkocsi(vontato, potkocsik);
-      const fuvarBlocks = collectAssemblyFuvarBlocks(vontato, sofor, potkocsi);
+      const linkedSofor = resolveLinkedSofor(vontato, soforok);
+      const linkedPotkocsi = resolveLinkedPotkocsi(vontato, potkocsik);
+      const fuvarBlocks = collectAssemblyFuvarBlocks(vontato, linkedSofor, linkedPotkocsi);
+      const sofor = linkedSofor || resolveResourceFromFuvarBlocks(fuvarBlocks, soforok, "assignedSoforId");
+      const potkocsi = linkedPotkocsi || resolveResourceFromFuvarBlocks(fuvarBlocks, potkocsik, "assignedPotkocsiId");
 
       return {
         id: vontato.id,

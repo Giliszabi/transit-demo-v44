@@ -161,6 +161,52 @@ function injectStyles() {
     }
     .aa-spedicio-hint strong { color: #e1bee7; }
 
+    .aa-dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .aa-kpi-card {
+      border: 1px solid #2e3d58;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+      padding: 10px 12px;
+    }
+    .aa-kpi-label {
+      color: #8fa7bf;
+      font-size: 0.73rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .aa-kpi-value {
+      color: #e6f1ff;
+      font-weight: 600;
+      font-size: 1.05rem;
+      margin-top: 3px;
+    }
+    .aa-kpi-value.good { color: #5cc98d; }
+    .aa-kpi-value.warn { color: #fb8c00; }
+    .aa-kpi-value.bad { color: #ef7070; }
+
+    .aa-mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      margin-top: 6px;
+    }
+    .aa-mini-table th,
+    .aa-mini-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #25354f;
+      text-align: left;
+      vertical-align: top;
+    }
+    .aa-mini-table th {
+      color: #7a9bbf;
+      font-weight: 500;
+    }
+
     .aa-modal-footer {
       padding: 14px 24px;
       border-top: 1px solid #2e3d58;
@@ -254,6 +300,107 @@ function statusBadge(jarat) {
   return `<span class="aa-badge ok">OK</span>`;
 }
 
+function getResourceDisplayText(primaryResource, list, getLabel) {
+  const safeList = Array.isArray(list) ? list : [];
+
+  if (safeList.length > 0) {
+    const labels = safeList
+      .map((item) => getLabel(item))
+      .filter(Boolean);
+
+    if (labels.length > 1) {
+      return `${labels[0]} +${labels.length - 1}`;
+    }
+
+    if (labels.length === 1) {
+      return labels[0];
+    }
+  }
+
+  if (primaryResource) {
+    const fallback = getLabel(primaryResource);
+    if (fallback) return fallback;
+  }
+
+  return `<span style="color:#ef7070">–</span>`;
+}
+
+function buildStabilityDashboardHtml(jaratok) {
+  const total = jaratok.length;
+  const partial = jaratok.filter((j) => (j.unassignedFuvars?.length || 0) > 0).length;
+  const ok = Math.max(0, total - partial);
+  const multiSofor = jaratok.filter((j) => (j.resourceSets?.soforok?.length || 0) > 1).length;
+  const multiVontato = jaratok.filter((j) => (j.resourceSets?.vontatok?.length || 0) > 1).length;
+  const multiPotkocsi = jaratok.filter((j) => (j.resourceSets?.potkocsik?.length || 0) > 1).length;
+  const multiAny = jaratok.filter((j) => {
+    return (j.resourceSets?.soforok?.length || 0) > 1
+      || (j.resourceSets?.vontatok?.length || 0) > 1
+      || (j.resourceSets?.potkocsik?.length || 0) > 1;
+  }).length;
+  const coveragePct = total > 0 ? Math.round((ok / total) * 100) : 100;
+
+  const risky = jaratok
+    .filter((j) => (j.unassignedFuvars?.length || 0) > 0 || (j.warnings?.length || 0) > 0)
+    .sort((a, b) => {
+      const aScore = (a.unassignedFuvars?.length || 0) * 10 + (a.warnings?.length || 0);
+      const bScore = (b.unassignedFuvars?.length || 0) * 10 + (b.warnings?.length || 0);
+      return bScore - aScore;
+    })
+    .slice(0, 10);
+
+  const riskRows = risky.length > 0
+    ? risky.map((j) => {
+      const drivers = j.resourceSets?.soforok?.length || 0;
+      const tractors = j.resourceSets?.vontatok?.length || 0;
+      const trailers = j.resourceSets?.potkocsik?.length || 0;
+      const notes = [
+        (j.unassignedFuvars?.length || 0) > 0 ? `${j.unassignedFuvars.length} hiányos fuvar` : null,
+        (j.warnings?.length || 0) > 0 ? `${j.warnings.length} figyelmeztetés` : null
+      ].filter(Boolean).join(" • ");
+
+      return `<tr>
+        <td style="color:#7ab8f5">${escHtml(j.jaratId || "-")}</td>
+        <td>${drivers}/${tractors}/${trailers}</td>
+        <td>${escHtml(notes || "-")}</td>
+      </tr>`;
+    }).join("")
+    : `<tr><td colspan="3" style="color:#8fa7bf">Nincs kockázatos járat a jelenlegi futásban.</td></tr>`;
+
+  const coverageClass = coveragePct >= 95 ? "good" : (coveragePct >= 80 ? "warn" : "bad");
+
+  return `
+    <div class="aa-section-title">Stabilitási Dashboard</div>
+    <div class="aa-dashboard-grid">
+      <div class="aa-kpi-card">
+        <div class="aa-kpi-label">Járat lefedettség</div>
+        <div class="aa-kpi-value ${coverageClass}">${coveragePct}%</div>
+      </div>
+      <div class="aa-kpi-card">
+        <div class="aa-kpi-label">Részleges járatok</div>
+        <div class="aa-kpi-value ${partial > 0 ? "bad" : "good"}">${partial} / ${total}</div>
+      </div>
+      <div class="aa-kpi-card">
+        <div class="aa-kpi-label">Több erőforrásos</div>
+        <div class="aa-kpi-value ${multiAny > 0 ? "warn" : "good"}">${multiAny}</div>
+      </div>
+      <div class="aa-kpi-card">
+        <div class="aa-kpi-label">Több sofőr/vontató/pótkocsi</div>
+        <div class="aa-kpi-value">${multiSofor}/${multiVontato}/${multiPotkocsi}</div>
+      </div>
+    </div>
+    <table class="aa-mini-table">
+      <thead>
+        <tr>
+          <th>Járat</th>
+          <th>S/V/P db</th>
+          <th>Jelzés</th>
+        </tr>
+      </thead>
+      <tbody>${riskRows}</tbody>
+    </table>
+  `;
+}
+
 function buildModalHtml(result) {
   const { jaratok, unassigned, warnings, stats, spedicioPartners, profileConfig } = result;
 
@@ -277,15 +424,21 @@ function buildModalHtml(result) {
   `;
 
   const jaratRows = jaratok.map((j) => {
-    const soforText = j.resources?.sofor
-      ? (j.resources.sofor.nev || j.resources.sofor.id)
-      : `<span style="color:#ef7070">–</span>`;
-    const vontatoText = j.resources?.vontato
-      ? (j.resources.vontato.rendszam || j.resources.vontato.id)
-      : `<span style="color:#ef7070">–</span>`;
-    const potkocsiText = j.resources?.potkocsi
-      ? (j.resources.potkocsi.rendszam || j.resources.potkocsi.id)
-      : `<span style="color:#ef7070">–</span>`;
+    const soforText = getResourceDisplayText(
+      j.resources?.sofor,
+      j.resourceSets?.soforok,
+      (item) => item?.nev || item?.id || ""
+    );
+    const vontatoText = getResourceDisplayText(
+      j.resources?.vontato,
+      j.resourceSets?.vontatok,
+      (item) => item?.rendszam || item?.id || ""
+    );
+    const potkocsiText = getResourceDisplayText(
+      j.resources?.potkocsi,
+      j.resourceSets?.potkocsik,
+      (item) => item?.rendszam || item?.id || ""
+    );
 
     return `<tr>
       <td style="color:#7ab8f5;font-size:0.75rem">${j.jaratId}</td>
@@ -316,6 +469,8 @@ function buildModalHtml(result) {
          </div>` : ""}`
     : "";
 
+    const dashboardHtml = buildStabilityDashboardHtml(jaratok);
+
   return `
     <div class="aa-modal-header">
       <span class="aa-modal-title">⊞&nbsp; Fuvarok összerakása – Előnézet</span>
@@ -323,6 +478,7 @@ function buildModalHtml(result) {
     </div>
     ${statsHtml}
     <div class="aa-modal-body">
+      ${dashboardHtml}
       <div class="aa-section-title">Járatok (${jaratok.length})</div>
       <table class="aa-table">
         <thead>

@@ -51,8 +51,21 @@ function getShortAddress(address) {
     return "-";
   }
 
-  const first = parts[0].toLowerCase();
-  if ((first.includes("magyarország") || first.includes("hungary")) && parts[1]) {
+  const first = String(parts[0] || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  const startsWithCountry = first.includes("magyarorszag")
+    || first.includes("hungary")
+    || [
+      "hollandia", "nemetorszag", "germany", "dania", "franciaorszag", "olaszorszag",
+      "csehorszag", "luxemburg", "ausztria", "austria", "belgium", "netherlands",
+      "lengyelorszag", "polska", "romania", "szerbiai", "bulgaria", "horvato",
+      "szlovakia", "ukrajna"
+    ].some((country) => first.includes(country))
+    || first.endsWith("orszag");
+
+  if (startsWithCountry && parts[1]) {
     return parts[1];
   }
 
