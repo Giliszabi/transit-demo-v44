@@ -106,12 +106,44 @@ function mapGeneratedDrivers(drivers, schedules, planningDate) {
       dedicatedVehiclePlate: driver.dedicatedVehiclePlate || null,
       preferredCountries: Array.isArray(driver.preferredCountries) ? driver.preferredCountries : [],
       blockedCountries: Array.isArray(driver.blockedCountries) ? driver.blockedCountries : [],
+      pairedDriverNames: Array.isArray(driver.pairedDriverNames) ? driver.pairedDriverNames : [],
       jelenlegi_pozicio: { hely: "Környe" },
       timeline: createTimelineFromSchedule(schedule, planningDate),
       driving: createDrivingProfile(driver),
       importedPlanning: driver,
       importedSchedule: schedule
     };
+  });
+}
+
+function linkGeneratedDriverPairs(drivers) {
+  const byNormalizedName = new Map(
+    drivers.map((driver) => [normalizeText(driver.nev), driver])
+  );
+  const linkedKeys = new Set();
+
+  drivers.forEach((driver) => {
+    if (String(driver?.kezes || "1") !== "2") {
+      return;
+    }
+
+    const candidates = Array.isArray(driver.pairedDriverNames) ? driver.pairedDriverNames : [];
+    const partner = candidates
+      .map((name) => byNormalizedName.get(normalizeText(name)))
+      .find((item) => item && item.id !== driver.id && String(item.kezes || "1") === "2");
+
+    if (!partner) {
+      return;
+    }
+
+    const pairKey = [driver.id, partner.id].sort().join("|");
+    if (linkedKeys.has(pairKey)) {
+      return;
+    }
+
+    driver.linkedSoforId = partner.id;
+    partner.linkedSoforId = driver.id;
+    linkedKeys.add(pairKey);
   });
 }
 
@@ -204,6 +236,7 @@ export async function loadGeneratedPlanningData() {
     const mappedDrivers = mapGeneratedDrivers(drivers, driverSchedules, planningContext?.planningDate);
     const mappedVehicles = mapGeneratedVehicles(vehicles, drivers);
     linkDriversAndVehicles(mappedDrivers, mappedVehicles);
+    linkGeneratedDriverPairs(mappedDrivers);
     const rosterMeta = applyRosterAssignments(mappedDrivers, mappedVehicles, rosterAssignments, planningContext?.planningDate);
 
     replaceArrayContents(SOFOROK, mappedDrivers);

@@ -211,11 +211,19 @@ const appState = {
     workPattern: "all",
     matchRule: "all"
   },
+  exportTableVisibleColumns: {
+    jobId: false,
+    weeklyKm: false,
+    workSchedule: false
+  },
+  exportColumnsModalOpen: false,
   riskFilter: "all",
   selectedDriverId: null,
   selectedExportDate: null,
   refreshTimerId: null,
-  generatedPlanning: null
+  generatedPlanning: null,
+  titboxConfirmations: {},
+  dispatcherAvailability: {}
 };
 
 const TIMELINE_PANEL_IDS = ["assembly-timeline", "resource-timeline"];
@@ -287,6 +295,7 @@ async function initMenetiranyitasPanel() {
   const exportTableFilters = document.getElementById("export-table-filters");
   const exportTableContainer = document.getElementById("export-table-container");
   const alertsList = document.getElementById("monitor-alerts-list");
+  const titboxFeedbackList = document.getElementById("titbox-feedback-list");
   const riskLegend = document.getElementById("risk-legend");
 
   if (driverList) {
@@ -304,9 +313,13 @@ async function initMenetiranyitasPanel() {
     exportTableContainer.addEventListener("click", onDriverListClick);
     exportTableContainer.addEventListener("keydown", onDriverListKeydown);
     
-    // Delegate blur event for note editing from input elements
+    // Delegate blur event for input editing
     exportTableContainer.addEventListener("blur", (event) => {
-      if (event.target.classList?.contains?.("export-note-edit")) {
+      const classList = event.target.classList;
+      if (classList?.contains?.("export-note-edit") ||
+          classList?.contains?.("export-start-time-edit") ||
+          classList?.contains?.("export-availability-from-edit") ||
+          classList?.contains?.("export-availability-to-edit")) {
         onExportTableCellBlur(event);
       }
     }, true);
@@ -326,6 +339,11 @@ async function initMenetiranyitasPanel() {
   if (alertsList) {
     alertsList.addEventListener("click", onAlertListClick);
     alertsList.addEventListener("keydown", onAlertListKeydown);
+  }
+
+  if (titboxFeedbackList) {
+    titboxFeedbackList.addEventListener("click", onTitboxPanelClick);
+    titboxFeedbackList.addEventListener("keydown", onTitboxPanelKeydown);
   }
 
   // riskLegend is hidden - not needed
@@ -358,22 +376,59 @@ function initCollapsibleSections() {
 }
 
 function onExportTableCellBlur(event) {
-  if (event.target.classList?.contains?.("export-note-edit")) {
-    const input = event.target;
-    const assignmentId = input.getAttribute("data-assignment-id");
-    const newValue = input.value;
-    
-    if (assignmentId && appState.generatedPlanning?.exportAssignments) {
-      const assignment = appState.generatedPlanning.exportAssignments.find(
-        (a) => a.assignmentId === assignmentId
-      );
-      if (assignment) {
-        assignment.dispatchNote = newValue;
-        // Also save to session storage or backend if needed
-        console.log(`Updated assignment ${assignmentId} note: ${newValue}`);
-      }
-    }
+  const input = event.target;
+  const assignmentId = input.getAttribute("data-assignment-id");
+  
+  if (!assignmentId || !appState.generatedPlanning?.exportAssignments) {
+    return;
   }
+
+  const assignment = appState.generatedPlanning.exportAssignments.find(
+    (a) => a.assignmentId === assignmentId
+  );
+  
+  if (!assignment) {
+    return;
+  }
+
+  if (input.classList?.contains?.("export-note-edit")) {
+    assignment.dispatchNote = input.value;
+  } else if (input.classList?.contains?.("export-start-time-edit")) {
+    assignment.startTime = input.value;
+  } else if (input.classList?.contains?.("export-availability-from-edit")) {
+    assignment.availabilityFrom = input.value;
+  } else if (input.classList?.contains?.("export-availability-to-edit")) {
+    assignment.availabilityTo = input.value;
+  }
+}
+
+function toDateTimeLocalValue(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return "";
+  }
+
+  const normalizedNoSeconds = raw.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+  if (normalizedNoSeconds) {
+    return raw;
+  }
+
+  const normalizedWithSeconds = raw.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/);
+  if (normalizedWithSeconds) {
+    return raw.slice(0, 16);
+  }
+
+  const parsed = new Date(raw);
+  if (!Number.isFinite(parsed.getTime())) {
+    return "";
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const hours = String(parsed.getHours()).padStart(2, "0");
+  const minutes = String(parsed.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 function getTimelinePanelElement(panelId) {
@@ -613,6 +668,7 @@ function refreshDashboard(options = {}) {
   // renderExportDriverList(profiles, appState.selectedDriverId);  // HIDDEN - not needed in menetirányítás
   // renderDriverStateList(filteredProfiles, appState.selectedDriverId);  // HIDDEN - not needed in menetirányítás
   renderMainPanel(selectedProfile, now);
+  renderDispatchOpsPanels(profiles, now);
   renderInsightsPanel(selectedProfile);
   // renderOperationLogPanel();  // HIDDEN - not needed in menetirányítás
   renderAlertsPanel(appState.alerts, appState.selectedDriverId);
@@ -712,12 +768,17 @@ function buildDriverProfiles(now) {
     planningDate
   });
 
-  return SOFOROK.map((driver, index) => {
-    const eligibility = eligibilityIndex.get(driver.id) || null;
-    driver.dispatchEligibility = eligibility;
-    const exportAssignments = resolveExportAssignmentsForDriver(driver, selectedExportDate);
-    return buildDriverProfile(driver, index, now, eligibility, exportAssignments);
-  });
+  return SOFOROK
+    .filter((driver) => {
+      const driverName = String(driver?.nev || driver?.name || "").toLowerCase();
+      return driverName !== "kivonya";
+    })
+    .map((driver, index) => {
+      const eligibility = eligibilityIndex.get(driver.id) || null;
+      driver.dispatchEligibility = eligibility;
+      const exportAssignments = resolveExportAssignmentsForDriver(driver, selectedExportDate);
+      return buildDriverProfile(driver, index, now, eligibility, exportAssignments);
+    });
 }
 
 function buildDriverProfile(driver, index, now, eligibility, exportAssignments = []) {
@@ -916,41 +977,7 @@ function renderExportTableFilters(profiles) {
     .map((value) => `<option value="${escapeHtml(value)}"${appState.exportFilters.workPattern === value ? " selected" : ""}>${escapeHtml(value)}</option>`)
     .join("");
 
-  container.hidden = false;
-  container.innerHTML = `
-    <div class="export-filter-grid">
-      <label class="export-filter-field">
-        <span>Gépjárművezető kereső</span>
-        <input type="search" value="${escapeHtml(appState.exportFilters.driverQuery)}" data-export-filter="driverQuery" placeholder="név vagy részlet" />
-      </label>
-      <label class="export-filter-field">
-        <span>Vontató</span>
-        <input type="search" value="${escapeHtml(appState.exportFilters.vehicleQuery)}" data-export-filter="vehicleQuery" placeholder="rendszám" />
-      </label>
-      <label class="export-filter-field">
-        <span>SZF-SZÁM</span>
-        <input type="search" value="${escapeHtml(appState.exportFilters.jobQuery)}" data-export-filter="jobQuery" placeholder="fuvarszám" />
-      </label>
-      <label class="export-filter-field">
-        <span>MI neve</span>
-        <select data-export-filter="workPattern">
-          <option value="all">Összes</option>
-          ${workPatternOptions}
-        </select>
-      </label>
-      <label class="export-filter-field">
-        <span>Párosítás</span>
-        <select data-export-filter="matchRule">
-          <option value="all"${appState.exportFilters.matchRule === "all" ? " selected" : ""}>Összes</option>
-          <option value="both"${appState.exportFilters.matchRule === "both" ? " selected" : ""}>Név + rendszám</option>
-          <option value="name"${appState.exportFilters.matchRule === "name" ? " selected" : ""}>Csak név</option>
-          <option value="vehicle"${appState.exportFilters.matchRule === "vehicle" ? " selected" : ""}>Csak rendszám</option>
-          <option value="multi"${appState.exportFilters.matchRule === "multi" ? " selected" : ""}>Több jelölt</option>
-          <option value="none"${appState.exportFilters.matchRule === "none" ? " selected" : ""}>Nincs párosítás</option>
-        </select>
-      </label>
-    </div>
-  `;
+  container.hidden = true;
 }
 
 function applyExportTableFilters(rows) {
@@ -1779,6 +1806,8 @@ function renderExportTable(profiles, selectedDriverId) {
     return;
   }
 
+  const visibleCols = appState.exportTableVisibleColumns;
+
   const rowsHtml = filteredRows
     .map(({ assignment, profile, match }) => {
       const selectedClass = profile?.driver.id === selectedDriverId ? "selected" : "";
@@ -1787,12 +1816,68 @@ function renderExportTable(profiles, selectedDriverId) {
       const driverIdAttr = directProfile?.id ? ` data-driver-id="${escapeHtml(directProfile.id)}" role="button" tabindex="0"` : "";
       const assignmentId = assignment.assignmentId || "";
       const dispatchNote = assignment.dispatchNote || "";
-      
+      const startTimeValue = toDateTimeLocalValue(assignment.startTime);
+      const availabilityFromValue = toDateTimeLocalValue(assignment.availabilityFrom);
+      const availabilityToValue = toDateTimeLocalValue(assignment.availabilityTo);
+
+      // Maradék vezetési idő
+      const driving = profile?.driver.driving || {};
+      const dailyRemaining = Math.max(0, Number(driving.dailyLimitHours || 0) - Number(driving.dailyDrivenHours || 0));
+      const weeklyRemaining = Math.max(0, Number(driving.weeklyLimitHours || 0) - Number(driving.weeklyDrivenHours || 0));
+      const drivingLabel = `${(Math.round(dailyRemaining * 10) / 10).toFixed(1)}/${(Math.round(weeklyRemaining * 10) / 10).toFixed(1)}`;
+
+      // Opcionális oszlopok
+      let optionalCellsHtml = "";
+      if (visibleCols.jobId) {
+        optionalCellsHtml += `<td>${escapeHtml(assignment.jobId || "-")}</td>`;
+      }
+      if (visibleCols.weeklyKm) {
+        const weeklyKm = driving.weeklyDrivenHours ? (driving.weeklyDrivenHours * 100).toFixed(0) : "-";
+        optionalCellsHtml += `<td>${escapeHtml(weeklyKm)} km</td>`;
+      }
+      if (visibleCols.workSchedule) {
+        const schedule = profile?.driver?.workSchedule || "-";
+        optionalCellsHtml += `<td>${escapeHtml(schedule)}</td>`;
+      }
+
       return `
         <tr class="export-table-row ${selectedClass}"${driverIdAttr}>
           <td>${escapeHtml(driverNames)}</td>
-          <td>${escapeHtml(assignment.jobId || "-")}</td>
-          <td>${escapeHtml(assignment.plannerNote || "-")}</td>
+          <td>
+            <input 
+              type="datetime-local" 
+              class="export-start-time-edit" 
+              value="${startTimeValue}"
+              step="60"
+              data-assignment-id="${escapeHtml(assignmentId)}"
+              placeholder="Mikortól..."
+            />
+          </td>
+          <td>${escapeHtml(drivingLabel)}</td>
+          <td>
+            <div class="export-availability-window">
+              <input 
+                type="datetime-local" 
+                class="export-availability-from-edit" 
+                value="${availabilityFromValue}"
+                step="60"
+                data-assignment-id="${escapeHtml(assignmentId)}"
+                placeholder="-tól"
+                title="Elérhetőségi ablak kezdete"
+              />
+              <span class="export-availability-sep">–</span>
+              <input 
+                type="datetime-local" 
+                class="export-availability-to-edit" 
+                value="${availabilityToValue}"
+                step="60"
+                data-assignment-id="${escapeHtml(assignmentId)}"
+                placeholder="-ig"
+                title="Elérhetőségi ablak vége"
+              />
+            </div>
+          </td>
+          ${optionalCellsHtml}
           <td>
             <input 
               type="text" 
@@ -1807,15 +1892,54 @@ function renderExportTable(profiles, selectedDriverId) {
     })
     .join("");
 
+  // Build optional column headers
+  let optionalHeadersHtml = "";
+  if (visibleCols.jobId) {
+    optionalHeadersHtml += "<th>Fuvarfeladat</th>";
+  }
+  if (visibleCols.weeklyKm) {
+    optionalHeadersHtml += "<th>Heti km</th>";
+  }
+  if (visibleCols.workSchedule) {
+    optionalHeadersHtml += "<th>Munkarend</th>";
+  }
+
   container.innerHTML = `
     <div class="export-table-meta">Megjelenített nap: ${escapeHtml(formatDateOnlyLabel(selectedDate))} • Szűrt sorok: ${filteredRows.length} / ${assignments.length}</div>
+    <div class="export-table-header-actions">
+      <button type="button" class="export-columns-toggle" data-action="toggle-columns">⚙️ Oszlopok</button>
+      <div id="export-columns-modal" class="export-columns-modal${appState.exportColumnsModalOpen ? " is-open" : ""}" aria-hidden="${appState.exportColumnsModalOpen ? "false" : "true"}">
+        <div class="export-columns-modal-content">
+          <div class="export-columns-modal-header">
+            <h3>Opcionális oszlopok</h3>
+            <button type="button" class="export-columns-modal-close" data-action="close-columns">✕</button>
+          </div>
+          <div class="export-columns-modal-body">
+            <label class="export-columns-option">
+              <input type="checkbox" class="export-columns-checkbox" data-column="jobId" ${visibleCols.jobId ? "checked" : ""} />
+              <span>Fuvarfeladat</span>
+            </label>
+            <label class="export-columns-option">
+              <input type="checkbox" class="export-columns-checkbox" data-column="weeklyKm" ${visibleCols.weeklyKm ? "checked" : ""} />
+              <span>Heti vezetett kilométer</span>
+            </label>
+            <label class="export-columns-option">
+              <input type="checkbox" class="export-columns-checkbox" data-column="workSchedule" ${visibleCols.workSchedule ? "checked" : ""} />
+              <span>Munkarend kód</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="export-table-shell">
       <table class="export-table-view">
         <thead>
           <tr>
             <th>Gépjárművezető(ök)</th>
-            <th>Fuvarfeladatra</th>
-            <th>Megtett kilométer</th>
+            <th>Mikortól indítható</th>
+            <th>Maradék vezetési idő</th>
+            <th>Elérhetőségi ablak</th>
+            ${optionalHeadersHtml}
             <th>Megjegyzés</th>
           </tr>
         </thead>
@@ -1825,6 +1949,48 @@ function renderExportTable(profiles, selectedDriverId) {
       </table>
     </div>
   `;
+
+  // Wire up column toggle
+  const columnsToggle = container.querySelector(".export-columns-toggle");
+  if (columnsToggle) {
+    columnsToggle.addEventListener("click", (e) => {
+      e.preventDefault();
+      const modal = container.querySelector("#export-columns-modal");
+      if (modal) {
+        appState.exportColumnsModalOpen = !appState.exportColumnsModalOpen;
+        modal.classList.toggle("is-open", appState.exportColumnsModalOpen);
+        modal.setAttribute("aria-hidden", appState.exportColumnsModalOpen ? "false" : "true");
+      }
+    });
+  }
+
+  const columnsClose = container.querySelector(".export-columns-modal-close");
+  if (columnsClose) {
+    columnsClose.addEventListener("click", (e) => {
+      e.preventDefault();
+      const modal = container.querySelector("#export-columns-modal");
+      if (modal) {
+        appState.exportColumnsModalOpen = false;
+        modal.classList.remove("is-open");
+        modal.setAttribute("aria-hidden", "true");
+      }
+    });
+  }
+
+  const checkboxes = container.querySelectorAll(".export-columns-checkbox");
+  checkboxes.forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
+      const columnKey = e.target.dataset.column;
+      appState.exportTableVisibleColumns[columnKey] = e.target.checked;
+      renderExportTable(profiles, selectedDriverId);
+    });
+  });
+
+  const columnsModal = container.querySelector("#export-columns-modal");
+  if (columnsModal) {
+    columnsModal.classList.toggle("is-open", appState.exportColumnsModalOpen);
+    columnsModal.setAttribute("aria-hidden", appState.exportColumnsModalOpen ? "false" : "true");
+  }
 }
 
 function formatDateOnlyLabel(dateLike) {
@@ -2339,7 +2505,197 @@ function renderAlertsPanel(alerts, selectedDriverId) {
     .join("");
 }
 
+function formatDispatchOpsDriverLabel(profile, profiles) {
+  const ownName = String(profile?.driver?.nev || profile?.driver?.name || "").trim();
+  const isTwoDriverCrew = String(profile?.driver?.kezes || "") === "2";
+  const rigId = profile?.rig?.id || null;
+
+  if (!isTwoDriverCrew || !rigId) {
+    return ownName || "Ismeretlen gépjárművezető";
+  }
+
+  const partner = profiles.find((candidate) => {
+    if (!candidate || candidate.driver?.id === profile.driver?.id) {
+      return false;
+    }
+
+    return String(candidate.driver?.kezes || "") === "2" && candidate.rig?.id === rigId;
+  });
+
+  const partnerName = String(partner?.driver?.nev || partner?.driver?.name || "").trim();
+  if (!partnerName) {
+    return ownName || "Ismeretlen gépjárművezető";
+  }
+
+  return `${ownName} - ${partnerName}`;
+}
+
+function renderDispatchOpsPanels(profiles, now) {
+  const kornyeList = document.getElementById("kornye-prediction-list");
+  const titboxList = document.getElementById("titbox-feedback-list");
+  const dispatcherList = document.getElementById("dispatcher-availability-list");
+
+  if (!kornyeList || !titboxList || !dispatcherList) {
+    return;
+  }
+
+  if (!profiles.length) {
+    const emptyHtml = '<div class="dispatch-ops-empty">Nincs elérhető sofőr adat a panelhez.</div>';
+    kornyeList.innerHTML = emptyHtml;
+    titboxList.innerHTML = emptyHtml;
+    dispatcherList.innerHTML = emptyHtml;
+    return;
+  }
+
+  ensureDispatchOpsState(profiles, now);
+
+  const sortedByEta = [...profiles]
+    .sort((left, right) => left.eta.nowToEtaMin - right.eta.nowToEtaMin)
+    .slice(0, 10);
+
+  kornyeList.innerHTML = sortedByEta
+    .map((profile) => {
+      const driverLabel = formatDispatchOpsDriverLabel(profile, profiles);
+      return `
+        <article class="dispatch-ops-item">
+          <div class="dispatch-ops-item-header">
+            <span class="dispatch-ops-driver">${escapeHtml(driverLabel)}</span>
+            <span class="dispatch-ops-chip ${escapeHtml(profile.risk.level)}">${escapeHtml(profile.risk.label)}</span>
+          </div>
+          <div class="dispatch-ops-meta">Predikció forrás: Fuvarszervezés AI</div>
+          <div class="dispatch-ops-meta">Várható beérkezés (Környe): ${escapeHtml(formatTime(profile.eta.correctedEta))} • ${escapeHtml(formatDuration(profile.eta.nowToEtaMin))} múlva</div>
+          <div class="dispatch-ops-meta">Kiinduló hely: ${escapeHtml(profile.driver.jelenlegi_pozicio?.hely || "ismeretlen")}</div>
+        </article>
+      `;
+    })
+    .join("");
+
+  titboxList.innerHTML = sortedByEta
+    .map((profile) => {
+      const entry = appState.titboxConfirmations[profile.driver.id];
+      const confirmationState = entry?.confirmedAt ? "confirmed" : "pending";
+      const stateLabel = entry?.confirmedAt ? "Visszaigazolt" : "Megerősítésre vár";
+      const driverLabel = formatDispatchOpsDriverLabel(profile, profiles);
+
+      return `
+        <article class="dispatch-ops-item dispatch-ops-item-titbox">
+          <div class="dispatch-ops-item-header">
+            <span class="dispatch-ops-driver">${escapeHtml(driverLabel)}</span>
+          </div>
+          <div class="dispatch-ops-status-stack">
+            <span class="dispatch-ops-chip ${confirmationState}">${escapeHtml(stateLabel)}</span>
+            <div class="dispatch-ops-actions dispatch-ops-actions-compact">
+              <button type="button" class="dispatch-ops-btn" data-titbox-action="send-push" data-driver-id="${escapeHtml(profile.driver.id)}">Push küldése</button>
+              <button type="button" class="dispatch-ops-btn" data-titbox-action="mark-confirmed" data-driver-id="${escapeHtml(profile.driver.id)}" ${entry?.confirmedAt ? "disabled" : ""}>Visszaigazolás rögzítése</button>
+            </div>
+          </div>
+          <div class="dispatch-ops-meta">Titbox ETA: ${escapeHtml(formatTime(entry.driverReportedEta))} • Hely: ${escapeHtml(entry.reportedLocation)}</div>
+          <div class="dispatch-ops-meta">Push kérés: ${escapeHtml(entry.pushSentAt ? formatTime(entry.pushSentAt) : "még nem küldve")}</div>
+        </article>
+      `;
+    })
+    .join("");
+
+  dispatcherList.innerHTML = sortedByEta
+    .map((profile) => {
+      const entry = appState.dispatcherAvailability[profile.driver.id];
+      const driverLabel = formatDispatchOpsDriverLabel(profile, profiles);
+      return `
+        <article class="dispatch-ops-item">
+          <div class="dispatch-ops-item-header">
+            <span class="dispatch-ops-driver">${escapeHtml(driverLabel)}</span>
+            <span class="dispatch-ops-chip confirmed">100% pontos</span>
+          </div>
+          <div class="dispatch-ops-meta">Lerögzített beérkezés: ${escapeHtml(formatTime(entry.agreedArrivalAt))} (Környe telephely)</div>
+          <div class="dispatch-ops-meta">Telefon: ${escapeHtml(entry.contactPhone)}</div>
+          <div class="dispatch-ops-meta">Egyeztetés frissítve: ${escapeHtml(formatTime(entry.updatedAt))}</div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function ensureDispatchOpsState(profiles, now) {
+  profiles.forEach((profile) => {
+    const driverId = profile.driver.id;
+    const seed = makeSeed(driverId);
+    const locationLabel = profile.predictionEvents?.[0]?.locationLabel || profile.driver.jelenlegi_pozicio?.hely || "ismeretlen";
+
+    if (!appState.titboxConfirmations[driverId]) {
+      const etaOffsetMin = randomInt(seed + 901, -20, 24);
+      const initiallyConfirmed = randomInt(seed + 917, 0, 100) > 65;
+      appState.titboxConfirmations[driverId] = {
+        driverReportedEta: addMinutes(profile.eta.correctedEta, etaOffsetMin),
+        reportedLocation: locationLabel,
+        pushSentAt: initiallyConfirmed ? addMinutes(now, -randomInt(seed + 923, 8, 70)) : null,
+        confirmedAt: initiallyConfirmed ? addMinutes(now, -randomInt(seed + 929, 2, 30)) : null
+      };
+    }
+
+    if (!appState.dispatcherAvailability[driverId]) {
+      appState.dispatcherAvailability[driverId] = {
+        agreedArrivalAt: addMinutes(profile.eta.correctedEta, randomInt(seed + 947, -8, 8)),
+        contactPhone: buildDispatcherContactPhone(seed),
+        updatedAt: addMinutes(now, -randomInt(seed + 953, 5, 85))
+      };
+    }
+  });
+}
+
+function buildDispatcherContactPhone(seed) {
+  const subscriber = String(1000000 + randomInt(seed + 971, 0, 8999999));
+  return `+36 30 ${subscriber.slice(0, 3)}-${subscriber.slice(3)}`;
+}
+
+function onTitboxPanelClick(event) {
+  const button = event.target.closest("[data-titbox-action]");
+  if (!button || !event.currentTarget.contains(button)) {
+    return;
+  }
+
+  const action = button.dataset.titboxAction;
+  const driverId = button.dataset.driverId;
+  if (!driverId) {
+    return;
+  }
+
+  const titboxEntry = appState.titboxConfirmations[driverId];
+  const dispatcherEntry = appState.dispatcherAvailability[driverId];
+  if (!titboxEntry || !dispatcherEntry) {
+    return;
+  }
+
+  const now = new Date();
+  if (action === "send-push") {
+    titboxEntry.pushSentAt = now;
+  } else if (action === "mark-confirmed") {
+    titboxEntry.confirmedAt = now;
+    dispatcherEntry.agreedArrivalAt = titboxEntry.driverReportedEta;
+    dispatcherEntry.updatedAt = now;
+  }
+
+  renderDispatchOpsPanels(appState.profiles, now);
+}
+
+function onTitboxPanelKeydown(event) {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  const button = event.target.closest("[data-titbox-action]");
+  if (!button || !event.currentTarget.contains(button)) {
+    return;
+  }
+
+  event.preventDefault();
+  onTitboxPanelClick(event);
+}
+
 function onDriverListClick(event) {
+  if (event.target.closest("input, textarea, select, button, label")) {
+    return;
+  }
+
   const card = event.target.closest("[data-driver-id]");
   if (!card || !event.currentTarget.contains(card)) {
     return;
@@ -2357,6 +2713,10 @@ function onDriverListClick(event) {
 
 function onDriverListKeydown(event) {
   if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  if (event.target.closest("input, textarea, select, button, label")) {
     return;
   }
 

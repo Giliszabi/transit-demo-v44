@@ -346,7 +346,8 @@ export function evaluateDriverAgainstJob({ driver, schedule, vehicles, job, plan
 
   const requiredHands = getJobRequiredHands(job);
   if (requiredHands !== getDriverRequiredHands(driver)) {
-    reasons.push(createReason("HAND_COUNT_MISMATCH", `A fuvar ${requiredHands} kezes, a gépjárművezető ${getDriverRequiredHands(driver)} kezes.`));
+    const formatHandsLabel = (hands) => (Number(hands) === 2 ? "4 kezes" : `${Number(hands) || 1} kezes`);
+    reasons.push(createReason("HAND_COUNT_MISMATCH", `A fuvar ${formatHandsLabel(requiredHands)}, a gépjárművezető ${formatHandsLabel(getDriverRequiredHands(driver))}.`));
   }
 
   if (getJobAdr(job) && !getDriverAdr(driver)) {

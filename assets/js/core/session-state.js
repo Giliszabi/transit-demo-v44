@@ -35,6 +35,7 @@ function sanitizeSessionState(raw) {
       .map((item) => ({
         fuvarId: item.fuvarId,
         assignedSoforId: item.assignedSoforId || null,
+        assignedSecondarySoforId: item.assignedSecondarySoforId || null,
         assignedVontatoId: item.assignedVontatoId || null,
         assignedPotkocsiId: item.assignedPotkocsiId || null
       }))
@@ -130,6 +131,7 @@ function applyFuvarAssignmentsFromSession(fuvarok, assignments) {
     }
 
     fuvar.assignedSoforId = assignment.assignedSoforId || undefined;
+    fuvar.assignedSecondarySoforId = assignment.assignedSecondarySoforId || undefined;
     fuvar.assignedVontatoId = assignment.assignedVontatoId || undefined;
     fuvar.assignedPotkocsiId = assignment.assignedPotkocsiId || undefined;
     applied += 1;

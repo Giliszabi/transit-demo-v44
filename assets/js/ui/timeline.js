@@ -615,16 +615,48 @@ function getSoforSortNameTL(sofor) {
   return String(sofor?.nev || "").toLocaleLowerCase("hu-HU");
 }
 
+function isFixedLinkedPairDriverTL(sofor) {
+  return sofor?.kezes === "2" && typeof sofor?.linkedSoforId === "string" && sofor.linkedSoforId.length > 0;
+}
+
+function getSoforPairPriorityTL(sofor) {
+  return isFixedLinkedPairDriverTL(sofor) ? 0 : 1;
+}
+
+function getSoforPairKeyTL(sofor) {
+  if (!isFixedLinkedPairDriverTL(sofor)) {
+    return `solo:${sofor?.id || ""}`;
+  }
+
+  return [sofor.id, sofor.linkedSoforId].sort().join("|");
+}
+
+function applySoforPairPrioritySortTL(list, compareWithinBucket) {
+  return [...list].sort((left, right) => {
+    const priorityDiff = getSoforPairPriorityTL(left) - getSoforPairPriorityTL(right);
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+
+    const pairDiff = getSoforPairKeyTL(left).localeCompare(getSoforPairKeyTL(right), "hu-HU");
+    if (pairDiff !== 0) {
+      return pairDiff;
+    }
+
+    return compareWithinBucket(left, right);
+  });
+}
+
 function applySoforSortTL(list) {
   const state = window._soforSortState;
   if (!state?.columnId) {
-    return sortResourcesByMatch(list);
+    return applySoforPairPrioritySortTL(sortResourcesByMatch(list), () => 0);
   }
   const dir = state.direction === "asc" ? 1 : -1;
   if (state.columnId === "abc") {
-    return [...list].sort((a, b) => getSoforSortNameTL(a).localeCompare(getSoforSortNameTL(b), "hu-HU") * dir);
+    return applySoforPairPrioritySortTL(list, (a, b) => getSoforSortNameTL(a).localeCompare(getSoforSortNameTL(b), "hu-HU") * dir);
   }
-  return [...list].sort((a, b) => {
+  return applySoforPairPrioritySortTL(list, (a, b) => {
     return (getSoforSortValueTL(a, state.columnId) - getSoforSortValueTL(b, state.columnId)) * dir;
   });
 }
@@ -2177,7 +2209,7 @@ function resolveInferredConvoyFromAssignments(sofor, vontatok, potkocsik) {
   }
 
   const latestAssigned = FUVAROK
-    .filter((fuvar) => fuvar?.assignedSoforId === sofor.id)
+    .filter((fuvar) => fuvar?.assignedSoforId === sofor.id || fuvar?.assignedSecondarySoforId === sofor.id)
     .filter((fuvar) => fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId)
     .sort((left, right) => {
       const leftEndMs = new Date(left?.lerakas?.ido || left?.felrakas?.ido || "").getTime();
@@ -2616,6 +2648,20 @@ function renderTimeScale(container) {
 // Egyetlen erőforrás timeline sor (sofor / vontato / potkocsi)
 // ============================================================
 function renderResourceRow(parent, r, type) {
+  const resolveLinkedSoforName = () => {
+    if (type !== "sofor" || !r?.linkedSoforId) {
+      return "-";
+    }
+
+    const soforGroup = (lastTimelineRenderState?.groups || []).find((group) => {
+      const groupType = group.type || getKindFromGroupName(group.name || "");
+      return groupType === "sofor";
+    });
+
+    const linked = (soforGroup?.list || []).find((item) => item.id === r.linkedSoforId);
+    return linked?.nev || linked?.name || "-";
+  };
+
 
   const row = document.createElement("div");
   row.className = "timeline-resource";
@@ -2695,7 +2741,8 @@ function renderResourceRow(parent, r, type) {
     `;
 
   const soforMetaHtml = type === "sofor"
-    ? `<div class="timeline-resource-driver-badges">${renderSoforMetaBadges(r, { compact: true, shortLabels: true })}</div>`
+    ? `<div class="timeline-resource-driver-badges">${renderSoforMetaBadges(r, { compact: true, shortLabels: true })}</div>
+      ${r?.kezes === "2" ? `<div style="font-size:11px;opacity:0.72;">👥 Fix pár: ${resolveLinkedSoforName()}</div>` : ""}`
     : "";
   const matchReasonsHtml = buildTimelineMatchReasonsHtml(r.matchReasons || []);
 

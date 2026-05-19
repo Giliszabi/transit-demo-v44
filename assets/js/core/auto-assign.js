@@ -236,6 +236,28 @@ function addTimelineBlock(resource, fuvar) {
   });
 }
 
+function resolveLinkedSoforFromPool(sofor, pool) {
+  if (!sofor?.linkedSoforId || !Array.isArray(pool)) {
+    return null;
+  }
+
+  return pool.find((item) => item.id === sofor.linkedSoforId) || null;
+}
+
+function canUseSoforAsTwoKezesPair(sofor, fuvar, pool, evaluator) {
+  if (!fuvar?.onlyTwoKezesRequired) {
+    return true;
+  }
+
+  const linkedSofor = resolveLinkedSoforFromPool(sofor, pool);
+  if (!linkedSofor) {
+    return false;
+  }
+
+  const linkedResult = evaluator(linkedSofor, fuvar);
+  return linkedResult.grade !== "bad";
+}
+
 /**
  * Megkeresi az első megfelelő sofőrt a fuvarhoz.
  * Visszaad: sofőr-objektum vagy null.
@@ -244,8 +266,8 @@ function findBestSofor(fuvar) {
   let bestWarn = null;
   for (const sofor of SOFOROK) {
     const result = evaluateSoforForFuvar(sofor, fuvar);
-    if (result.grade === "ok") return sofor;
-    if (result.grade === "warn" && !bestWarn) bestWarn = sofor;
+    if (result.grade === "ok" && canUseSoforAsTwoKezesPair(sofor, fuvar, SOFOROK, evaluateSoforForFuvar)) return sofor;
+    if (result.grade === "warn" && !bestWarn && canUseSoforAsTwoKezesPair(sofor, fuvar, SOFOROK, evaluateSoforForFuvar)) bestWarn = sofor;
   }
   return bestWarn;
 }
@@ -302,6 +324,9 @@ function findBestPotkocsi(fuvar, vontato) {
  */
 function assignResourcesToFuvar(fuvar, soforOverride = null, vontatoOverride = null, potkocsiOverride = null) {
   const sofor = soforOverride || findBestSofor(fuvar);
+  const secondarySofor = fuvar?.onlyTwoKezesRequired && sofor
+    ? resolveLinkedSoforFromPool(sofor, SOFOROK)
+    : null;
   const vontato = vontatoOverride || findBestVontato(fuvar, sofor);
   const potkocsi = potkocsiOverride || findBestPotkocsi(fuvar, vontato);
 
@@ -312,6 +337,13 @@ function assignResourcesToFuvar(fuvar, soforOverride = null, vontatoOverride = n
     addTimelineBlock(sofor, fuvar);
     const result = evaluateSoforForFuvar(sofor, fuvar);
     if (result.grade === "warn") warnings.push(...result.warnings);
+  }
+
+  if (secondarySofor) {
+    fuvar.assignedSecondarySoforId = secondarySofor.id;
+    addTimelineBlock(secondarySofor, fuvar);
+  } else {
+    delete fuvar.assignedSecondarySoforId;
   }
 
   if (vontato) {
@@ -325,6 +357,7 @@ function assignResourcesToFuvar(fuvar, soforOverride = null, vontatoOverride = n
   }
 
   const unassignedReason = !sofor ? "Nincs elérhető sofőr"
+    : fuvar?.onlyTwoKezesRequired && !secondarySofor ? "Nincs elérhető fix 4-kezes pár"
     : !vontato ? "Nincs elérhető vontató"
     : !potkocsi ? "Nincs elérhető pótkocsi"
     : null;
@@ -366,6 +399,7 @@ export function runAutoAssign(options = {}) {
       f.id,
       {
         soforId: f.assignedSoforId || null,
+        secondarySoforId: f.assignedSecondarySoforId || null,
         vontatoId: f.assignedVontatoId || null,
         potkocsiId: f.assignedPotkocsiId || null
       }
@@ -375,6 +409,7 @@ export function runAutoAssign(options = {}) {
   // Nullázzuk az eredeti listák timeline-jait és assignment mezőit (snapshot)
   fuvarokSnapshot.forEach((f) => {
     delete f.assignedSoforId;
+    delete f.assignedSecondarySoforId;
     delete f.assignedVontatoId;
     delete f.assignedPotkocsiId;
   });
@@ -423,8 +458,14 @@ export function runAutoAssign(options = {}) {
     for (const sofor of soforokSnapshot) {
       if (hasSnapCollision(sofor.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido)) continue;
       const result = evaluateSoforForFuvar({ ...sofor, timeline: [] }, fuvar);
-      if (result.grade === "ok") return sofor;
-      if (result.grade === "warn" && !bestWarn) bestWarn = sofor;
+      const canUseTwoKezesPair = canUseSoforAsTwoKezesPair(
+        sofor,
+        fuvar,
+        soforokSnapshot,
+        (candidate, targetFuvar) => evaluateSoforForFuvar({ ...candidate, timeline: [] }, targetFuvar)
+      );
+      if (result.grade === "ok" && canUseTwoKezesPair) return sofor;
+      if (result.grade === "warn" && !bestWarn && canUseTwoKezesPair) bestWarn = sofor;
     }
     return bestWarn;
   }
@@ -472,6 +513,9 @@ export function runAutoAssign(options = {}) {
     const sofor = previous.soforId
       ? soforokSnapshot.find((item) => item.id === previous.soforId) || null
       : null;
+    const secondarySofor = previous.secondarySoforId
+      ? soforokSnapshot.find((item) => item.id === previous.secondarySoforId) || null
+      : null;
     const vontato = previous.vontatoId
       ? vontatokSnapshot.find((item) => item.id === previous.vontatoId) || null
       : null;
@@ -479,14 +523,20 @@ export function runAutoAssign(options = {}) {
       ? potkocsikSnapshot.find((item) => item.id === previous.potkocsiId) || null
       : null;
 
-    return { sofor, vontato, potkocsi };
+    return { sofor, secondarySofor, vontato, potkocsi };
   }
 
   function canUsePreferredSofor(sofor, fuvar) {
     if (!sofor) return false;
     if (hasSnapCollision(sofor.timeline, fuvar.felrakas.ido, fuvar.lerakas.ido)) return false;
     const result = evaluateSoforForFuvar({ ...sofor, timeline: [] }, fuvar);
-    return result.grade !== "bad";
+    if (result.grade === "bad") return false;
+    return canUseSoforAsTwoKezesPair(
+      sofor,
+      fuvar,
+      soforokSnapshot,
+      (candidate, targetFuvar) => evaluateSoforForFuvar({ ...candidate, timeline: [] }, targetFuvar)
+    );
   }
 
   function canUsePreferredVontato(vontato, fuvar) {
@@ -509,6 +559,9 @@ export function runAutoAssign(options = {}) {
     const sofor = soforOverride
       || (canUsePreferredSofor(preferred.sofor, fuvar) ? preferred.sofor : null)
       || findBestSoforSnap(fuvar);
+    const secondarySofor = fuvar?.onlyTwoKezesRequired && sofor
+      ? resolveLinkedSoforFromPool(sofor, soforokSnapshot)
+      : null;
     const vontato = vontatoOverride
       || (canUsePreferredVontato(preferred.vontato, fuvar) ? preferred.vontato : null)
       || findBestVontatoSnap(fuvar, sofor);
@@ -523,6 +576,12 @@ export function runAutoAssign(options = {}) {
       const r = evaluateSoforForFuvar({ ...sofor, timeline: [] }, fuvar);
       if (r.grade === "warn") warnings.push(...r.warnings);
     }
+    if (secondarySofor) {
+      fuvar.assignedSecondarySoforId = secondarySofor.id;
+      addTimelineBlock(secondarySofor, fuvar);
+    } else {
+      delete fuvar.assignedSecondarySoforId;
+    }
     if (vontato) {
       fuvar.assignedVontatoId = vontato.id;
       addTimelineBlock(vontato, fuvar);
@@ -534,10 +593,12 @@ export function runAutoAssign(options = {}) {
 
     return {
       sofor: sofor || null,
+      secondarySofor: secondarySofor || null,
       vontato: vontato || null,
       potkocsi: potkocsi || null,
       warnings,
       unassignedReason: !sofor ? "Nincs elérhető sofőr"
+        : fuvar?.onlyTwoKezesRequired && !secondarySofor ? "Nincs elérhető fix 4-kezes pár"
         : !vontato ? "Nincs elérhető vontató"
         : !potkocsi ? "Nincs elérhető pótkocsi"
         : null
@@ -545,7 +606,11 @@ export function runAutoAssign(options = {}) {
   }
 
   function collectUniqueAssignedResources(fuvarokInJarat) {
-    const soforIds = [...new Set(fuvarokInJarat.map((f) => f.assignedSoforId).filter(Boolean))];
+    const soforIds = [...new Set(
+      fuvarokInJarat
+        .flatMap((f) => [f.assignedSoforId, f.assignedSecondarySoforId])
+        .filter(Boolean)
+    )];
     const vontatoIds = [...new Set(fuvarokInJarat.map((f) => f.assignedVontatoId).filter(Boolean))];
     const potkocsiIds = [...new Set(fuvarokInJarat.map((f) => f.assignedPotkocsiId).filter(Boolean))];
 
@@ -900,6 +965,7 @@ export function applyAutoAssignResult(result) {
     const orig = FUVAROK.find((f) => f.id === snap.id);
     if (orig) {
       orig.assignedSoforId = snap.assignedSoforId || undefined;
+      orig.assignedSecondarySoforId = snap.assignedSecondarySoforId || undefined;
       orig.assignedVontatoId = snap.assignedVontatoId || undefined;
       orig.assignedPotkocsiId = snap.assignedPotkocsiId || undefined;
     } else {
@@ -930,6 +996,7 @@ export function applyAutoAssignResult(result) {
   const fuvarAssignments = FUVAROK.map((fuvar) => ({
     fuvarId: fuvar.id,
     assignedSoforId: fuvar.assignedSoforId || null,
+    assignedSecondarySoforId: fuvar.assignedSecondarySoforId || null,
     assignedVontatoId: fuvar.assignedVontatoId || null,
     assignedPotkocsiId: fuvar.assignedPotkocsiId || null
   }));

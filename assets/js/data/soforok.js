@@ -2,7 +2,7 @@ import { DEMO_NEARBY_FREE_PAIR_SCENARIO, createScenarioTimelineBlock } from "./d
 
 // ==========================================================
 // TransIT v4.4 – Sofőr adatbázis (Demo Dataset – Bővített)
-// 18 sofőr: 5 belföldes + 8 nemzetközi 1-kezes + 5 nemzetközi 2-kezes
+// 18 sofőr: 5 belföldes + 8 nemzetközi 1-kezes + 5 nemzetközi 4-kezes
 // ==========================================================
 
 function randomADR() { return Math.random() < 0.3; }
@@ -53,16 +53,19 @@ export const SOFOROK = [
     driving: createIntlProfile("medium") },
   { id: "S12", nev: "Lakatos Bence", tipus: "nemzetkozi", kezes: "1", adr: true, jelenlegi_pozicio: { hely: "Győr" }, timeline: [], driving: createIntlProfile("strong") },
 
-  // ═══ NEMZETKÖZI 2-KEZES (5) ═══
+  // ═══ NEMZETKÖZI 4-KEZES (5) ═══
   { id: "S7", nev: "Adamek István", tipus: "nemzetkozi", kezes: "2", adr: true, jelenlegi_pozicio: { hely: "Budapest" },
+    linkedSoforId: "S13",
     linkedVontatoId: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeVontatoId,
     timeline: [createScenarioTimelineBlock({ fuvarId: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeFuvarId, label: "Demo felszabaduló pár – Tatabánya → Budapest", start: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeStartIso, end: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeEndIso, felrakasCim: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativePickupAddress, lerakasCim: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeDropoffAddress, viszonylat: "belfold" })],
     driving: createIntlProfile("weak") },
-  { id: "S13", nev: "Molnár Richárd", tipus: "nemzetkozi", kezes: "2", adr: true, jelenlegi_pozicio: { hely: "Környe" }, timeline: [], driving: createIntlProfile("strong") },
+  { id: "S13", nev: "Molnár Richárd", tipus: "nemzetkozi", kezes: "2", adr: true, jelenlegi_pozicio: { hely: "Környe" }, linkedSoforId: "S7", timeline: [], driving: createIntlProfile("strong") },
   { id: "S14", nev: "Nagy Kristóf", tipus: "nemzetkozi", kezes: "2", adr: false, jelenlegi_pozicio: { hely: "Budapest" },
+    linkedSoforId: "S17",
     timeline: [tb("EX-008","Budapest → Milano","2026-04-13T20:00","2026-04-14T08:00","Budapest, BILK","Milano, Hub Nord","export")],
     driving: createIntlProfile("medium") },
   { id: "S17", nev: "Oláh Sándor", tipus: "nemzetkozi", kezes: "2", adr: true, jelenlegi_pozicio: { hely: "Győr" },
+    linkedSoforId: "S14",
     timeline: [tb("IM-006","Rotterdam → Győr","2026-04-14T14:00","2026-04-15T06:00","Rotterdam, ECT Delta","Győr, Átrakó terminál","import")],
     driving: createIntlProfile("strong") },
   { id: "S18", nev: "Papp Levente", tipus: "nemzetkozi", kezes: "2", adr: true, jelenlegi_pozicio: { hely: "Tatabánya" }, timeline: [], driving: createIntlProfile("strong") }

@@ -10,6 +10,7 @@ export const FUVAROK_REAL = [
     lerakas: { cim: "Páty", ido: "2026-04-08T10:30" },
     adr: false,
     surgos: false,
+    kezes: "2",
   },
   {
     id: "FF-26-0004019",
@@ -18,7 +19,8 @@ export const FUVAROK_REAL = [
     felrakas: { cim: "Hollandia, Oostrum", ido: "2026-04-08T19:30" },
     lerakas: { cim: "Páty", ido: "2026-04-09T10:30" },
     adr: false,
-    surgos: false
+    surgos: false,
+    kezes: "2"
   },
   {
     id: "FF-26-0004020",
@@ -27,7 +29,8 @@ export const FUVAROK_REAL = [
     felrakas: { cim: "Hollandia, Oostrum", ido: "2026-04-09T19:30" },
     lerakas: { cim: "Páty", ido: "2026-04-10T10:30" },
     adr: false,
-    surgos: false
+    surgos: false,
+    kezes: "2"
   },
   {
     id: "FF-26-0004031",
@@ -37,6 +40,7 @@ export const FUVAROK_REAL = [
     lerakas: { cim: "Páty", ido: "2026-04-09T10:45" },
     adr: false,
     surgos: false,
+    kezes: "2",
   },
   {
     id: "FF-26-0004032",
@@ -45,7 +49,8 @@ export const FUVAROK_REAL = [
     felrakas: { cim: "Dánia, Bjerringbro", ido: "2026-04-09T19:00" },
     lerakas: { cim: "Páty", ido: "2026-04-10T10:45" },
     adr: false,
-    surgos: false
+    surgos: false,
+    kezes: "2"
   },
   {
     id: "FF-26-0004041",
@@ -54,7 +59,8 @@ export const FUVAROK_REAL = [
     felrakas: { cim: "Dánia, Bjerringbro", ido: "2026-04-08T21:00" },
     lerakas: { cim: "Páty", ido: "2026-04-09T12:45" },
     adr: false,
-    surgos: false
+    surgos: false,
+    kezes: "2"
   },
   {
     id: "FF-26-0004042",
@@ -63,7 +69,8 @@ export const FUVAROK_REAL = [
     felrakas: { cim: "Dánia, Bjerringbro", ido: "2026-04-09T21:00" },
     lerakas: { cim: "Páty", ido: "2026-04-10T12:45" },
     adr: false,
-    surgos: false
+    surgos: false,
+    kezes: "2"
   },
   {
     id: "FF-26-0004048",
@@ -72,7 +79,8 @@ export const FUVAROK_REAL = [
     felrakas: { cim: "Dánia, Bjerringbro", ido: "2026-04-09T00:00" },
     lerakas: { cim: "Páty", ido: "2026-04-09T15:45" },
     adr: false,
-    surgos: false
+    surgos: false,
+    kezes: "2"
   },
   {
     id: "FF-26-0004057",
@@ -100,6 +108,7 @@ export const FUVAROK_REAL = [
     lerakas: { cim: "Hollandia, Oostrum", ido: "2026-04-09T00:00" },
     adr: false,
     surgos: false,
+    kezes: "2",
   },
   {
     id: "FF-26-0004137",
@@ -108,7 +117,8 @@ export const FUVAROK_REAL = [
     felrakas: { cim: "Páty", ido: "2026-04-09T09:00" },
     lerakas: { cim: "Hollandia, Oostrum", ido: "2026-04-10T00:00" },
     adr: false,
-    surgos: false
+    surgos: false,
+    kezes: "2"
   },
   {
     id: "FF-26-0004146",
@@ -117,7 +127,8 @@ export const FUVAROK_REAL = [
     felrakas: { cim: "Páty", ido: "2026-04-08T11:00" },
     lerakas: { cim: "Hollandia, Oostrum", ido: "2026-04-09T02:00" },
     adr: false,
-    surgos: false
+    surgos: false,
+    kezes: "2"
   },
   {
     id: "FF-26-0004147",
@@ -126,7 +137,8 @@ export const FUVAROK_REAL = [
     felrakas: { cim: "Páty", ido: "2026-04-09T11:00" },
     lerakas: { cim: "Hollandia, Oostrum", ido: "2026-04-10T02:00" },
     adr: false,
-    surgos: false
+    surgos: false,
+    kezes: "2"
   },
   {
     id: "FF-26-0004155",

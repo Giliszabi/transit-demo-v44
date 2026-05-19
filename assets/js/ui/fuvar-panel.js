@@ -15,12 +15,13 @@ import { enableFuvarDrag } from "./dragdrop.js";
 import { getDomesticTransitRoleInfo } from "./transit-relations.js";
 import { openAutoAssignModal } from "./auto-assign-modal.js";
 
-const FILTERS = ["all", "adr", "surgos", "belfold", "export", "import", "elofutas", "utofutas", "spediccio"];
+const FILTERS = ["all", "adr", "surgos", "kezes2", "belfold", "export", "import", "elofutas", "utofutas", "spediccio"];
 const DEFAULT_FUVAR_FILTER_STATE = Object.freeze({
   category: "all",
   assignment: "all",
   adr: false,
   surgos: false,
+  kezes2: false,
   spediccio: false,
   elapsed: false,
   dayOffset: null,
@@ -28,7 +29,9 @@ const DEFAULT_FUVAR_FILTER_STATE = Object.freeze({
   idScope: null
 });
 const BASE_CARD_COLUMN_OPTIONS = [
-  { id: "route", label: "Útvonal" },
+  { id: "pickupLocation", label: "Felrakó" },
+  { id: "dropoffLocation", label: "Lerakó" },
+  { id: "region", label: "Régió" },
   { id: "pickup", label: "Felrakás dátuma" },
   { id: "delivery", label: "Lerakás dátuma" },
   { id: "client", label: "Megbízó" },
@@ -115,7 +118,9 @@ export const FUVAR_CARD_COLUMN_OPTIONS = [...BASE_CARD_COLUMN_OPTIONS, ...EXCEL_
 const FUVAR_CARD_COLUMN_OPTION_MAP = new Map(FUVAR_CARD_COLUMN_OPTIONS.map((item) => [item.id, item]));
 
 export const DEFAULT_FUVAR_CARD_COLUMNS = [
-  "route",
+  "pickupLocation",
+  "dropoffLocation",
+  "region",
   "pickup",
   "delivery",
   "client",
@@ -394,7 +399,9 @@ function isNumberLikeLabel(label) {
 
 function getColumnMeta(columnId) {
   const baseMap = {
-    route: { width: 196, sortType: "text" },
+    pickupLocation: { width: 132, sortType: "text" },
+    dropoffLocation: { width: 132, sortType: "text" },
+    region: { width: 84, sortType: "text" },
     pickup: { width: 146, sortType: "date" },
     delivery: { width: 146, sortType: "date" },
     client: { width: 188, sortType: "text" },
@@ -459,7 +466,7 @@ function normalizeFuvarFilterState(filter) {
       return base;
     }
 
-    if (filter === "adr" || filter === "surgos") {
+    if (filter === "adr" || filter === "surgos" || filter === "kezes2") {
       base[filter] = true;
       return base;
     }
@@ -472,9 +479,10 @@ function normalizeFuvarFilterState(filter) {
     assignment: ["all", "ready", "planning", "unassigned"].includes(filter.assignment) ? filter.assignment : "all",
     adr: Boolean(filter.adr),
     surgos: Boolean(filter.surgos),
+    kezes2: Boolean(filter.kezes2),
     spediccio: Boolean(filter.spediccio),
     elapsed: Boolean(filter.elapsed),
-    dayOffset: Number.isInteger(filter.dayOffset) && filter.dayOffset >= 0 && filter.dayOffset <= 2
+    dayOffset: Number.isInteger(filter.dayOffset)
       ? filter.dayOffset
       : null,
     query: String(filter.query || ""),
@@ -525,11 +533,15 @@ function isFuvarPickupOnDayOffset(fuvar, dayOffset, referenceDate) {
 }
 
 function getFuvarAssignmentStatusKey(fuvar) {
-  if (fuvar?.assignedSoforId && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId) {
+  const hasRequiredDrivers = fuvar?.onlyTwoKezesRequired
+    ? Boolean(fuvar?.assignedSoforId && fuvar?.assignedSecondarySoforId)
+    : Boolean(fuvar?.assignedSoforId);
+
+  if (hasRequiredDrivers && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId) {
     return "ready";
   }
 
-  if (fuvar?.assignedSoforId || fuvar?.assignedVontatoId || fuvar?.assignedPotkocsiId) {
+  if (fuvar?.assignedSoforId || fuvar?.assignedSecondarySoforId || fuvar?.assignedVontatoId || fuvar?.assignedPotkocsiId) {
     return "planning";
   }
 
@@ -564,6 +576,10 @@ function matchesUnifiedFuvarFilter(fuvar, filterState, options = {}) {
     return false;
   }
 
+  if (filterState.kezes2 && !(fuvar.kezes === "2" || fuvar.onlyTwoKezesRequired)) {
+    return false;
+  }
+
   if (filterState.spediccio && !fuvar.spediccio) {
     return false;
   }
@@ -589,6 +605,7 @@ function matchesUnifiedFuvarFilter(fuvar, filterState, options = {}) {
     fuvar.felrakas?.cim,
     fuvar.lerakas?.cim,
     getAssignedResourceName("sofor", fuvar.assignedSoforId),
+    getAssignedResourceName("sofor", fuvar.assignedSecondarySoforId),
     getAssignedResourceName("vontato", fuvar.assignedVontatoId),
     getAssignedResourceName("potkocsi", fuvar.assignedPotkocsiId)
   ].join(" "));
@@ -784,8 +801,14 @@ function getExcelFieldValue(fuvar, excelLabel, context) {
 }
 
 function getBaseColumnDisplayValue(fuvar, columnId, context) {
-  if (columnId === "route") {
-    return `${getDisplayLocation(fuvar.felrakas.cim)} → ${getDisplayLocation(fuvar.lerakas.cim)}`;
+  if (columnId === "pickupLocation") {
+    return getDisplayLocation(fuvar.felrakas.cim);
+  }
+  if (columnId === "dropoffLocation") {
+    return getDisplayLocation(fuvar.lerakas.cim);
+  }
+  if (columnId === "region") {
+    return getFuvarRegionCode(fuvar);
   }
   if (columnId === "pickup") {
     return formatDate(fuvar.felrakas.ido);
@@ -825,8 +848,14 @@ function getBaseColumnDisplayValue(fuvar, columnId, context) {
 }
 
 function getBaseColumnSortValue(fuvar, columnId, context) {
-  if (columnId === "route") {
-    return normalizeText(`${getDisplayLocation(fuvar.felrakas.cim)} ${getDisplayLocation(fuvar.lerakas.cim)}`);
+  if (columnId === "pickupLocation") {
+    return normalizeText(getDisplayLocation(fuvar.felrakas.cim));
+  }
+  if (columnId === "dropoffLocation") {
+    return normalizeText(getDisplayLocation(fuvar.lerakas.cim));
+  }
+  if (columnId === "region") {
+    return getFuvarRegionCode(fuvar);
   }
   if (columnId === "pickup") {
     return new Date(fuvar.felrakas.ido).getTime();
@@ -906,6 +935,227 @@ function getDisplayLocation(address) {
   return parts[0];
 }
 
+const COUNTRY_CODE_BY_COUNTRY_ALIAS = {
+  magyarorszag: "HU",
+  hungary: "HU",
+  nemetorszag: "DE",
+  germany: "DE",
+  ausztria: "AT",
+  austria: "AT",
+  hollandia: "NL",
+  netherlands: "NL",
+  olaszorszag: "IT",
+  italy: "IT",
+  spanyolorszag: "ES",
+  spain: "ES",
+  csehorszag: "CZ",
+  czech: "CZ",
+  szlovakia: "SK",
+  slovakia: "SK",
+  dania: "DK",
+  denmark: "DK",
+  belgia: "BE",
+  belgium: "BE",
+  lengyelorszag: "PL",
+  poland: "PL",
+  luxemburg: "LU",
+  luxembourg: "LU",
+  portugal: "PT",
+  franciaorszag: "FR",
+  france: "FR",
+  svajc: "CH",
+  switzerland: "CH"
+};
+
+const COUNTRY_CODE_BY_CITY_ALIAS = {
+  milano: "IT",
+  brescello: "IT",
+  hamburg: "DE",
+  lubeck: "DE",
+  munchen: "DE",
+  stuttgart: "DE",
+  dusseldorf: "DE",
+  frankfurt: "DE",
+  nurnberg: "DE",
+  regensburg: "DE",
+  hannover: "DE",
+  wien: "AT",
+  rotterdam: "NL",
+  oostrum: "NL",
+  groot_ammers: "NL",
+  maasvlakte: "NL",
+  vianen: "NL",
+  sevenum: "NL",
+  sluis: "NL",
+  enschede: "NL",
+  harderwijk: "NL",
+  eindhoven: "NL",
+  moerdijk: "NL",
+  praha: "CZ",
+  brno: "CZ",
+  bitozeves: "CZ",
+  klasterec_nad_ohri: "CZ",
+  pardubice: "CZ",
+  bratislava: "SK",
+  jelling: "DK",
+  bjerringbro: "DK",
+  fredericia: "DK",
+  broby: "DK",
+  antwerpen: "BE",
+  gent: "BE",
+  kuurne: "BE",
+  turnhout: "BE",
+  willebroek: "BE",
+  biwer: "LU",
+  setubal: "PT",
+  benavente_pt: "PT",
+  las_torres_de_cotillas: "ES",
+  fraga: "ES",
+  munchwilen: "CH"
+};
+
+const POSTAL_PREFIX_BY_CITY_ALIAS = {
+  budapest: "10",
+  gyor: "90",
+  vac: "26",
+  dunakeszi: "21",
+  debrecen: "40",
+  szeged: "67",
+  miskolc: "35",
+  pecs: "76",
+  tatabanya: "28",
+  kecskemet: "60",
+  esztergom: "25",
+  kornye: "28",
+  szekesfehervar: "80",
+  paty: "20",
+  tata: "28",
+  komarom: "29",
+  szigetszentmiklos: "23",
+  racalmas: "24",
+  berhida: "81",
+  dunaharaszti: "23",
+  kocs: "28",
+  hatvan: "30",
+  biatorbagy: "20",
+  ecser: "22",
+  gyal: "23",
+  gyongyoshalasz: "32",
+  jaszfenyszaru: "51",
+  kincsesbanya: "80",
+  nagykoros: "27",
+  ocsa: "23",
+  szalkszentmarton: "60",
+  szazhalombatta: "24",
+  zalacseb: "89",
+  milano: "20",
+  hamburg: "20",
+  lubeck: "23",
+  munchen: "80",
+  stuttgart: "70",
+  dusseldorf: "40",
+  rotterdam: "30",
+  frankfurt: "60",
+  wien: "10",
+  bratislava: "81",
+  praha: "11",
+  brno: "60",
+  linz: "40",
+  oostrum: "58",
+  nurnberg: "90",
+  bjerringbro: "88",
+  neutraubling: "93",
+  grossmehring: "85",
+  bitozeves: "43",
+  eindhoven: "56",
+  antwerpen: "20",
+  jelling: "73",
+  berkel_enschot: "50",
+  enschede: "75",
+  harderwijk: "38",
+  hagen: "58",
+  seriate: "24",
+  fraga: "22",
+  gent: "90",
+  kuurne: "85",
+  turnhout: "23",
+  willebroek: "28",
+  pardubice: "53",
+  fredericia: "70",
+  born_nl: "61",
+  groot_ammers: "29",
+  maasvlakte: "31",
+  sevenum: "59",
+  sluis: "45",
+  vianen: "41",
+  jedlicze: "38",
+  biwer: "68",
+  hannover: "30",
+  krefeld: "47",
+  regensburg: "93",
+  zwickau: "08",
+  brescello: "42",
+  benavente_pt: "21",
+  setubal: "29",
+  las_torres_de_cotillas: "30",
+  munchwilen: "95",
+  hlinik_nad_hronom: "96"
+};
+
+function inferCountryCodeFromAddress(address) {
+  const normalizedAddress = normalizeText(address);
+  const aliasCode = Object.entries(COUNTRY_CODE_BY_COUNTRY_ALIAS).find(([alias]) => normalizedAddress.includes(alias))?.[1];
+  if (aliasCode) {
+    return aliasCode;
+  }
+
+  const cityAlias = getCityKeyFromAddress(address);
+  if (cityAlias && COUNTRY_CODE_BY_CITY_ALIAS[cityAlias]) {
+    return COUNTRY_CODE_BY_CITY_ALIAS[cityAlias];
+  }
+
+  if (isHungaryAddress(address)) {
+    return "HU";
+  }
+
+  return "ZZ";
+}
+
+function extractPostalPrefix(address) {
+  const match = String(address || "").match(/\b(\d{4,5})\b/);
+  if (match?.[1]) {
+    return match[1].slice(0, 2);
+  }
+
+  const cityAlias = getCityKeyFromAddress(address);
+  if (cityAlias && POSTAL_PREFIX_BY_CITY_ALIAS[cityAlias]) {
+    return POSTAL_PREFIX_BY_CITY_ALIAS[cityAlias];
+  }
+
+  return "00";
+}
+
+function getFuvarRegionCode(fuvar) {
+  const relation = normalizeText(fuvar?.viszonylat);
+  const pickupAddress = fuvar?.felrakas?.cim || "";
+  const dropoffAddress = fuvar?.lerakas?.cim || "";
+
+  let countrySourceAddress = dropoffAddress;
+  let postalSourceAddress = dropoffAddress;
+
+  if (relation === "import") {
+    countrySourceAddress = pickupAddress;
+    postalSourceAddress = dropoffAddress;
+  } else if (relation !== "export") {
+    countrySourceAddress = dropoffAddress || pickupAddress;
+    postalSourceAddress = dropoffAddress || pickupAddress;
+  }
+
+  const countryCode = inferCountryCodeFromAddress(countrySourceAddress);
+  const postalPrefix = extractPostalPrefix(postalSourceAddress);
+  return `${countryCode}${postalPrefix}`;
+}
+
 function scheduleRoadDistanceRefresh() {
   if (roadDistanceRefreshTimer) {
     return;
@@ -938,11 +1188,16 @@ function isHungaryAddress(address) {
 }
 
 function hasFullAssignment(fuvar) {
-  return Boolean(fuvar?.assignedSoforId && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId);
+  const hasRequiredDrivers = fuvar?.onlyTwoKezesRequired
+    ? Boolean(fuvar?.assignedSoforId && fuvar?.assignedSecondarySoforId)
+    : Boolean(fuvar?.assignedSoforId);
+
+  return Boolean(hasRequiredDrivers && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId);
 }
 
 function hasSameTrio(leftFuvar, rightFuvar) {
   return leftFuvar.assignedSoforId === rightFuvar.assignedSoforId
+    && (leftFuvar.assignedSecondarySoforId || null) === (rightFuvar.assignedSecondarySoforId || null)
     && leftFuvar.assignedVontatoId === rightFuvar.assignedVontatoId
     && leftFuvar.assignedPotkocsiId === rightFuvar.assignedPotkocsiId;
 }
@@ -1256,7 +1511,7 @@ function isResourceAssignedToFuvar(resource, scopeType, fuvar) {
   }
 
   if (scopeType === "sofor") {
-    return fuvar.assignedSoforId === resource.id;
+    return fuvar.assignedSoforId === resource.id || fuvar.assignedSecondarySoforId === resource.id;
   }
 
   if (scopeType === "vontato") {
@@ -1638,14 +1893,51 @@ function getQuickFilterPreviewState(filterState, key) {
     return preview;
   }
 
-  if (key === "today" || key === "tomorrow" || key === "day2") {
-    const targetOffset = key === "today" ? 0 : key === "tomorrow" ? 1 : 2;
-    preview.dayOffset = targetOffset;
+  if (key.startsWith("day-offset-")) {
+    const rawOffset = Number.parseInt(key.slice("day-offset-".length), 10);
+    preview.dayOffset = Number.isInteger(rawOffset) ? rawOffset : null;
     return preview;
   }
 
   preview[key] = true;
   return preview;
+}
+
+function getWeekStartDate(referenceDate, weekOffset = 0) {
+  const base = getDayReferenceBase(referenceDate);
+  const weekStart = new Date(base);
+  const dayOfWeek = (weekStart.getDay() + 6) % 7;
+  weekStart.setDate(weekStart.getDate() - dayOfWeek + weekOffset * 7);
+  weekStart.setHours(0, 0, 0, 0);
+  return weekStart;
+}
+
+function buildWeekDayOffsets(referenceDate, weekOffset = 0) {
+  const weekStart = getWeekStartDate(referenceDate, weekOffset);
+  const base = getDayReferenceBase(referenceDate);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const current = new Date(weekStart);
+    current.setDate(weekStart.getDate() + index);
+    current.setHours(0, 0, 0, 0);
+
+    const label = current.toLocaleDateString("hu-HU", {
+      month: "2-digit",
+      day: "2-digit"
+    }).replace(/\/$/, "");
+
+    const offset = Math.round((current.getTime() - base.getTime()) / (24 * 60 * 60 * 1000));
+    return { label, offset };
+  });
+}
+
+function formatWeekRangeLabel(referenceDate, weekOffset = 0) {
+  const weekDays = buildWeekDayOffsets(referenceDate, weekOffset);
+  if (weekDays.length !== 7) {
+    return "";
+  }
+
+  return `${weekDays[0].label} - ${weekDays[6].label}`;
 }
 
 function getQuickFilterPreviewCount(filterState, key, options = {}) {
@@ -1665,6 +1957,19 @@ function getQuickFilterColorMeta(key) {
 
   if (key === "surgos") {
     return getCategoryPalette("surgos");
+  }
+
+  if (key === "kezes2") {
+    return {
+      accent: "#b39ddb",
+      text: "#f3e5ff",
+      badgeText: "#1a0a2e",
+      softBg: "rgba(179, 157, 219, 0.16)",
+      softBgStrong: "rgba(179, 157, 219, 0.26)",
+      border: "rgba(179, 157, 219, 0.44)",
+      borderStrong: "rgba(179, 157, 219, 0.65)",
+      glow: "rgba(179, 157, 219, 0.2)"
+    };
   }
 
   if (key === "spediccio") {
@@ -1726,19 +2031,26 @@ function syncUnifiedFilterControls(container, filterState, options = {}) {
   const categorySelect = container.querySelector('[data-filter-role="category"]');
   const assignmentSelect = container.querySelector('[data-filter-role="assignment"]');
   const queryInput = container.querySelector('[data-filter-role="query"]');
+  const timelineReferenceDate = options.timelineReferenceDate;
+  const weekOffset = Number.isInteger(options.weekOffset) ? options.weekOffset : 0;
 
   if (categorySelect) categorySelect.value = filterState.category;
   if (assignmentSelect) assignmentSelect.value = filterState.assignment;
   if (queryInput) queryInput.value = filterState.query;
+
+  const weekLabelNode = container.querySelector("[data-filter-week-label]");
+  if (weekLabelNode) {
+    weekLabelNode.textContent = formatWeekRangeLabel(timelineReferenceDate, weekOffset);
+  }
 
   container.querySelectorAll(".fuvar-filter-toggle").forEach((node) => {
     const key = node.dataset.toggle;
     const colorMeta = getQuickFilterColorMeta(key);
     if (key === "ready" || key === "planning") {
       node.classList.toggle("active", filterState.assignment === key);
-    } else if (key === "today" || key === "tomorrow" || key === "day2") {
-      const targetOffset = key === "today" ? 0 : key === "tomorrow" ? 1 : 2;
-      node.classList.toggle("active", filterState.dayOffset === targetOffset);
+    } else if (key.startsWith("day-offset-")) {
+      const targetOffset = Number.parseInt(key.slice("day-offset-".length), 10);
+      node.classList.toggle("active", Number.isInteger(targetOffset) && filterState.dayOffset === targetOffset);
     } else {
       node.classList.toggle("active", Boolean(filterState[key]));
     }
@@ -1754,7 +2066,7 @@ function syncUnifiedFilterControls(container, filterState, options = {}) {
     const countNode = node.querySelector("[data-filter-count]");
     if (countNode) {
       const count = getQuickFilterPreviewCount(filterState, key, {
-        timelineReferenceDate: options.timelineReferenceDate
+        timelineReferenceDate
       });
       countNode.textContent = String(count);
       countNode.style.setProperty("--filter-count-bg", colorMeta.accent);
@@ -2150,6 +2462,10 @@ function getFuvarTags(fuvar) {
     tags.push(transitRoleInfo.role);
   }
 
+  if (fuvar.onlyTwoKezesRequired) {
+    tags.push("twoKezesOnly");
+  }
+
   return tags;
 }
 
@@ -2162,6 +2478,7 @@ function clearSpedicioAssignment(fuvar) {
 
 function clearFuvarResourceAssignment(fuvar) {
   delete fuvar.assignedSoforId;
+  delete fuvar.assignedSecondarySoforId;
   delete fuvar.assignedVontatoId;
   delete fuvar.assignedPotkocsiId;
 
@@ -2712,8 +3029,23 @@ function getAssignedResourceName(type, id) {
   return POTKOCSIK.find((item) => item.id === id)?.rendszam || "-";
 }
 
+function getAssignedSoforDisplayName(fuvar) {
+  const primary = getAssignedResourceName("sofor", fuvar.assignedSoforId);
+  const secondary = getAssignedResourceName("sofor", fuvar.assignedSecondarySoforId);
+
+  if (primary === "-" && secondary === "-") {
+    return "-";
+  }
+
+  if (secondary !== "-") {
+    return `${primary} + ${secondary}`;
+  }
+
+  return primary;
+}
+
 function renderFuvarAssignment(fuvar) {
-  const soforName = getAssignedResourceName("sofor", fuvar.assignedSoforId);
+  const soforName = getAssignedSoforDisplayName(fuvar);
   const vontatoName = getAssignedResourceName("vontato", fuvar.assignedVontatoId);
   const potkocsiName = getAssignedResourceName("potkocsi", fuvar.assignedPotkocsiId);
 
@@ -2740,43 +3072,55 @@ function renderFuvarAssignment(fuvar) {
 export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
   const cont = document.getElementById(containerId);
   let filterState = normalizeFuvarFilterState(options.initialFilterState);
+  let weekOffset = 0;
+  filterState.query = "";
+  const initialWeekDays = buildWeekDayOffsets(
+    typeof options.getTimelineReferenceDate === "function"
+      ? options.getTimelineReferenceDate()
+      : options.timelineReferenceDate,
+    weekOffset
+  );
   cont.innerHTML = `
     <div class="fuvar-filter-bar">
-      <label class="fuvar-filter-field">
-        <span>Típus</span>
-        <select class="btn fuvar-filter-select" data-filter-role="category">
-          <option value="all">Összes típus</option>
-          <option value="belfold">Belföld</option>
-          <option value="export">Export</option>
-          <option value="import">Import</option>
-          <option value="elofutas">Előfutás</option>
-          <option value="utofutas">Utófutás</option>
-        </select>
-      </label>
-      <label class="fuvar-filter-field">
-        <span>Erőforrás</span>
-        <select class="btn fuvar-filter-select" data-filter-role="assignment">
-          <option value="all">Összes állapot</option>
-          <option value="ready">Kész</option>
-          <option value="planning">Tervezés alatt</option>
-          <option value="unassigned">Szabad</option>
-        </select>
-      </label>
-      <label class="fuvar-filter-field fuvar-filter-search-field">
-        <span>Keresés</span>
-        <input class="fuvar-filter-search" data-filter-role="query" type="search" placeholder="Fuvar, cím, gépjárművezető, vontató..." />
-      </label>
-      <button class="btn fuvar-filter-toggle" type="button" data-toggle="adr"><span class="fuvar-filter-toggle-label">ADR</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
-      <button class="btn fuvar-filter-toggle" type="button" data-toggle="surgos"><span class="fuvar-filter-toggle-label">Sürgős</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
-      <button class="btn fuvar-filter-toggle" type="button" data-toggle="elapsed"><span class="fuvar-filter-toggle-label">Elmaradt</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
-      <button class="btn fuvar-filter-toggle fuvar-filter-ready" type="button" data-toggle="ready"><span class="fuvar-filter-toggle-label">Kész</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
-      <button class="btn fuvar-filter-toggle fuvar-filter-planning" type="button" data-toggle="planning"><span class="fuvar-filter-toggle-label">Tervezés alatt</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
-      <button class="btn fuvar-filter-toggle fuvar-filter-spediccio" type="button" data-toggle="spediccio"><span class="fuvar-filter-toggle-label">Spedíció</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
-      <button class="btn fuvar-filter-toggle" type="button" data-toggle="today"><span class="fuvar-filter-toggle-label">Ma</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
-      <button class="btn fuvar-filter-toggle" type="button" data-toggle="tomorrow"><span class="fuvar-filter-toggle-label">Holnap</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
-      <button class="btn fuvar-filter-toggle" type="button" data-toggle="day2"><span class="fuvar-filter-toggle-label">Holnapután</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
-      <button class="btn fuvar-filter-reset" type="button" data-action="reset">Szűrők törlése</button>
-      <button class="btn" type="button" id="btn-auto-assign" data-action="auto-assign">Fuvarok összerakása</button>
+      <div class="fuvar-filter-row fuvar-filter-row-main">
+        <label class="fuvar-filter-field">
+          <span>Típus</span>
+          <select class="btn fuvar-filter-select" data-filter-role="category">
+            <option value="all">Összes típus</option>
+            <option value="belfold">Belföld</option>
+            <option value="export">Export</option>
+            <option value="import">Import</option>
+            <option value="elofutas">Előfutás</option>
+            <option value="utofutas">Utófutás</option>
+          </select>
+        </label>
+        <label class="fuvar-filter-field">
+          <span>Erőforrás</span>
+          <select class="btn fuvar-filter-select" data-filter-role="assignment">
+            <option value="all">Összes állapot</option>
+            <option value="ready">Kész</option>
+            <option value="planning">Tervezés alatt</option>
+            <option value="unassigned">Szabad</option>
+          </select>
+        </label>
+        <button class="btn fuvar-filter-toggle" type="button" data-toggle="adr"><span class="fuvar-filter-toggle-label">ADR</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
+        <button class="btn fuvar-filter-toggle" type="button" data-toggle="surgos"><span class="fuvar-filter-toggle-label">Sürgős</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
+        <button class="btn fuvar-filter-toggle" type="button" data-toggle="kezes2"><span class="fuvar-filter-toggle-label">Négy kezes</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
+        <button class="btn fuvar-filter-toggle" type="button" data-toggle="elapsed"><span class="fuvar-filter-toggle-label">Elmaradt</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
+        <button class="btn fuvar-filter-toggle fuvar-filter-ready" type="button" data-toggle="ready"><span class="fuvar-filter-toggle-label">Kész</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
+        <button class="btn fuvar-filter-toggle fuvar-filter-planning" type="button" data-toggle="planning"><span class="fuvar-filter-toggle-label">Tervezés alatt</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
+        <button class="btn fuvar-filter-toggle fuvar-filter-spediccio" type="button" data-toggle="spediccio"><span class="fuvar-filter-toggle-label">Spedíció</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
+        <button class="btn fuvar-filter-reset" type="button" data-action="reset">Szűrők törlése</button>
+        <button class="btn" type="button" id="btn-auto-assign" data-action="auto-assign">Fuvarok összerakása</button>
+      </div>
+      <div class="fuvar-filter-row fuvar-filter-row-dates">
+        <button class="btn fuvar-filter-week-nav" type="button" data-action="week-prev" aria-label="Előző hét">◀</button>
+        <div class="fuvar-filter-week-label" data-filter-week-label></div>
+        ${initialWeekDays.map((day) => {
+          return `<button class="btn fuvar-filter-toggle" type="button" data-toggle="day-offset-${day.offset}"><span class="fuvar-filter-toggle-label">${day.label}</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>`;
+        }).join("")}
+        <button class="btn fuvar-filter-week-nav" type="button" data-action="week-next" aria-label="Következő hét">▶</button>
+      </div>
     </div>
   `;
 
@@ -2785,7 +3129,22 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
       ? options.getTimelineReferenceDate()
       : options.timelineReferenceDate;
 
-    syncUnifiedFilterControls(cont, filterState, { timelineReferenceDate });
+    const weekDays = buildWeekDayOffsets(timelineReferenceDate, weekOffset);
+    const dateButtonNodes = cont.querySelectorAll(".fuvar-filter-row-dates .fuvar-filter-toggle");
+    weekDays.forEach((day, index) => {
+      const buttonNode = dateButtonNodes[index];
+      if (!buttonNode) {
+        return;
+      }
+
+      buttonNode.dataset.toggle = `day-offset-${day.offset}`;
+      const labelNode = buttonNode.querySelector(".fuvar-filter-toggle-label");
+      if (labelNode) {
+        labelNode.textContent = day.label;
+      }
+    });
+
+    syncUnifiedFilterControls(cont, filterState, { timelineReferenceDate, weekOffset });
     onFilterChange({ ...filterState });
   };
 
@@ -2799,19 +3158,14 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
     emit();
   });
 
-  cont.querySelector('[data-filter-role="query"]')?.addEventListener("input", (event) => {
-    filterState.query = event.target.value;
-    emit();
-  });
-
   cont.querySelectorAll(".fuvar-filter-toggle").forEach((btn) => {
     btn.addEventListener("click", () => {
       const key = btn.dataset.toggle;
 
       if (key === "ready" || key === "planning") {
         filterState.assignment = filterState.assignment === key ? "all" : key;
-      } else if (key === "today" || key === "tomorrow" || key === "day2") {
-        const targetOffset = key === "today" ? 0 : key === "tomorrow" ? 1 : 2;
+      } else if (key.startsWith("day-offset-")) {
+        const targetOffset = Number.parseInt(key.slice("day-offset-".length), 10);
         filterState.dayOffset = filterState.dayOffset === targetOffset ? null : targetOffset;
       } else {
         filterState[key] = !filterState[key];
@@ -2823,6 +3177,17 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
 
   cont.querySelector('[data-action="reset"]')?.addEventListener("click", () => {
     filterState = createDefaultFuvarFilterState();
+    weekOffset = 0;
+    emit();
+  });
+
+  cont.querySelector('[data-action="week-prev"]')?.addEventListener("click", () => {
+    weekOffset -= 1;
+    emit();
+  });
+
+  cont.querySelector('[data-action="week-next"]')?.addEventListener("click", () => {
+    weekOffset += 1;
     emit();
   });
 
@@ -2836,6 +3201,7 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
   });
 
   syncUnifiedFilterControls(cont, filterState, {
+    weekOffset,
     timelineReferenceDate: typeof options.getTimelineReferenceDate === "function"
       ? options.getTimelineReferenceDate()
       : options.timelineReferenceDate
@@ -3098,9 +3464,28 @@ function buildStageDisplaySegments(stageModels) {
 export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, options = {}) {
   const container = document.getElementById(containerId);
   const filterState = normalizeFuvarFilterState(filter);
+  if (currentFuvarSort.columnId === "route") {
+    currentFuvarSort.columnId = "pickupLocation";
+  }
   const allowedColumnIds = new Set(FUVAR_CARD_COLUMN_OPTIONS.map((item) => item.id));
   const requestedColumns = Array.isArray(options.visibleColumns) ? options.visibleColumns : DEFAULT_FUVAR_CARD_COLUMNS;
-  const visibleColumns = requestedColumns.filter((id) => allowedColumnIds.has(id));
+  const expandedRequestedColumns = requestedColumns.flatMap((id) => {
+    if (id === "route") {
+      return ["pickupLocation", "dropoffLocation"];
+    }
+    return [id];
+  });
+  const regionAwareRequestedColumns = [...expandedRequestedColumns];
+  if (!regionAwareRequestedColumns.includes("region")) {
+    const dropoffIndex = regionAwareRequestedColumns.indexOf("dropoffLocation");
+    if (dropoffIndex >= 0) {
+      regionAwareRequestedColumns.splice(dropoffIndex + 1, 0, "region");
+    } else {
+      regionAwareRequestedColumns.push("region");
+    }
+  }
+
+  const visibleColumns = regionAwareRequestedColumns.filter((id) => allowedColumnIds.has(id));
   const effectiveColumns = visibleColumns.length > 0 ? visibleColumns : DEFAULT_FUVAR_CARD_COLUMNS;
   const importRecommendation = filterState.category === "import" ? findRecommendedImportForFocusedExport() : null;
   const renderList = [...FUVAROK];
@@ -3147,7 +3532,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
 
     void importRecommendation;
 
-    const soforName = getAssignedResourceName("sofor", fuvar.assignedSoforId);
+    const soforName = getAssignedSoforDisplayName(fuvar);
     const vontatoName = getAssignedResourceName("vontato", fuvar.assignedVontatoId);
     const potkocsiName = getAssignedResourceName("potkocsi", fuvar.assignedPotkocsiId);
 
@@ -3302,9 +3687,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
 
       const extraClass = columnId === "distance"
         ? " fuvar-card-distance"
-        : columnId === "route"
-          ? " fuvar-card-route"
-          : "";
+        : "";
 
       return `
         <div class="fuvar-card-item${extraClass}" style="${getColumnWidthStyle(columnId)}">

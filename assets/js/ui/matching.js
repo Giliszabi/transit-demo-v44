@@ -62,6 +62,11 @@ function isDomesticOnlyTipus(tipus) {
   return normalizeText(tipus).includes("belfold");
 }
 
+const MAX_SINGLE_DRIVER_DAILY_HOURS = 9;
+const MAX_CONTINUOUS_DRIVE_HOURS = 4.5;
+const MANDATORY_BREAK_HOURS = 0.75;
+const MANDATORY_DAILY_REST_HOURS = 11;
+
 export function getMatchGradePriority(matchGrade) {
   if (matchGrade === "ok") return 0;
   if (matchGrade === "warn") return 1;
@@ -131,6 +136,7 @@ export function evaluateFuvarTags(fuvar) {
   // A "spediccio" nem automatikus fuvar-kategória, csak explicit UI állapot lehet.
   if (["belfold", "export", "import"].includes(fuvar.viszonylat)) {
     fuvar.kategoria = fuvar.viszonylat;
+    fuvar.onlyTwoKezesRequired = isFuvarOnlyTwoKezesRequired(fuvar);
     return;
   }
 
@@ -148,6 +154,68 @@ export function evaluateFuvarTags(fuvar) {
   } else {
     fuvar.kategoria = "import";
   }
+
+  fuvar.onlyTwoKezesRequired = isFuvarOnlyTwoKezesRequired(fuvar);
+}
+
+function getMandatoryBreakCountForSegmentHours(segmentHours) {
+  if (!Number.isFinite(segmentHours) || segmentHours <= MAX_CONTINUOUS_DRIVE_HOURS) {
+    return 0;
+  }
+
+  return Math.floor(segmentHours / MAX_CONTINUOUS_DRIVE_HOURS);
+}
+
+function estimateSingleDriverMinimumElapsedHours(requiredDrivingHours) {
+  if (!Number.isFinite(requiredDrivingHours) || requiredDrivingHours <= 0) {
+    return 0;
+  }
+
+  let remaining = requiredDrivingHours;
+  let elapsed = 0;
+
+  while (remaining > 0) {
+    const segmentDriving = Math.min(MAX_SINGLE_DRIVER_DAILY_HOURS, remaining);
+    elapsed += segmentDriving;
+    elapsed += getMandatoryBreakCountForSegmentHours(segmentDriving) * MANDATORY_BREAK_HOURS;
+    remaining -= segmentDriving;
+
+    if (remaining > 0) {
+      elapsed += MANDATORY_DAILY_REST_HOURS;
+    }
+  }
+
+  return elapsed;
+}
+
+function getFuvarAvailableWindowHours(fuvar) {
+  const pickupMs = new Date(fuvar?.felrakas?.ido || "").getTime();
+  const dropoffMs = new Date(fuvar?.lerakas?.ido || "").getTime();
+  if (!Number.isFinite(pickupMs) || !Number.isFinite(dropoffMs) || dropoffMs <= pickupMs) {
+    return Number.NaN;
+  }
+
+  return (dropoffMs - pickupMs) / (60 * 60 * 1000);
+}
+
+export function isFuvarOnlyTwoKezesRequired(fuvar) {
+  if (!fuvar) {
+    return false;
+  }
+
+  if (fuvar.kezes === "2") {
+    return true;
+  }
+
+  const requiredHours = calculateRequiredDrivingHours(fuvar);
+  const minSingleElapsed = estimateSingleDriverMinimumElapsedHours(requiredHours);
+  const availableWindow = getFuvarAvailableWindowHours(fuvar);
+
+  if (!Number.isFinite(availableWindow)) {
+    return requiredHours > MAX_SINGLE_DRIVER_DAILY_HOURS;
+  }
+
+  return minSingleElapsed > availableWindow;
 }
 
 function isDomesticTransitFuvar(fuvar) {
@@ -174,6 +242,7 @@ export function evaluateSoforForFuvar(sofor, fuvar) {
   let suitable = true;
   const soforTipus = ensureResourceTipus(sofor, "belföldes");
   const domesticEligibleFuvar = isDomesticTransitFuvar(fuvar);
+  const onlyTwoKezesRequired = isFuvarOnlyTwoKezesRequired(fuvar);
 
   // ADR
   // safe-compliance profil: ha adrStrictness < 50%, ADR hiány csak figyelmeztetés
@@ -200,9 +269,20 @@ export function evaluateSoforForFuvar(sofor, fuvar) {
   }
 
   // Kezes kompatibilitás – mindig kemény szabály
-  if (fuvar.kezes && fuvar.kezes !== sofor.kezes) {
+  if (onlyTwoKezesRequired && sofor.kezes !== "2") {
     suitable = false;
-    reasons.push(`A fuvar ${fuvar.kezes} kezes, de a gépjárművezető ${sofor.kezes} kezes`);
+    reasons.push("A fuvar vezetési/pihenőidő alapján csak fix 4-kezes párral teljesíthető");
+  }
+
+  if (onlyTwoKezesRequired && !sofor.linkedSoforId) {
+    suitable = false;
+    reasons.push("A kiválasztott 4-kezes gépjárművezetőhöz nincs fix pár rendelve");
+  }
+
+  // 1-kezes fuvar adható 4-kezes párnak is – csak a 4-kezes fuvar tiltott 1-kezes sofőrnek
+  if (fuvar.kezes === "2" && sofor.kezes !== "2") {
+    suitable = false;
+    reasons.push("A fuvar 4 kezes, de a gépjárművezető 1 kezes – nem fog odaérni a lerakási időpontra");
   }
 
   // Időütközés – mindig kemény szabály
@@ -303,12 +383,6 @@ export function evaluateVontatoForFuvar(vontato, fuvar) {
   if (!domesticEligibleFuvar && isDomesticOnlyTipus(vontatoTipus)) {
     suitable = false;
     reasons.push("Belföldi vontató nem vihet nemzetközi fuvart");
-  }
-
-  // Kezes kompatibilitás
-  if (fuvar.kezes && fuvar.kezes !== vontato.kezes) {
-    suitable = false;
-    reasons.push(`A fuvar ${fuvar.kezes} kezes, de a vontató ${vontato.kezes} kezes`);
   }
 
   // Időütközés

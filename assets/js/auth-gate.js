@@ -2,6 +2,11 @@
   const STORAGE_KEY = "transit_demo_auth_v1";
   const PASSWORD = "TiT2026GTdemo";
 
+  function shouldRequireAuth() {
+    const host = String(window.location.hostname || "").toLowerCase();
+    return host === "giliszabi.github.io";
+  }
+
   function isAuthorized() {
     try {
       return window.sessionStorage.getItem(STORAGE_KEY) === "ok";
@@ -138,6 +143,10 @@
     setTimeout(() => {
       input.focus();
     }, 0);
+  }
+
+  if (!shouldRequireAuth()) {
+    return;
   }
 
   if (isAuthorized()) {

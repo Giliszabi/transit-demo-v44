@@ -1000,6 +1000,49 @@ let resourceFocusScope = null;
 let resourceFocusSource = "none";
 let sessionProfileMismatchText = "";
 
+function escapeRuntimeErrorText(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderBootstrapError(error, source = "runtime") {
+  const message = error?.message || String(error || "Ismeretlen hiba");
+  const stackLine = String(error?.stack || "").split("\n").slice(0, 2).join(" | ");
+  const text = escapeRuntimeErrorText(`[${source}] ${message}${stackLine ? ` | ${stackLine}` : ""}`);
+  const targets = [
+    "fuvar-list",
+    "resource-panel-container",
+    "transit-task-board-elofutas",
+    "transit-task-board-utofutas",
+    "assembly-timeline-container",
+    "jarat-timeline-container",
+    "timeline-container"
+  ];
+
+  targets.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) {
+      return;
+    }
+
+    el.innerHTML = `<div style="padding:10px 12px;border:1px solid rgba(255,99,99,0.55);border-radius:8px;background:rgba(90,20,20,0.28);color:#ffdede;font-size:13px;">Betöltési hiba: ${text}</div>`;
+  });
+
+  console.error("[BootstrapError]", source, error);
+}
+
+window.addEventListener("error", (event) => {
+  renderBootstrapError(event?.error || event?.message || "Unknown error", "window.error");
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  renderBootstrapError(event?.reason || "Unhandled promise rejection", "unhandledrejection");
+});
+
 const DISPATCH_PROFILE_STORAGE_KEY = "transit.v44.dispatchProfiles";
 const DISPATCH_PROFILE_DEFINITIONS = [
   {
@@ -2343,6 +2386,10 @@ function buildResourceFocusScopeFromFuvarId(fuvarId) {
 
   if (fuvar.assignedSoforId) {
     scope.soforIds.add(fuvar.assignedSoforId);
+  }
+
+  if (fuvar.assignedSecondarySoforId) {
+    scope.soforIds.add(fuvar.assignedSecondarySoforId);
   }
 
   if (fuvar.assignedPotkocsiId) {
@@ -3823,6 +3870,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     refreshAllViews();
   });
 
+  window.addEventListener("sofor:pair-updated", () => {
+    refreshAllViews();
+  });
+
   window.addEventListener("spediccio:form-updated", () => {
     refreshAllViews();
   });
@@ -3998,9 +4049,10 @@ function restoreElementScrollPosition(element, position) {
 }
 
   function refreshAllViews() {
-    const timelineScrollPosition = captureElementScrollPosition(document.getElementById("timeline-container"));
-    const assemblyTimelineScrollPosition = captureElementScrollPosition(document.getElementById("assembly-timeline-container"));
-    const jaratTimelineScrollPosition = captureElementScrollPosition(document.getElementById("jarat-timeline-container"));
+    try {
+      const timelineScrollPosition = captureElementScrollPosition(document.getElementById("timeline-container"));
+      const assemblyTimelineScrollPosition = captureElementScrollPosition(document.getElementById("assembly-timeline-container"));
+      const jaratTimelineScrollPosition = captureElementScrollPosition(document.getElementById("jarat-timeline-container"));
 
     SOFOROK.forEach((sofor) => {
       refreshAutoTransitBlocksForResource(sofor, FUVAROK);
@@ -4110,8 +4162,11 @@ function restoreElementScrollPosition(element, position) {
 
     renderDispatchProfilePanel();
 
-    renderAssemblyOperationLog();
-    updateNextFuvarRecommendation();
+      renderAssemblyOperationLog();
+      updateNextFuvarRecommendation();
+    } catch (error) {
+      renderBootstrapError(error, "refreshAllViews");
+    }
 }
 
 /* ==========================================================

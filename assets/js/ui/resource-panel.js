@@ -18,6 +18,9 @@ const resourceSearchTerms = {
   potkocsi: ""
 };
 
+let openSoforContextMenu = null;
+let openSoforPairModal = null;
+
 function normalizeSearchText(value) {
   return String(value || "")
     .toLowerCase()
@@ -67,16 +70,329 @@ function getSoforSortName(sofor) {
   return String(sofor?.nev || "").toLocaleLowerCase("hu-HU");
 }
 
+function isFixedLinkedPairDriver(sofor) {
+  return sofor?.kezes === "2" && typeof sofor?.linkedSoforId === "string" && sofor.linkedSoforId.length > 0;
+}
+
+function getSoforDisplayName(sofor) {
+  return String(sofor?.nev || sofor?.name || sofor?.id || "Ismeretlen sofőr");
+}
+
+function resolveSoforById(soforId, list = SOFOROK) {
+  return (list || []).find((item) => item.id === soforId) || null;
+}
+
+function closeSoforContextMenu() {
+  if (!openSoforContextMenu) {
+    return;
+  }
+
+  openSoforContextMenu.remove();
+  openSoforContextMenu = null;
+}
+
+function closeSoforPairModal() {
+  if (!openSoforPairModal) {
+    return;
+  }
+
+  openSoforPairModal.remove();
+  openSoforPairModal = null;
+}
+
+function unlinkSoforPair(sofor, list = SOFOROK) {
+  if (!sofor) {
+    return;
+  }
+
+  const linked = resolveSoforById(sofor.linkedSoforId, list);
+  if (linked && linked.linkedSoforId === sofor.id) {
+    delete linked.linkedSoforId;
+  }
+
+  delete sofor.linkedSoforId;
+}
+
+function applySoforPair(baseSofor, partnerSofor, list = SOFOROK) {
+  if (!baseSofor) {
+    return;
+  }
+
+  unlinkSoforPair(baseSofor, list);
+
+  if (!partnerSofor) {
+    return;
+  }
+
+  unlinkSoforPair(partnerSofor, list);
+  baseSofor.linkedSoforId = partnerSofor.id;
+  partnerSofor.linkedSoforId = baseSofor.id;
+  baseSofor.kezes = "2";
+  partnerSofor.kezes = "2";
+}
+
+function createSoforPairEntries(sortedList, sourceList) {
+  const byId = new Map((sourceList || []).map((item) => [item.id, item]));
+  const visited = new Set();
+  const entries = [];
+
+  sortedList.forEach((driver) => {
+    if (!driver || visited.has(driver.id)) {
+      return;
+    }
+
+    const partner = resolveSoforById(driver.linkedSoforId, sourceList);
+    const hasStablePair = Boolean(
+      partner
+      && partner.id !== driver.id
+      && partner.linkedSoforId === driver.id
+      && isFixedLinkedPairDriver(driver)
+      && isFixedLinkedPairDriver(partner)
+    );
+
+    if (hasStablePair) {
+      visited.add(driver.id);
+      visited.add(partner.id);
+      entries.push({
+        kind: "pair",
+        key: getSoforPairKey(driver),
+        primary: byId.get(driver.id) || driver,
+        secondary: byId.get(partner.id) || partner
+      });
+      return;
+    }
+
+    visited.add(driver.id);
+    entries.push({
+      kind: "single",
+      key: `single:${driver.id}`,
+      primary: byId.get(driver.id) || driver,
+      secondary: null
+    });
+  });
+
+  return entries;
+}
+
+function openSoforContextMenuAt(event, actions = []) {
+  closeSoforContextMenu();
+
+  if (!actions.length) {
+    return;
+  }
+
+  const menu = document.createElement("div");
+  menu.className = "resource-context-menu";
+  menu.style.left = `${event.clientX}px`;
+  menu.style.top = `${event.clientY}px`;
+
+  actions.forEach((action) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "resource-context-menu-item";
+    button.textContent = action.label;
+    button.addEventListener("click", () => {
+      closeSoforContextMenu();
+      action.action();
+    });
+    menu.appendChild(button);
+  });
+
+  document.body.appendChild(menu);
+  openSoforContextMenu = menu;
+
+  requestAnimationFrame(() => {
+    const rect = menu.getBoundingClientRect();
+    const maxX = Math.max(8, window.innerWidth - rect.width - 8);
+    const maxY = Math.max(8, window.innerHeight - rect.height - 8);
+    menu.style.left = `${Math.min(event.clientX, maxX)}px`;
+    menu.style.top = `${Math.min(event.clientY, maxY)}px`;
+  });
+}
+
+function openSoforPairManagerModal(baseSofor, sourceList, onSaved) {
+  closeSoforPairModal();
+
+  if (!baseSofor) {
+    return;
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "resource-pair-modal-overlay";
+
+  const host = document.createElement("div");
+  host.className = "resource-pair-modal";
+
+  const currentPartner = resolveSoforById(baseSofor.linkedSoforId, sourceList);
+  let selectedPartnerId = currentPartner?.id || "";
+
+  const allCandidates = (sourceList || [])
+    .filter((item) => item.id !== baseSofor.id)
+    .slice()
+    .sort((left, right) => getSoforDisplayName(left).localeCompare(getSoforDisplayName(right), "hu-HU"));
+
+  const renderCandidateList = (query = "") => {
+    const normalized = normalizeSearchText(query);
+    const rows = allCandidates
+      .filter((candidate) => {
+        const searchable = normalizeSearchText(`${getSoforDisplayName(candidate)} ${(candidate.jelenlegi_pozicio?.hely || "")}`);
+        return !normalized || searchable.includes(normalized);
+      })
+      .map((candidate) => {
+        const selectedClass = candidate.id === selectedPartnerId ? " selected" : "";
+        const selectedBadge = candidate.id === selectedPartnerId ? "<span class=\"resource-pair-candidate-badge\">Kijelölve</span>" : "";
+        return `
+          <button type="button" class="resource-pair-candidate${selectedClass}" data-candidate-id="${candidate.id}">
+            <span class="resource-pair-candidate-name">${getSoforDisplayName(candidate)}</span>
+            <span class="resource-pair-candidate-meta">📍 ${candidate.jelenlegi_pozicio?.hely || "-"}</span>
+            ${selectedBadge}
+          </button>
+        `;
+      })
+      .join("");
+
+    const listHost = host.querySelector(".resource-pair-candidates");
+    if (listHost) {
+      listHost.innerHTML = rows || '<div class="resource-pair-empty">Nincs találat a keresésre.</div>';
+    }
+  };
+
+  const baseName = getSoforDisplayName(baseSofor);
+  const partnerName = currentPartner ? getSoforDisplayName(currentPartner) : "nincs beállítva";
+
+  host.innerHTML = `
+    <div class="resource-pair-modal-header">
+      <h3>4 kezes páros beállítása</h3>
+      <button type="button" class="resource-pair-modal-close" aria-label="Bezárás">×</button>
+    </div>
+    <div class="resource-pair-modal-subtitle">Alap sofőr: <strong>${baseName}</strong></div>
+    <div class="resource-pair-current-row">
+      <div>Jelenlegi pár: <strong class="resource-pair-current-name">${partnerName}</strong></div>
+      <button type="button" class="resource-pair-clear-btn">Pár törlése</button>
+    </div>
+    <input type="search" class="resource-pair-search" placeholder="Sofőr keresése név alapján" aria-label="Sofőr keresése" />
+    <div class="resource-pair-candidates"></div>
+    <div class="resource-pair-modal-actions">
+      <button type="button" class="btn resource-pair-cancel-btn">Mégse</button>
+      <button type="button" class="btn resource-pair-save-btn">Mentés</button>
+    </div>
+  `;
+
+  overlay.appendChild(host);
+  document.body.appendChild(overlay);
+  openSoforPairModal = overlay;
+
+  const close = () => {
+    closeSoforPairModal();
+  };
+
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) {
+      close();
+    }
+  });
+
+  host.querySelector(".resource-pair-modal-close")?.addEventListener("click", close);
+  host.querySelector(".resource-pair-cancel-btn")?.addEventListener("click", close);
+
+  host.querySelector(".resource-pair-clear-btn")?.addEventListener("click", () => {
+    selectedPartnerId = "";
+    const currentNameEl = host.querySelector(".resource-pair-current-name");
+    if (currentNameEl) {
+      currentNameEl.textContent = "nincs beállítva";
+    }
+    renderCandidateList(host.querySelector(".resource-pair-search")?.value || "");
+  });
+
+  host.querySelector(".resource-pair-search")?.addEventListener("input", (event) => {
+    renderCandidateList(event.target.value || "");
+  });
+
+  host.querySelector(".resource-pair-candidates")?.addEventListener("click", (event) => {
+    const row = event.target.closest("[data-candidate-id]");
+    if (!row) {
+      return;
+    }
+
+    selectedPartnerId = row.dataset.candidateId || "";
+    const selectedPartner = resolveSoforById(selectedPartnerId, sourceList);
+    const currentNameEl = host.querySelector(".resource-pair-current-name");
+    if (currentNameEl) {
+      currentNameEl.textContent = selectedPartner ? getSoforDisplayName(selectedPartner) : "nincs beállítva";
+    }
+    renderCandidateList(host.querySelector(".resource-pair-search")?.value || "");
+  });
+
+  host.querySelector(".resource-pair-save-btn")?.addEventListener("click", () => {
+    const partner = selectedPartnerId ? resolveSoforById(selectedPartnerId, sourceList) : null;
+    applySoforPair(baseSofor, partner, sourceList);
+    close();
+    if (typeof onSaved === "function") {
+      onSaved({ baseSoforId: baseSofor.id, partnerSoforId: partner?.id || null });
+    }
+  });
+
+  renderCandidateList("");
+  host.querySelector(".resource-pair-search")?.focus();
+}
+
+function openSoforPairContextMenu(event, contextDriver, sourceList = SOFOROK) {
+  if (!contextDriver) {
+    return;
+  }
+
+  openSoforContextMenuAt(event, [
+    {
+      label: "4 kezes páros beállítása",
+      action: () => {
+        openSoforPairManagerModal(contextDriver, sourceList, (detail) => {
+          window.dispatchEvent(new CustomEvent("sofor:pair-updated", { detail }));
+        });
+      }
+    }
+  ]);
+}
+
+function getSoforPairPriority(sofor) {
+  return isFixedLinkedPairDriver(sofor) ? 0 : 1;
+}
+
+function getSoforPairKey(sofor) {
+  if (!isFixedLinkedPairDriver(sofor)) {
+    return `solo:${sofor?.id || ""}`;
+  }
+
+  return [sofor.id, sofor.linkedSoforId].sort().join("|");
+}
+
+function applySoforPairPrioritySort(list, compareWithinBucket) {
+  return [...list].sort((left, right) => {
+    const priorityDiff = getSoforPairPriority(left) - getSoforPairPriority(right);
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+
+    const pairDiff = getSoforPairKey(left).localeCompare(getSoforPairKey(right), "hu-HU");
+    if (pairDiff !== 0) {
+      return pairDiff;
+    }
+
+    return compareWithinBucket(left, right);
+  });
+}
+
 function applySoforSort(list) {
   const state = window._soforSortState;
   if (!state?.columnId) {
-    return sortResourcesByMatch(list);
+    return applySoforPairPrioritySort(sortResourcesByMatch(list), () => 0);
   }
   const dir = state.direction === "asc" ? 1 : -1;
   if (state.columnId === "abc") {
-    return [...list].sort((a, b) => getSoforSortName(a).localeCompare(getSoforSortName(b), "hu-HU") * dir);
+    return applySoforPairPrioritySort(list, (a, b) => {
+      return getSoforSortName(a).localeCompare(getSoforSortName(b), "hu-HU") * dir;
+    });
   }
-  return [...list].sort((a, b) => {
+  return applySoforPairPrioritySort(list, (a, b) => {
     return (getSoforSortValue(a, state.columnId) - getSoforSortValue(b, state.columnId)) * dir;
   });
 }
@@ -397,7 +713,8 @@ function getResourceLabelByTypeAndId(type, id) {
   if (!id) return "";
 
   if (type === "sofor") {
-    return SOFOROK.find((s) => s.id === id)?.nev || "";
+    const sofor = SOFOROK.find((s) => s.id === id);
+    return sofor ? getSoforDisplayName(sofor) : "";
   }
 
   if (type === "vontato") {
@@ -412,7 +729,11 @@ function renderLinkedInfo(resourceType, resource) {
 
   if (resourceType === "sofor") {
     const linkedVontato = getResourceLabelByTypeAndId("vontato", resource.linkedVontatoId);
+    const linkedSofor = getResourceLabelByTypeAndId("sofor", resource.linkedSoforId);
     lines.push(`🚛 Vontató: ${linkedVontato || "-"}`);
+    if (resource.kezes === "2") {
+      lines.push(`👥 Fix pár: ${linkedSofor || "-"}`);
+    }
   }
 
   if (resourceType === "vontato") {
@@ -500,6 +821,7 @@ function resourceCardHtml(icon, title, position, timeline = [], linkedInfoHtml =
 function renderSoforList(targetId, list, FUVAROK, onSelectResource, selectedFuvarId = null) {
   const el = document.getElementById(targetId);
   el.innerHTML = "";
+  closeSoforContextMenu();
 
   const filteredList = filterResourceListForSelectedFuvar(list, selectedFuvarId);
   const sortedList = applySoforSort(filteredList);
@@ -509,34 +831,130 @@ function renderSoforList(targetId, list, FUVAROK, onSelectResource, selectedFuva
     return;
   }
 
-  sortedList.forEach((s) => {
+  const entries = createSoforPairEntries(sortedList, list);
+
+  entries.forEach((entry) => {
+    const s = entry.primary;
+    const pairSofor = entry.secondary;
     const div = document.createElement("div");
     const matchClass = getResourceCardMatchClass(s.matchGrade);
     div.className = ["resource-card", matchClass].filter(Boolean).join(" ");
     div.dataset.id = s.id;
     div.dataset.type = "sofor";
+    if (pairSofor) {
+      div.dataset.secondaryId = pairSofor.id;
+      div.dataset.pairCard = "true";
+    }
     const linkedVontato = getResourceLabelByTypeAndId("vontato", s.linkedVontatoId);
-    div.dataset.searchText = normalizeSearchText(`${s.nev} ${s.jelenlegi_pozicio?.hely || ""} ${linkedVontato}`);
+    const secondLinkedVontato = pairSofor ? getResourceLabelByTypeAndId("vontato", pairSofor.linkedVontatoId) : "";
+    div.dataset.searchText = normalizeSearchText(`${getSoforDisplayName(s)} ${pairSofor ? getSoforDisplayName(pairSofor) : ""} ${s.jelenlegi_pozicio?.hely || ""} ${pairSofor?.jelenlegi_pozicio?.hely || ""} ${linkedVontato} ${secondLinkedVontato}`);
+
+    const mergedTimeline = pairSofor
+      ? [...(s.timeline || []), ...(pairSofor.timeline || [])]
+      : s.timeline;
+
+    const pairTopMetaHtml = pairSofor
+      ? `
+        <div class="resource-pair-title-row">
+          <button type="button" class="resource-driver-name-chip" data-driver-id="${s.id}">${getSoforDisplayName(s)}</button>
+          <span class="resource-pair-separator">+</span>
+          <button type="button" class="resource-driver-name-chip" data-driver-id="${pairSofor.id}">${getSoforDisplayName(pairSofor)}</button>
+        </div>
+      `
+      : renderSoforMetaBadges(s);
+
+    const pairLinkedInfoHtml = pairSofor
+      ? `
+        <div class="res-links">
+          <div class="res-link-item">🚛 Vontató (1): ${linkedVontato || "-"}</div>
+          <div class="res-link-item">🚛 Vontató (2): ${secondLinkedVontato || "-"}</div>
+          <div class="res-link-item">👥 4 kezes fix pár</div>
+        </div>
+      `
+      : renderLinkedInfo("sofor", s);
+
+    const title = pairSofor
+      ? `${getSoforDisplayName(s)} + ${getSoforDisplayName(pairSofor)}`
+      : getSoforDisplayName(s);
+
+    const position = pairSofor
+      ? `${s.jelenlegi_pozicio?.hely || "-"} | ${pairSofor.jelenlegi_pozicio?.hely || "-"}`
+      : s.jelenlegi_pozicio?.hely;
 
     div.innerHTML = resourceCardHtml(
-      "👤",
-      s.nev,
-      s.jelenlegi_pozicio?.hely,
-      s.timeline,
-      renderLinkedInfo("sofor", s),
+      pairSofor ? "👥" : "👤",
+      title,
+      position,
+      mergedTimeline,
+      pairLinkedInfoHtml,
       s.matchReasons || [],
-      renderSoforMetaBadges(s)
+      pairTopMetaHtml
     );
-    div.title = buildSoforMetaTooltip(s);
+    div.title = pairSofor
+      ? `${getSoforDisplayName(s)}\n${buildSoforMetaTooltip(s)}\n\n${getSoforDisplayName(pairSofor)}\n${buildSoforMetaTooltip(pairSofor)}`
+      : buildSoforMetaTooltip(s);
 
-    div.addEventListener("click", () => {
-      const results = evaluateFuvarokForResource(s, FUVAROK, "sofor");
-      onSelectResource("sofor", s, results);
+    const selectDriver = (driver) => {
+      const results = evaluateFuvarokForResource(driver, FUVAROK, "sofor");
+      onSelectResource("sofor", driver, results);
+    };
+
+    div.addEventListener("click", (event) => {
+      const chip = event.target.closest(".resource-driver-name-chip[data-driver-id]");
+      if (chip) {
+        const selectedDriver = resolveSoforById(chip.dataset.driverId, list);
+        if (selectedDriver) {
+          selectDriver(selectedDriver);
+          return;
+        }
+      }
+
+      selectDriver(s);
+    });
+
+    div.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const chip = event.target.closest(".resource-driver-name-chip[data-driver-id]");
+      const contextDriver = chip
+        ? resolveSoforById(chip.dataset.driverId, list) || s
+        : s;
+
+      openSoforPairContextMenu(event, contextDriver, list);
     });
 
     el.appendChild(div);
   });
 }
+
+document.addEventListener("click", () => {
+  closeSoforContextMenu();
+});
+
+document.addEventListener("contextmenu", (event) => {
+  const timelineName = event.target.closest('.timeline-resource-name[data-resource-type="sofor"][data-resource-id]');
+  if (!timelineName) {
+    return;
+  }
+
+  const soforId = timelineName.dataset.resourceId;
+  const sofor = resolveSoforById(soforId, SOFOROK);
+  if (!sofor) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  openSoforPairContextMenu(event, sofor, SOFOROK);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeSoforContextMenu();
+    closeSoforPairModal();
+  }
+});
 
 // ======================================================================
 // VONTATÓ LISTA

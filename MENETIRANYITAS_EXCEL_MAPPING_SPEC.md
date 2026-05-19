@@ -283,7 +283,7 @@ Minden import futás végén:
 
 - a dedikált rendszám kötelező vagy csak preferencia?
 - mi a kezelése a rendkívüli munkanapnak (manual override meddig él)?
-- a 2-kezes feladat kötelezően fix párral megy vagy dinamikus párosítás is lehet?
+- a 4-kezes feladat kötelezően fix párral megy vagy dinamikus párosítás is lehet?
 - melyik oszlop az elsődleges igazságforrás, ha Export és Segédtábla konfliktusban van?
 
 ## 13. Javasolt pilot

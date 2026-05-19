@@ -2,7 +2,7 @@ import { DEMO_NEARBY_FREE_PAIR_SCENARIO, createScenarioTimelineBlock } from "./d
 
 // ==========================================================
 // TransIT v4.4 – Sofőr adatbázis (Demo Dataset – Bővített)
-// 18 sofőr: 5 belföldes + 8 nemzetközi 1-kezes + 5 nemzetközi 2-kezes
+// 18 sofőr: 5 belföldes + 8 nemzetközi 1-kezes + 5 nemzetközi 4-kezes
 // ==========================================================
 
 function randomADR() { return Math.random() < 0.3; }
@@ -53,7 +53,7 @@ export const SOFOROK = [
     driving: createIntlProfile("medium") },
   { id: "S12", nev: "Lakatos Bence", tipus: "nemzetkozi", kezes: "1", adr: true, jelenlegi_pozicio: { hely: "Győr" }, timeline: [], driving: createIntlProfile("strong") },
 
-  // ═══ NEMZETKÖZI 2-KEZES (5) ═══
+  // ═══ NEMZETKÖZI 4-KEZES (5) ═══
   { id: "S7", nev: "Adamek István", tipus: "nemzetkozi", kezes: "2", adr: true, jelenlegi_pozicio: { hely: "Budapest" },
     linkedVontatoId: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeVontatoId,
     timeline: [createScenarioTimelineBlock({ fuvarId: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeFuvarId, label: "Demo felszabaduló pár – Tatabánya → Budapest", start: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeStartIso, end: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeEndIso, felrakasCim: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativePickupAddress, lerakasCim: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeDropoffAddress, viszonylat: "belfold" })],

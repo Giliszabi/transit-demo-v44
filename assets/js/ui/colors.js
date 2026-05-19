@@ -76,6 +76,11 @@ const FUVAR_TAG_META = {
     label: "Ajánlatkérés",
     color: "#00ACC1",
     textColor: "#E8FBFF"
+  },
+  twoKezesOnly: {
+    label: "2K",
+    color: "#8E24AA",
+    textColor: "#F9EFFF"
   }
 };
 

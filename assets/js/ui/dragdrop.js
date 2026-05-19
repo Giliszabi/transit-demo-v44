@@ -656,6 +656,7 @@ function linkPotkocsiToVontato(potkocsi, vontato) {
 function getStoredAssignment(fuvar) {
   return {
     soforId: fuvar.assignedSoforId || null,
+    secondarySoforId: fuvar.assignedSecondarySoforId || null,
     vontatoId: fuvar.assignedVontatoId || null,
     potkocsiId: fuvar.assignedPotkocsiId || null
   };
@@ -664,6 +665,9 @@ function getStoredAssignment(fuvar) {
 function saveFuvarAssignment(fuvar, assignment) {
   if (assignment.soforId) fuvar.assignedSoforId = assignment.soforId;
   else delete fuvar.assignedSoforId;
+
+  if (assignment.secondarySoforId) fuvar.assignedSecondarySoforId = assignment.secondarySoforId;
+  else delete fuvar.assignedSecondarySoforId;
 
   if (assignment.vontatoId) fuvar.assignedVontatoId = assignment.vontatoId;
   else delete fuvar.assignedVontatoId;
@@ -691,6 +695,7 @@ function removeFuvarBlocksFromAllResources(fuvarId) {
 function getLinkedAssignmentPatch(resourceType, resource) {
   const patch = {
     soforId: null,
+    secondarySoforId: null,
     vontatoId: null,
     potkocsiId: null
   };
@@ -701,6 +706,9 @@ function getLinkedAssignmentPatch(resourceType, resource) {
 
   if (resourceType === "sofor") {
     patch.soforId = resource.id;
+    if (resource.linkedSoforId) {
+      patch.secondarySoforId = resource.linkedSoforId;
+    }
     if (resource.linkedVontatoId) {
       patch.vontatoId = resource.linkedVontatoId;
       const linkedVontato = getResourceByType("vontato", resource.linkedVontatoId);
@@ -738,6 +746,7 @@ function mergeAssignments(base, patch) {
   const merged = { ...base };
 
   if (patch.soforId) merged.soforId = patch.soforId;
+  if (patch.secondarySoforId) merged.secondarySoforId = patch.secondarySoforId;
   if (patch.vontatoId) merged.vontatoId = patch.vontatoId;
   if (patch.potkocsiId) merged.potkocsiId = patch.potkocsiId;
 
@@ -767,6 +776,7 @@ function normalizeFuvarAssignment(fuvar, preferredType = null, preferredId = nul
   if (preferredType && preferredId) {
     assignment = {
       soforId: null,
+      secondarySoforId: null,
       vontatoId: null,
       potkocsiId: null,
       ...assignment,
@@ -793,6 +803,21 @@ function normalizeFuvarAssignment(fuvar, preferredType = null, preferredId = nul
     if (!canAssignFuvarToResource("sofor", resource, fuvar)) {
       assignment.soforId = null;
     }
+  }
+
+  if (fuvar?.onlyTwoKezesRequired) {
+    const primary = assignment.soforId ? getResourceByType("sofor", assignment.soforId) : null;
+    const secondaryId = primary?.linkedSoforId || assignment.secondarySoforId;
+    const secondary = secondaryId ? getResourceByType("sofor", secondaryId) : null;
+
+    if (!primary || !secondary || !canAssignFuvarToResource("sofor", secondary, fuvar)) {
+      assignment.soforId = null;
+      assignment.secondarySoforId = null;
+    } else {
+      assignment.secondarySoforId = secondary.id;
+    }
+  } else {
+    assignment.secondarySoforId = null;
   }
 
   if (assignment.vontatoId) {
@@ -823,6 +848,13 @@ function applyFuvarAssignment(fuvar, assignment) {
     }
   }
 
+  if (assignment.secondarySoforId) {
+    const sofor = getResourceByType("sofor", assignment.secondarySoforId);
+    if (sofor) {
+      addFuvarBlockToTimeline(sofor, fuvar);
+    }
+  }
+
   if (assignment.vontatoId) {
     const vontato = getResourceByType("vontato", assignment.vontatoId);
     if (vontato) {
@@ -843,7 +875,7 @@ function applyFuvarAssignment(fuvar, assignment) {
 function rebalanceAllFuvarAssignments() {
   FUVAROK.forEach((fuvar) => {
     const current = getStoredAssignment(fuvar);
-    if (!current.soforId && !current.vontatoId && !current.potkocsiId) {
+    if (!current.soforId && !current.secondarySoforId && !current.vontatoId && !current.potkocsiId) {
       return;
     }
 

@@ -1593,6 +1593,9 @@ function saveFuvarAssignment(fuvar, assignment) {
   if (assignment.soforId) fuvar.assignedSoforId = assignment.soforId;
   else delete fuvar.assignedSoforId;
 
+  if (assignment.secondarySoforId) fuvar.assignedSecondarySoforId = assignment.secondarySoforId;
+  else delete fuvar.assignedSecondarySoforId;
+
   if (assignment.vontatoId) fuvar.assignedVontatoId = assignment.vontatoId;
   else delete fuvar.assignedVontatoId;
 
