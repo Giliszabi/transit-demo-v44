@@ -9,6 +9,7 @@ import { renderTimeline } from "./timeline.js";
 import { renderSzerelvenyMap } from "./szerelveny-map.js";
 import { getAssemblyOperationLogEntries, renderSzerelvenyTimeline } from "./szerelveny-timeline.js";
 import { loadSessionState, applySessionStateSnapshots } from "../core/session-state.js";
+import "./resource-panel.js";
 
 const CONTINUOUS_LIMIT_MIN = 4 * 60 + 30;
 const DAILY_LIMIT_NORMAL_MIN = 9 * 60;
@@ -212,9 +213,9 @@ const appState = {
     matchRule: "all"
   },
   exportTableVisibleColumns: {
-    jobId: false,
-    weeklyKm: false,
-    workSchedule: false
+    jobId: true,
+    weeklyKm: true,
+    workSchedule: true
   },
   exportColumnsModalOpen: false,
   riskFilter: "all",
@@ -223,7 +224,9 @@ const appState = {
   refreshTimerId: null,
   generatedPlanning: null,
   titboxConfirmations: {},
-  dispatcherAvailability: {}
+  dispatcherAvailability: {},
+  dispatcherConfirmedDriverIds: new Set(),
+  dispatcherConfirmedEntityCount: 0
 };
 
 const TIMELINE_PANEL_IDS = ["assembly-timeline", "resource-timeline"];
@@ -295,7 +298,7 @@ async function initMenetiranyitasPanel() {
   const exportTableFilters = document.getElementById("export-table-filters");
   const exportTableContainer = document.getElementById("export-table-container");
   const alertsList = document.getElementById("monitor-alerts-list");
-  const titboxFeedbackList = document.getElementById("titbox-feedback-list");
+  const dispatchOpsGrid = document.querySelector(".dispatch-ops-grid");
   const riskLegend = document.getElementById("risk-legend");
 
   if (driverList) {
@@ -341,9 +344,9 @@ async function initMenetiranyitasPanel() {
     alertsList.addEventListener("keydown", onAlertListKeydown);
   }
 
-  if (titboxFeedbackList) {
-    titboxFeedbackList.addEventListener("click", onTitboxPanelClick);
-    titboxFeedbackList.addEventListener("keydown", onTitboxPanelKeydown);
+  if (dispatchOpsGrid) {
+    dispatchOpsGrid.addEventListener("click", onTitboxPanelClick);
+    dispatchOpsGrid.addEventListener("keydown", onTitboxPanelKeydown);
   }
 
   // riskLegend is hidden - not needed
@@ -664,11 +667,11 @@ function refreshDashboard(options = {}) {
   renderPlanningContextStrip();
   renderExportDateSwitcher();
   renderExportTableFilters(profiles);
+  renderDispatchOpsPanels(profiles, now);
   renderExportTable(profiles, appState.selectedDriverId);
   // renderExportDriverList(profiles, appState.selectedDriverId);  // HIDDEN - not needed in menetirányítás
   // renderDriverStateList(filteredProfiles, appState.selectedDriverId);  // HIDDEN - not needed in menetirányítás
   renderMainPanel(selectedProfile, now);
-  renderDispatchOpsPanels(profiles, now);
   renderInsightsPanel(selectedProfile);
   // renderOperationLogPanel();  // HIDDEN - not needed in menetirányítás
   renderAlertsPanel(appState.alerts, appState.selectedDriverId);
@@ -845,18 +848,94 @@ function resolveExportAssignmentsForDriver(driver, selectedExportDate) {
 
 function getAvailableExportDates() {
   const dates = appState.generatedPlanning?.planningContext?.availableExportDates;
+  const expectedDriverCountsByDate = buildExpectedDriverCountsByDate();
+  const buildDateMeta = (date, fallbackAssignmentCount = 0) => {
+    const dateKey = String(date || "").slice(0, 10);
+    const expectedDriverCount = expectedDriverCountsByDate.get(dateKey) || 0;
+
+    return {
+      date: dateKey,
+      parsedAssignmentCount: Number(fallbackAssignmentCount || getExportAssignmentsForDate(date).length || 0),
+      expectedDriverCount
+    };
+  };
+
   if (Array.isArray(dates) && dates.length) {
     return dates
       .filter((item) => Number(item.parsedAssignmentCount || 0) > 0)
-      .sort((left, right) => String(right.date || "").localeCompare(String(left.date || "")));
+      .map((item) => buildDateMeta(item.date, item.parsedAssignmentCount))
+      .filter((item) => item.expectedDriverCount > 0)
+      .sort((left, right) => String(left.date || "").localeCompare(String(right.date || "")));
   }
 
   const exportAssignments = appState.generatedPlanning?.exportAssignments || [];
   const uniqueDates = [...new Set(exportAssignments.map((item) => String(item.exportDate || "").slice(0, 10)).filter(Boolean))].sort();
   return uniqueDates
-    .map((date) => ({ date, parsedAssignmentCount: getExportAssignmentsForDate(date).length }))
-    .filter((item) => Number(item.parsedAssignmentCount || 0) > 0)
-    .sort((left, right) => String(right.date || "").localeCompare(String(left.date || "")));
+    .map((date) => buildDateMeta(date, getExportAssignmentsForDate(date).length))
+    .filter((item) => Number(item.parsedAssignmentCount || 0) > 0 && item.expectedDriverCount > 0)
+    .sort((left, right) => String(left.date || "").localeCompare(String(right.date || "")));
+}
+
+function buildExpectedDriverCountsByDate() {
+  const assignments = appState.generatedPlanning?.exportAssignments;
+  const countsByDate = new Map();
+  if (!Array.isArray(assignments) || !assignments.length) {
+    return countsByDate;
+  }
+
+  const driverIdsByNameKey = new Map();
+  const driverIdsByVehicleKey = new Map();
+
+  SOFOROK.forEach((driver) => {
+    const driverId = String(driver?.id || "").trim();
+    if (!driverId) {
+      return;
+    }
+
+    const driverNameKey = normalizePlanningKey(driver.nev || driver.name || driverId);
+    if (driverNameKey) {
+      const list = driverIdsByNameKey.get(driverNameKey) || [];
+      list.push(driverId);
+      driverIdsByNameKey.set(driverNameKey, list);
+    }
+
+    const dedicatedVehicleKey = normalizePlanningKey(driver.dedicatedVehiclePlate || "");
+    const linkedVehicleKey = normalizePlanningKey(resolveRigForDriver(driver)?.vontato?.rendszam || "");
+    const vehicleKeys = new Set([dedicatedVehicleKey, linkedVehicleKey]);
+
+    vehicleKeys.forEach((vehicleKey) => {
+      if (!vehicleKey) {
+        return;
+      }
+      const list = driverIdsByVehicleKey.get(vehicleKey) || [];
+      list.push(driverId);
+      driverIdsByVehicleKey.set(vehicleKey, list);
+    });
+  });
+
+  const matchedDriversByDate = new Map();
+  assignments.forEach((assignment) => {
+    const dateKey = String(assignment?.exportDate || "").slice(0, 10);
+    if (!dateKey) {
+      return;
+    }
+
+    const matched = matchedDriversByDate.get(dateKey) || new Set();
+    (assignment.driverNames || []).forEach((name) => {
+      const key = normalizePlanningKey(name);
+      (driverIdsByNameKey.get(key) || []).forEach((driverId) => matched.add(driverId));
+    });
+
+    const vehicleKey = normalizePlanningKey(assignment.vehiclePlate || "");
+    (driverIdsByVehicleKey.get(vehicleKey) || []).forEach((driverId) => matched.add(driverId));
+    matchedDriversByDate.set(dateKey, matched);
+  });
+
+  matchedDriversByDate.forEach((driverIds, dateKey) => {
+    countsByDate.set(dateKey, driverIds.size);
+  });
+
+  return countsByDate;
 }
 
 function ensureSelectedExportDate() {
@@ -887,6 +966,39 @@ function getExportAssignmentsForDate(exportDate) {
   return (appState.generatedPlanning?.exportAssignments || []).filter((assignment) => {
     return String(assignment.exportDate || "").slice(0, 10) === normalizedDate;
   });
+}
+
+function getDriverName(driver) {
+  return String(driver?.nev || driver?.name || driver?.id || "Ismeretlen gépjárművezető").trim();
+}
+
+function resolveStableLinkedPair(driver, profileByDriverId = null) {
+  const driverId = String(driver?.id || "").trim();
+  const linkedId = String(driver?.linkedSoforId || "").trim();
+  if (!driverId || !linkedId || linkedId === driverId) {
+    return null;
+  }
+
+  const partnerFromProfiles = profileByDriverId?.get(linkedId)?.driver || null;
+  const partner = partnerFromProfiles || SOFOROK.find((item) => String(item?.id || "").trim() === linkedId) || null;
+  if (!partner) {
+    return null;
+  }
+
+  const isStablePair = String(driver?.kezes || "") === "2"
+    && String(partner?.kezes || "") === "2"
+    && String(partner?.linkedSoforId || "").trim() === driverId;
+
+  if (!isStablePair) {
+    return null;
+  }
+
+  return {
+    driver,
+    partner,
+    ids: [driverId, linkedId].sort((left, right) => left.localeCompare(right, "hu-HU")),
+    label: `${getDriverName(driver)} + ${getDriverName(partner)}`
+  };
 }
 
 function resolveAssignmentDriverMatch(assignment, profiles) {
@@ -957,6 +1069,42 @@ function resolveAssignmentDriverMatch(assignment, profiles) {
       ? matchedProfiles.map((match) => match.name).join(", ")
       : "nincs felismert gépjárművezető"
   };
+}
+
+function collectExportRowDriverIds(row, profileByDriverId) {
+  const ids = new Set();
+  const directProfile = row?.profile || null;
+  const matchedPrimaryDriver = row?.match?.primaryProfile?.id
+    ? profileByDriverId.get(row.match.primaryProfile.id)?.driver || null
+    : null;
+  const resolvedPrimaryDriver = matchedPrimaryDriver || directProfile?.driver || null;
+
+  const directDriverId = String(directProfile?.driver?.id || "").trim();
+  if (directDriverId) {
+    ids.add(directDriverId);
+  }
+
+  const matchedPrimaryId = String(row?.match?.primaryProfile?.id || "").trim();
+  if (matchedPrimaryId) {
+    ids.add(matchedPrimaryId);
+  }
+
+  (row?.match?.matchedProfiles || []).forEach((item) => {
+    const matchedId = String(item?.id || "").trim();
+    if (matchedId) {
+      ids.add(matchedId);
+    }
+  });
+
+  const stablePair = resolveStableLinkedPair(resolvedPrimaryDriver, profileByDriverId);
+  (stablePair?.ids || []).forEach((id) => {
+    const normalized = String(id || "").trim();
+    if (normalized) {
+      ids.add(normalized);
+    }
+  });
+
+  return ids;
 }
 
 function renderExportTableFilters(profiles) {
@@ -1748,30 +1896,132 @@ function renderExportDateSwitcher() {
 
   const selectedDate = getSelectedExportDate();
   container.hidden = false;
-  const selectedIndex = Math.max(0, availableDates.findIndex((item) => item.date === selectedDate));
-  const hasPrevious = selectedIndex < availableDates.length - 1;
-  const hasNext = selectedIndex > 0;
-  const optionsHtml = availableDates
-    .map((item) => {
-      const date = item.date;
-      const count = Number(item.parsedAssignmentCount || 0);
-      const selectedAttr = date === selectedDate ? ' selected' : "";
-      return `<option value="${escapeHtml(date)}"${selectedAttr}>${escapeHtml(formatDateOnlyLabel(date))} • ${count} sor</option>`;
+  const availableByDate = new Map(availableDates.map((item) => [item.date, item]));
+  const selectedWeekStart = getWeekStartDateOnly(selectedDate);
+  const visibleDates = Array.from({ length: 7 }, (_, idx) => addDaysToDateOnly(selectedWeekStart, idx));
+  const stripStart = visibleDates[0] || null;
+  const stripEnd = visibleDates[visibleDates.length - 1] || null;
+  const firstAvailableWeekStart = getWeekStartDateOnly(availableDates[0]?.date || selectedDate);
+  const lastAvailableWeekStart = getWeekStartDateOnly(availableDates[availableDates.length - 1]?.date || selectedDate);
+  const hasPrevious = selectedWeekStart > firstAvailableWeekStart;
+  const hasNext = selectedWeekStart < lastAvailableWeekStart;
+  const stripLabel = stripStart && stripEnd
+    ? `${formatDateOnlyLabel(stripStart)} - ${formatDateOnlyLabel(stripEnd)}`
+    : "";
+
+  const pillsHtml = visibleDates
+    .map((date) => {
+      const item = availableByDate.get(date) || null;
+      const isSelected = date === selectedDate;
+      const count = Number(item.expectedDriverCount || 0);
+      const disabledAttr = item ? "" : "disabled";
+      return `<button class="btn fuvar-filter-toggle export-date-pill export-date-pill-nav ${isSelected ? "active" : ""}" type="button" data-export-date="${escapeHtml(date)}" ${disabledAttr}><span class="fuvar-filter-toggle-label">${escapeHtml(formatShortDateLabel(date))}</span><span class="fuvar-filter-count-badge" data-filter-count>${count}</span></button>`;
     })
     .join("");
 
   container.innerHTML = `
-    <div class="export-date-switcher-controls">
-      <button type="button" class="export-date-nav" data-export-nav="previous" ${hasPrevious ? "" : "disabled"}>← Előző nap</button>
-      <label class="export-date-select-wrap">
-        <span>Export nap</span>
-        <select class="export-date-select" data-export-select="true">
-          ${optionsHtml}
-        </select>
-      </label>
-      <button type="button" class="export-date-nav" data-export-nav="next" ${hasNext ? "" : "disabled"}>Következő nap →</button>
+    <div class="export-date-switcher-controls export-date-switcher-controls-pills">
+      <button type="button" class="btn fuvar-filter-week-nav export-date-nav" data-export-nav="previous" aria-label="Előző nap" ${hasPrevious ? "" : "disabled"}>◀</button>
+      <div class="fuvar-filter-week-label export-date-strip-label">${escapeHtml(stripLabel)}</div>
+      <div class="export-date-pill-strip" role="tablist" aria-label="Export napok">
+        ${pillsHtml}
+      </div>
+      <button type="button" class="btn fuvar-filter-week-nav export-date-nav" data-export-nav="next" aria-label="Következő nap" ${hasNext ? "" : "disabled"}>▶</button>
     </div>
   `;
+}
+
+function formatShortDateLabel(dateLike) {
+  const date = new Date(`${String(dateLike || "").slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleDateString("hu-HU", {
+    month: "2-digit",
+    day: "2-digit"
+  }).replace(/\/$/, ".").replace("/", ".");
+}
+
+function parseDateOnly(dateLike) {
+  const normalized = String(dateLike || "").slice(0, 10);
+  const [year, month, day] = normalized.split("-").map((part) => Number(part));
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function toDateOnly(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addDaysToDateOnly(dateLike, deltaDays) {
+  const base = parseDateOnly(dateLike);
+  if (!base) {
+    return String(dateLike || "").slice(0, 10);
+  }
+
+  base.setDate(base.getDate() + Number(deltaDays || 0));
+  return toDateOnly(base);
+}
+
+function getWeekStartDateOnly(dateLike) {
+  const date = parseDateOnly(dateLike);
+  if (!date) {
+    return String(dateLike || "").slice(0, 10);
+  }
+
+  const day = date.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + mondayOffset);
+  return toDateOnly(date);
+}
+
+function moveExportDateByWeek(weekDelta) {
+  const availableDates = getAvailableExportDates();
+  if (!availableDates.length) {
+    return;
+  }
+
+  const availableDateKeys = new Set(availableDates.map((item) => item.date));
+  const selectedDate = getSelectedExportDate();
+  const selectedWeekStart = getWeekStartDateOnly(selectedDate);
+  const selectedDateObj = parseDateOnly(selectedDate);
+  const selectedWeekStartObj = parseDateOnly(selectedWeekStart);
+  if (!selectedDateObj || !selectedWeekStartObj) {
+    return;
+  }
+
+  const selectedWeekdayOffset = Math.floor((selectedDateObj.getTime() - selectedWeekStartObj.getTime()) / (24 * 60 * 60 * 1000));
+  const targetWeekStart = addDaysToDateOnly(selectedWeekStart, Number(weekDelta || 0) * 7);
+  let candidate = addDaysToDateOnly(targetWeekStart, selectedWeekdayOffset);
+
+  if (!availableDateKeys.has(candidate)) {
+    const weekCandidates = Array.from({ length: 7 }, (_, idx) => addDaysToDateOnly(targetWeekStart, idx))
+      .filter((dateKey) => availableDateKeys.has(dateKey));
+    if (!weekCandidates.length) {
+      return;
+    }
+    candidate = weekDelta < 0 ? weekCandidates[weekCandidates.length - 1] : weekCandidates[0];
+  }
+
+  if (!candidate || candidate === appState.selectedExportDate) {
+    return;
+  }
+
+  appState.selectedExportDate = candidate;
+  refreshDashboard({ preserveSelection: true, focusMode: "none" });
 }
 
 function renderExportTable(profiles, selectedDriverId) {
@@ -1788,32 +2038,83 @@ function renderExportTable(profiles, selectedDriverId) {
   }
 
   const profileByAssignmentId = new Map();
+  const profileByDriverId = new Map();
   profiles.forEach((profile) => {
+    profileByDriverId.set(String(profile.driver.id || "").trim(), profile);
     (profile.exportAssignments || []).forEach((assignment) => {
       profileByAssignmentId.set(assignment.assignmentId, profile);
     });
   });
 
-  const rows = assignments.map((assignment) => {
+  const rows = assignments.map((assignment, rowIndex) => {
     const profile = profileByAssignmentId.get(assignment.assignmentId) || null;
     const match = resolveAssignmentDriverMatch(assignment, profiles);
-    return { assignment, profile, match };
+    return { assignment, profile, match, rowIndex };
   });
 
-  const filteredRows = applyExportTableFilters(rows);
+  const filteredRows = applyExportTableFilters(rows).filter((row) => {
+    const confirmedDriverIds = appState.dispatcherConfirmedDriverIds;
+    if (!(confirmedDriverIds instanceof Set) || confirmedDriverIds.size === 0) {
+      return false;
+    }
+
+    const rowDriverIds = collectExportRowDriverIds(row, profileByDriverId);
+    for (const driverId of rowDriverIds) {
+      if (confirmedDriverIds.has(driverId)) {
+        return true;
+      }
+    }
+
+    return false;
+  });
   if (!filteredRows.length) {
-    container.innerHTML = '<div class="empty-message">A jelenlegi szűrőkkel nincs látható Export sor.</div>';
+    container.innerHTML = '<div class="empty-message">A zöld panel táblázatába a kék boxból visszaigazolt és rögzített gépjárművezetők sorai kerülnek.</div>';
     return;
   }
 
-  const visibleCols = appState.exportTableVisibleColumns;
+  const sortedRows = [...filteredRows].sort((left, right) => {
+    const leftDriver = (left.match.primaryProfile?.id && profileByDriverId.get(left.match.primaryProfile.id)?.driver)
+      || left.profile?.driver
+      || null;
+    const rightDriver = (right.match.primaryProfile?.id && profileByDriverId.get(right.match.primaryProfile.id)?.driver)
+      || right.profile?.driver
+      || null;
+    const leftPair = resolveStableLinkedPair(leftDriver, profileByDriverId);
+    const rightPair = resolveStableLinkedPair(rightDriver, profileByDriverId);
 
-  const rowsHtml = filteredRows
+    if (Boolean(leftPair) !== Boolean(rightPair)) {
+      return leftPair ? -1 : 1;
+    }
+
+    const leftStart = new Date(left.assignment?.startTime || "").getTime();
+    const rightStart = new Date(right.assignment?.startTime || "").getTime();
+    const leftTime = Number.isFinite(leftStart) ? leftStart : Number.POSITIVE_INFINITY;
+    const rightTime = Number.isFinite(rightStart) ? rightStart : Number.POSITIVE_INFINITY;
+    if (leftTime !== rightTime) {
+      return leftTime - rightTime;
+    }
+
+    return left.rowIndex - right.rowIndex;
+  });
+
+  const visibleCols = { jobId: true, weeklyKm: true, workSchedule: true };
+
+  const rowsHtml = sortedRows
     .map(({ assignment, profile, match }) => {
       const selectedClass = profile?.driver.id === selectedDriverId ? "selected" : "";
-      const driverNames = (assignment.driverNames || []).join(", ") || profile?.driver.nev || "-";
+      const resolvedPrimaryDriver = (match.primaryProfile?.id && profileByDriverId.get(match.primaryProfile.id)?.driver)
+        || profile?.driver
+        || null;
+      const stablePair = resolveStableLinkedPair(resolvedPrimaryDriver, profileByDriverId);
+      const driverNames = stablePair?.label || (assignment.driverNames || []).join(" + ") || profile?.driver.nev || "-";
       const directProfile = match.primaryProfile || profile;
-      const driverIdAttr = directProfile?.id ? ` data-driver-id="${escapeHtml(directProfile.id)}" role="button" tabindex="0"` : "";
+      const rowDriverId = String(
+        directProfile?.id
+        || stablePair?.ids?.[0]
+        || match.matchedProfiles?.[0]?.id
+        || ""
+      ).trim();
+      const driverIdAttr = rowDriverId ? ` data-driver-id="${escapeHtml(rowDriverId)}" role="button" tabindex="0"` : "";
       const assignmentId = assignment.assignmentId || "";
       const dispatchNote = assignment.dispatchNote || "";
       const startTimeValue = toDateTimeLocalValue(assignment.startTime);
@@ -1905,32 +2206,6 @@ function renderExportTable(profiles, selectedDriverId) {
   }
 
   container.innerHTML = `
-    <div class="export-table-meta">Megjelenített nap: ${escapeHtml(formatDateOnlyLabel(selectedDate))} • Szűrt sorok: ${filteredRows.length} / ${assignments.length}</div>
-    <div class="export-table-header-actions">
-      <button type="button" class="export-columns-toggle" data-action="toggle-columns">⚙️ Oszlopok</button>
-      <div id="export-columns-modal" class="export-columns-modal${appState.exportColumnsModalOpen ? " is-open" : ""}" aria-hidden="${appState.exportColumnsModalOpen ? "false" : "true"}">
-        <div class="export-columns-modal-content">
-          <div class="export-columns-modal-header">
-            <h3>Opcionális oszlopok</h3>
-            <button type="button" class="export-columns-modal-close" data-action="close-columns">✕</button>
-          </div>
-          <div class="export-columns-modal-body">
-            <label class="export-columns-option">
-              <input type="checkbox" class="export-columns-checkbox" data-column="jobId" ${visibleCols.jobId ? "checked" : ""} />
-              <span>Fuvarfeladat</span>
-            </label>
-            <label class="export-columns-option">
-              <input type="checkbox" class="export-columns-checkbox" data-column="weeklyKm" ${visibleCols.weeklyKm ? "checked" : ""} />
-              <span>Heti vezetett kilométer</span>
-            </label>
-            <label class="export-columns-option">
-              <input type="checkbox" class="export-columns-checkbox" data-column="workSchedule" ${visibleCols.workSchedule ? "checked" : ""} />
-              <span>Munkarend kód</span>
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
     <div class="export-table-shell">
       <table class="export-table-view">
         <thead>
@@ -1949,48 +2224,6 @@ function renderExportTable(profiles, selectedDriverId) {
       </table>
     </div>
   `;
-
-  // Wire up column toggle
-  const columnsToggle = container.querySelector(".export-columns-toggle");
-  if (columnsToggle) {
-    columnsToggle.addEventListener("click", (e) => {
-      e.preventDefault();
-      const modal = container.querySelector("#export-columns-modal");
-      if (modal) {
-        appState.exportColumnsModalOpen = !appState.exportColumnsModalOpen;
-        modal.classList.toggle("is-open", appState.exportColumnsModalOpen);
-        modal.setAttribute("aria-hidden", appState.exportColumnsModalOpen ? "false" : "true");
-      }
-    });
-  }
-
-  const columnsClose = container.querySelector(".export-columns-modal-close");
-  if (columnsClose) {
-    columnsClose.addEventListener("click", (e) => {
-      e.preventDefault();
-      const modal = container.querySelector("#export-columns-modal");
-      if (modal) {
-        appState.exportColumnsModalOpen = false;
-        modal.classList.remove("is-open");
-        modal.setAttribute("aria-hidden", "true");
-      }
-    });
-  }
-
-  const checkboxes = container.querySelectorAll(".export-columns-checkbox");
-  checkboxes.forEach((checkbox) => {
-    checkbox.addEventListener("change", (e) => {
-      const columnKey = e.target.dataset.column;
-      appState.exportTableVisibleColumns[columnKey] = e.target.checked;
-      renderExportTable(profiles, selectedDriverId);
-    });
-  });
-
-  const columnsModal = container.querySelector("#export-columns-modal");
-  if (columnsModal) {
-    columnsModal.classList.toggle("is-open", appState.exportColumnsModalOpen);
-    columnsModal.setAttribute("aria-hidden", appState.exportColumnsModalOpen ? "false" : "true");
-  }
 }
 
 function formatDateOnlyLabel(dateLike) {
@@ -2158,6 +2391,9 @@ function renderMainPanel(profile, now) {
 
   panel.hidden = false;
 
+  const stablePair = resolveStableLinkedPair(profile.driver);
+  const monitorDriverLabel = stablePair?.label || getDriverName(profile.driver);
+
   const counters = buildCounterCards(profile);
 
   const stripSegmentsHtml = profile.strip.segments
@@ -2177,7 +2413,7 @@ function renderMainPanel(profile, now) {
   container.innerHTML = `
     <div class="main-driver-header">
       <div>
-        <h3>${escapeHtml(profile.driver.id)} • ${escapeHtml(profile.driver.nev)}</h3>
+        <h3>${escapeHtml(monitorDriverLabel)}</h3>
         <div class="main-driver-sub">
           ${escapeHtml(profile.status.icon)} ${escapeHtml(profile.status.label)} • ${escapeHtml(profile.risk.label)}
         </div>
@@ -2505,29 +2741,154 @@ function renderAlertsPanel(alerts, selectedDriverId) {
     .join("");
 }
 
-function formatDispatchOpsDriverLabel(profile, profiles) {
-  const ownName = String(profile?.driver?.nev || profile?.driver?.name || "").trim();
-  const isTwoDriverCrew = String(profile?.driver?.kezes || "") === "2";
-  const rigId = profile?.rig?.id || null;
+function getDispatchOpsEntityKey(profile, selectedExportDate = null, profileByDriverId = null) {
+  const dateKey = String(selectedExportDate || "").slice(0, 10) || "no-date";
+  const stablePair = resolveStableLinkedPair(profile?.driver, profileByDriverId);
 
-  if (!isTwoDriverCrew || !rigId) {
-    return ownName || "Ismeretlen gépjárművezető";
+  if (stablePair) {
+    return `date:${dateKey}|pair:${stablePair.ids.join("+")}`;
   }
 
-  const partner = profiles.find((candidate) => {
-    if (!candidate || candidate.driver?.id === profile.driver?.id) {
-      return false;
-    }
+  return `date:${dateKey}|driver:${String(profile?.driver?.id || "unknown")}`;
+}
 
-    return String(candidate.driver?.kezes || "") === "2" && candidate.rig?.id === rigId;
+function buildDispatchOpsEntities(profiles, selectedExportDate = null) {
+  const entityMap = new Map();
+  const profileByDriverId = new Map();
+
+  profiles.forEach((profile) => {
+    const driverId = String(profile?.driver?.id || "").trim();
+    if (driverId) {
+      profileByDriverId.set(driverId, profile);
+    }
   });
 
-  const partnerName = String(partner?.driver?.nev || partner?.driver?.name || "").trim();
-  if (!partnerName) {
-    return ownName || "Ismeretlen gépjárművezető";
+  profiles.forEach((profile) => {
+    const entityKey = getDispatchOpsEntityKey(profile, selectedExportDate, profileByDriverId);
+    const existing = entityMap.get(entityKey);
+
+    if (!existing) {
+      const stablePair = resolveStableLinkedPair(profile?.driver, profileByDriverId);
+      entityMap.set(entityKey, {
+        key: entityKey,
+        profiles: [profile],
+        primaryProfile: profile,
+        pair: stablePair
+      });
+      return;
+    }
+
+    existing.profiles.push(profile);
+    if (profile.eta.nowToEtaMin < existing.primaryProfile.eta.nowToEtaMin) {
+      existing.primaryProfile = profile;
+    }
+  });
+
+  return [...entityMap.values()];
+}
+
+function formatDispatchOpsEntityLabel(entity) {
+  const names = getDispatchOpsEntityDrivers(entity)
+    .map((driver) => String(driver?.name || "").trim())
+    .filter(Boolean);
+
+  const uniqueNames = [...new Set(names)];
+  if (!uniqueNames.length) {
+    return "Ismeretlen gépjárművezető";
   }
 
-  return `${ownName} - ${partnerName}`;
+  return uniqueNames.join(" + ");
+}
+
+function getDispatchOpsEntityDrivers(entity) {
+  const seen = new Set();
+  const drivers = [];
+
+  (entity?.profiles || []).forEach((profile) => {
+    const driverId = String(profile?.driver?.id || "").trim();
+    const driverName = String(profile?.driver?.nev || profile?.driver?.name || "").trim();
+
+    if (!driverId || !driverName || seen.has(driverId)) {
+      return;
+    }
+
+    seen.add(driverId);
+    drivers.push({ id: driverId, name: driverName });
+  });
+
+  const pair = entity?.pair;
+  const partnerId = String(pair?.partner?.id || "").trim();
+  const partnerName = getDriverName(pair?.partner);
+  if (partnerId && partnerName && !seen.has(partnerId)) {
+    seen.add(partnerId);
+    drivers.push({ id: partnerId, name: partnerName });
+  }
+
+  return drivers;
+}
+
+function buildDispatchOpsDriverMarkup(entity) {
+  const drivers = getDispatchOpsEntityDrivers(entity);
+  if (!drivers.length) {
+    return `<span class="dispatch-ops-driver">${escapeHtml(formatDispatchOpsEntityLabel(entity))}</span>`;
+  }
+
+  return drivers
+    .map((driver) => {
+      return `<button type="button" class="dispatch-ops-driver dispatch-ops-driver-link" data-dispatch-driver-id="${escapeHtml(driver.id)}">${escapeHtml(driver.name)}</button>`;
+    })
+    .join('<span class="dispatch-ops-driver-separator"> + </span>');
+}
+
+function scrollResourceTimelineToDriver(driverId) {
+  const normalizedDriverId = String(driverId || "").trim();
+  if (!normalizedDriverId) {
+    return;
+  }
+
+  const timelineContainer = document.getElementById("timeline-container");
+  if (!timelineContainer) {
+    return;
+  }
+
+  const soforTitleText = [...timelineContainer.querySelectorAll(".timeline-group-title-text")]
+    .find((item) => item.textContent?.includes("Gépjárművezetők"));
+  const soforTitleButton = soforTitleText?.closest(".timeline-group-title");
+  const soforGroupHeader = soforTitleButton?.closest(".timeline-group-header");
+  const soforGroupBody = soforGroupHeader?.nextElementSibling;
+
+  if (soforTitleButton && soforGroupBody?.hidden) {
+    soforTitleButton.click();
+  }
+
+  const target = [...timelineContainer.querySelectorAll('.timeline-resource-name[data-resource-type="sofor"][data-resource-id]')]
+    .find((item) => item.dataset.resourceId === normalizedDriverId);
+
+  if (!target) {
+    return;
+  }
+
+  const row = target.closest(".timeline-resource");
+  if (row?.hidden) {
+    row.hidden = false;
+  }
+
+  window.dispatchEvent(new CustomEvent("timeline:resource-selected", {
+    detail: {
+      type: "sofor",
+      resourceId: normalizedDriverId
+    }
+  }));
+
+  row?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+  target.classList.add("timeline-resource-jump-highlight");
+  window.setTimeout(() => {
+    target.classList.remove("timeline-resource-jump-highlight");
+  }, 1200);
+}
+
+function renderDispatchOpsEmpty(listElement, message) {
+  listElement.innerHTML = `<div class="dispatch-ops-empty">${escapeHtml(message)}</div>`;
 }
 
 function renderDispatchOpsPanels(profiles, now) {
@@ -2535,108 +2896,176 @@ function renderDispatchOpsPanels(profiles, now) {
   const titboxList = document.getElementById("titbox-feedback-list");
   const dispatcherList = document.getElementById("dispatcher-availability-list");
 
-  if (!kornyeList || !titboxList || !dispatcherList) {
+  if (!kornyeList || !titboxList) {
     return;
   }
+
+  appState.dispatcherConfirmedDriverIds = new Set();
+  appState.dispatcherConfirmedEntityCount = 0;
 
   if (!profiles.length) {
-    const emptyHtml = '<div class="dispatch-ops-empty">Nincs elérhető sofőr adat a panelhez.</div>';
-    kornyeList.innerHTML = emptyHtml;
-    titboxList.innerHTML = emptyHtml;
-    dispatcherList.innerHTML = emptyHtml;
+    renderDispatchOpsEmpty(kornyeList, "Nincs elérhető sofőr adat a panelhez.");
+    renderDispatchOpsEmpty(titboxList, "Nincs elérhető sofőr adat a panelhez.");
+    if (dispatcherList) {
+      dispatcherList.textContent = "Nincs rögzített fogható erőforrás.";
+    }
     return;
   }
 
-  ensureDispatchOpsState(profiles, now);
+  const selectedExportDate = getSelectedExportDate();
+  const dispatchProfiles = profiles.filter((profile) => (profile.exportAssignments || []).length > 0);
+  if (!dispatchProfiles.length) {
+    renderDispatchOpsEmpty(kornyeList, "A kiválasztott dátumhoz nincs megjeleníthető gépjárművezető.");
+    renderDispatchOpsEmpty(titboxList, "A kiválasztott dátumhoz még nincs sofőr visszaigazolás.");
+    if (dispatcherList) {
+      dispatcherList.textContent = "A kiválasztott dátumhoz még nincs fogható erőforrás rögzítve.";
+    }
+    return;
+  }
 
-  const sortedByEta = [...profiles]
-    .sort((left, right) => left.eta.nowToEtaMin - right.eta.nowToEtaMin)
-    .slice(0, 10);
+  const entities = buildDispatchOpsEntities(dispatchProfiles, selectedExportDate);
+  ensureDispatchOpsState(entities, now);
 
-  kornyeList.innerHTML = sortedByEta
-    .map((profile) => {
-      const driverLabel = formatDispatchOpsDriverLabel(profile, profiles);
-      return `
+  const sortedByEta = [...entities]
+    .sort((left, right) => {
+      const leftIsPair = Boolean(left.pair);
+      const rightIsPair = Boolean(right.pair);
+      if (leftIsPair !== rightIsPair) {
+        return leftIsPair ? -1 : 1;
+      }
+      return left.primaryProfile.eta.nowToEtaMin - right.primaryProfile.eta.nowToEtaMin;
+    });
+
+  const calculatedEntities = [];
+  const driverConfirmedEntities = [];
+  const dispatcherConfirmedEntities = [];
+
+  sortedByEta.forEach((entity) => {
+    const titboxEntry = appState.titboxConfirmations[entity.key];
+    const dispatcherEntry = appState.dispatcherAvailability[entity.key];
+
+    if (dispatcherEntry?.recordedAt) {
+      dispatcherConfirmedEntities.push(entity);
+      return;
+    }
+
+    if (titboxEntry?.confirmedAt) {
+      driverConfirmedEntities.push(entity);
+      return;
+    }
+
+    calculatedEntities.push(entity);
+  });
+
+  if (!calculatedEntities.length) {
+    renderDispatchOpsEmpty(kornyeList, "Nincs nyitott, számított elérhetőségű erőforrás.");
+  } else {
+    kornyeList.innerHTML = calculatedEntities
+      .map((entity) => {
+        const profile = entity.primaryProfile;
+        const entry = appState.titboxConfirmations[entity.key];
+        const fuvar = profile.activeFuvar?.fuvar;
+        const fuvarLabel = fuvar?.megnevezes
+          ? `${fuvar.id} • ${fuvar.megnevezes}`
+          : "Nincs hozzárendelt fuvarfeladat";
+        const pushState = entry?.pushSentAt ? `Push kérés: ${formatTime(entry.pushSentAt)}` : "Push kérés: még nem küldve";
+        const etaLead = formatEtaLeadTime(profile.eta.nowToEtaMin);
+        const etaMeta = etaLead ? ` • ${etaLead} múlva` : "";
+
+        return `
         <article class="dispatch-ops-item">
           <div class="dispatch-ops-item-header">
-            <span class="dispatch-ops-driver">${escapeHtml(driverLabel)}</span>
+            <div class="dispatch-ops-driver-list">${buildDispatchOpsDriverMarkup(entity)}</div>
             <span class="dispatch-ops-chip ${escapeHtml(profile.risk.level)}">${escapeHtml(profile.risk.label)}</span>
           </div>
-          <div class="dispatch-ops-meta">Predikció forrás: Fuvarszervezés AI</div>
-          <div class="dispatch-ops-meta">Várható beérkezés (Környe): ${escapeHtml(formatTime(profile.eta.correctedEta))} • ${escapeHtml(formatDuration(profile.eta.nowToEtaMin))} múlva</div>
+          <div class="dispatch-ops-meta">Fuvarfeladat: ${escapeHtml(fuvarLabel)}</div>
+          <div class="dispatch-ops-meta">Várható beérkezés (Környe): ${escapeHtml(formatTime(profile.eta.correctedEta))}${escapeHtml(etaMeta)}</div>
           <div class="dispatch-ops-meta">Kiinduló hely: ${escapeHtml(profile.driver.jelenlegi_pozicio?.hely || "ismeretlen")}</div>
+          <div class="dispatch-ops-meta">${escapeHtml(pushState)}</div>
+          <div class="dispatch-ops-actions">
+            <button type="button" class="dispatch-ops-btn" data-titbox-action="send-push" data-entity-key="${escapeHtml(entity.key)}">Push küldése</button>
+            <button type="button" class="dispatch-ops-btn" data-titbox-action="mark-driver-confirmed" data-entity-key="${escapeHtml(entity.key)}" ${entry?.pushSentAt ? "" : "disabled"}>Sofőr visszaigazolta</button>
+          </div>
         </article>
       `;
-    })
-    .join("");
+      })
+      .join("");
+  }
 
-  titboxList.innerHTML = sortedByEta
-    .map((profile) => {
-      const entry = appState.titboxConfirmations[profile.driver.id];
-      const confirmationState = entry?.confirmedAt ? "confirmed" : "pending";
-      const stateLabel = entry?.confirmedAt ? "Visszaigazolt" : "Megerősítésre vár";
-      const driverLabel = formatDispatchOpsDriverLabel(profile, profiles);
+  if (!driverConfirmedEntities.length) {
+    renderDispatchOpsEmpty(titboxList, "Nincs sofőr által visszaigazolt, rögzítésre váró erőforrás.");
+  } else {
+    titboxList.innerHTML = driverConfirmedEntities
+      .map((entity) => {
+        const profile = entity.primaryProfile;
+        const entry = appState.titboxConfirmations[entity.key];
 
-      return `
+        return `
         <article class="dispatch-ops-item dispatch-ops-item-titbox">
           <div class="dispatch-ops-item-header">
-            <span class="dispatch-ops-driver">${escapeHtml(driverLabel)}</span>
+            <div class="dispatch-ops-driver-list">${buildDispatchOpsDriverMarkup(entity)}</div>
           </div>
           <div class="dispatch-ops-status-stack">
-            <span class="dispatch-ops-chip ${confirmationState}">${escapeHtml(stateLabel)}</span>
+            <span class="dispatch-ops-chip confirmed">Visszaigazolt</span>
             <div class="dispatch-ops-actions dispatch-ops-actions-compact">
-              <button type="button" class="dispatch-ops-btn" data-titbox-action="send-push" data-driver-id="${escapeHtml(profile.driver.id)}">Push küldése</button>
-              <button type="button" class="dispatch-ops-btn" data-titbox-action="mark-confirmed" data-driver-id="${escapeHtml(profile.driver.id)}" ${entry?.confirmedAt ? "disabled" : ""}>Visszaigazolás rögzítése</button>
+              <button type="button" class="dispatch-ops-btn" data-titbox-action="mark-dispatcher-confirmed" data-entity-key="${escapeHtml(entity.key)}">Visszaigazolás rögzítése</button>
             </div>
           </div>
           <div class="dispatch-ops-meta">Titbox ETA: ${escapeHtml(formatTime(entry.driverReportedEta))} • Hely: ${escapeHtml(entry.reportedLocation)}</div>
           <div class="dispatch-ops-meta">Push kérés: ${escapeHtml(entry.pushSentAt ? formatTime(entry.pushSentAt) : "még nem küldve")}</div>
+          <div class="dispatch-ops-meta">Sofőr visszaigazolta: ${escapeHtml(entry.confirmedAt ? formatTime(entry.confirmedAt) : "még nem")}</div>
+          <div class="dispatch-ops-meta">Kalkulált ETA: ${escapeHtml(formatTime(profile.eta.correctedEta))}</div>
         </article>
       `;
-    })
-    .join("");
+      })
+      .join("");
+  }
 
-  dispatcherList.innerHTML = sortedByEta
-    .map((profile) => {
-      const entry = appState.dispatcherAvailability[profile.driver.id];
-      const driverLabel = formatDispatchOpsDriverLabel(profile, profiles);
-      return `
-        <article class="dispatch-ops-item">
-          <div class="dispatch-ops-item-header">
-            <span class="dispatch-ops-driver">${escapeHtml(driverLabel)}</span>
-            <span class="dispatch-ops-chip confirmed">100% pontos</span>
-          </div>
-          <div class="dispatch-ops-meta">Lerögzített beérkezés: ${escapeHtml(formatTime(entry.agreedArrivalAt))} (Környe telephely)</div>
-          <div class="dispatch-ops-meta">Telefon: ${escapeHtml(entry.contactPhone)}</div>
-          <div class="dispatch-ops-meta">Egyeztetés frissítve: ${escapeHtml(formatTime(entry.updatedAt))}</div>
-        </article>
-      `;
-    })
-    .join("");
+  if (!dispatcherConfirmedEntities.length) {
+    if (dispatcherList) {
+      dispatcherList.textContent = "Nincs menetirányító által rögzített fogható erőforrás.";
+    }
+  } else {
+    if (dispatcherList) {
+      dispatcherList.textContent = `${dispatcherConfirmedEntities.length} rögzített fogható erőforrás • a kapcsolódó sorok a táblázatban látszanak`;
+    }
+  }
+
+  const confirmedDriverIds = new Set();
+  dispatcherConfirmedEntities.forEach((entity) => {
+    getDispatchOpsEntityDrivers(entity).forEach((driver) => {
+      const driverId = String(driver?.id || "").trim();
+      if (driverId) {
+        confirmedDriverIds.add(driverId);
+      }
+    });
+  });
+  appState.dispatcherConfirmedDriverIds = confirmedDriverIds;
+  appState.dispatcherConfirmedEntityCount = dispatcherConfirmedEntities.length;
 }
 
-function ensureDispatchOpsState(profiles, now) {
-  profiles.forEach((profile) => {
-    const driverId = profile.driver.id;
-    const seed = makeSeed(driverId);
-    const locationLabel = profile.predictionEvents?.[0]?.locationLabel || profile.driver.jelenlegi_pozicio?.hely || "ismeretlen";
+function ensureDispatchOpsState(entities, now) {
+  entities.forEach((entity) => {
+    const primaryProfile = entity.primaryProfile;
+    const seed = makeSeed(entity.key);
+    const locationLabel = primaryProfile.predictionEvents?.[0]?.locationLabel || primaryProfile.driver.jelenlegi_pozicio?.hely || "ismeretlen";
 
-    if (!appState.titboxConfirmations[driverId]) {
+    if (!appState.titboxConfirmations[entity.key]) {
       const etaOffsetMin = randomInt(seed + 901, -20, 24);
-      const initiallyConfirmed = randomInt(seed + 917, 0, 100) > 65;
-      appState.titboxConfirmations[driverId] = {
-        driverReportedEta: addMinutes(profile.eta.correctedEta, etaOffsetMin),
+      appState.titboxConfirmations[entity.key] = {
+        driverReportedEta: addMinutes(primaryProfile.eta.correctedEta, etaOffsetMin),
         reportedLocation: locationLabel,
-        pushSentAt: initiallyConfirmed ? addMinutes(now, -randomInt(seed + 923, 8, 70)) : null,
-        confirmedAt: initiallyConfirmed ? addMinutes(now, -randomInt(seed + 929, 2, 30)) : null
+        pushSentAt: null,
+        confirmedAt: null
       };
     }
 
-    if (!appState.dispatcherAvailability[driverId]) {
-      appState.dispatcherAvailability[driverId] = {
-        agreedArrivalAt: addMinutes(profile.eta.correctedEta, randomInt(seed + 947, -8, 8)),
+    if (!appState.dispatcherAvailability[entity.key]) {
+      appState.dispatcherAvailability[entity.key] = {
+        agreedArrivalAt: addMinutes(primaryProfile.eta.correctedEta, randomInt(seed + 947, -8, 8)),
         contactPhone: buildDispatcherContactPhone(seed),
-        updatedAt: addMinutes(now, -randomInt(seed + 953, 5, 85))
+        updatedAt: now,
+        recordedAt: null
       };
     }
   });
@@ -2648,19 +3077,28 @@ function buildDispatcherContactPhone(seed) {
 }
 
 function onTitboxPanelClick(event) {
+  const driverLink = event.target.closest("[data-dispatch-driver-id]");
+  if (driverLink && event.currentTarget.contains(driverLink)) {
+    const driverId = driverLink.dataset.dispatchDriverId;
+    if (driverId) {
+      scrollResourceTimelineToDriver(driverId);
+    }
+    return;
+  }
+
   const button = event.target.closest("[data-titbox-action]");
   if (!button || !event.currentTarget.contains(button)) {
     return;
   }
 
   const action = button.dataset.titboxAction;
-  const driverId = button.dataset.driverId;
-  if (!driverId) {
+  const entityKey = button.dataset.entityKey;
+  if (!entityKey) {
     return;
   }
 
-  const titboxEntry = appState.titboxConfirmations[driverId];
-  const dispatcherEntry = appState.dispatcherAvailability[driverId];
+  const titboxEntry = appState.titboxConfirmations[entityKey];
+  const dispatcherEntry = appState.dispatcherAvailability[entityKey];
   if (!titboxEntry || !dispatcherEntry) {
     return;
   }
@@ -2668,13 +3106,22 @@ function onTitboxPanelClick(event) {
   const now = new Date();
   if (action === "send-push") {
     titboxEntry.pushSentAt = now;
-  } else if (action === "mark-confirmed") {
+  } else if (action === "mark-driver-confirmed") {
+    if (!titboxEntry.pushSentAt) {
+      return;
+    }
     titboxEntry.confirmedAt = now;
+  } else if (action === "mark-dispatcher-confirmed" || action === "mark-confirmed") {
+    if (!titboxEntry.confirmedAt) {
+      return;
+    }
+    dispatcherEntry.recordedAt = now;
     dispatcherEntry.agreedArrivalAt = titboxEntry.driverReportedEta;
     dispatcherEntry.updatedAt = now;
   }
 
   renderDispatchOpsPanels(appState.profiles, now);
+  renderExportTable(appState.profiles, appState.selectedDriverId);
 }
 
 function onTitboxPanelKeydown(event) {
@@ -2709,6 +3156,7 @@ function onDriverListClick(event) {
   appState.selectedDriverId = driverId;
   refreshDashboard({ preserveSelection: true, focusMode: "assembly" });
   pulseMainPanel();
+  scrollResourceTimelineToDriver(driverId);
 }
 
 function onDriverListKeydown(event) {
@@ -2735,6 +3183,7 @@ function onDriverListKeydown(event) {
   appState.selectedDriverId = driverId;
   refreshDashboard({ preserveSelection: true, focusMode: "assembly" });
   pulseMainPanel();
+  scrollResourceTimelineToDriver(driverId);
 }
 
 function onRiskLegendClick(event) {
@@ -2788,30 +3237,41 @@ function onGlobalKeydown(event) {
 }
 
 function onExportDateSwitcherClick(event) {
+  const dateButton = event.target.closest("[data-export-date]");
+  if (dateButton && event.currentTarget.contains(dateButton)) {
+    const exportDate = String(dateButton.dataset.exportDate || "").slice(0, 10);
+    if (!exportDate || exportDate === appState.selectedExportDate) {
+      return;
+    }
+
+    appState.selectedExportDate = exportDate;
+    refreshDashboard({ preserveSelection: true, focusMode: "none" });
+    return;
+  }
+
   const button = event.target.closest("[data-export-nav]");
   if (!button || !event.currentTarget.contains(button)) {
     return;
   }
 
-  const availableDates = getAvailableExportDates();
-  const currentIndex = availableDates.findIndex((item) => item.date === appState.selectedExportDate);
-  if (currentIndex === -1) {
-    return;
-  }
-
-  const delta = button.dataset.exportNav === "previous" ? 1 : -1;
-  const nextDate = availableDates[currentIndex + delta]?.date;
-  const exportDate = String(nextDate || "").slice(0, 10);
-  if (!exportDate || exportDate === appState.selectedExportDate) {
-    return;
-  }
-
-  appState.selectedExportDate = exportDate;
-  refreshDashboard({ preserveSelection: true, focusMode: "none" });
+  moveExportDateByWeek(button.dataset.exportNav === "previous" ? -1 : 1);
 }
 
 function onExportDateSwitcherKeydown(event) {
   if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  const dateButton = event.target.closest("[data-export-date]");
+  if (dateButton && event.currentTarget.contains(dateButton)) {
+    event.preventDefault();
+    const exportDate = String(dateButton.dataset.exportDate || "").slice(0, 10);
+    if (!exportDate || exportDate === appState.selectedExportDate) {
+      return;
+    }
+
+    appState.selectedExportDate = exportDate;
+    refreshDashboard({ preserveSelection: true, focusMode: "none" });
     return;
   }
 
@@ -2821,21 +3281,7 @@ function onExportDateSwitcherKeydown(event) {
   }
 
   event.preventDefault();
-  const availableDates = getAvailableExportDates();
-  const currentIndex = availableDates.findIndex((item) => item.date === appState.selectedExportDate);
-  if (currentIndex === -1) {
-    return;
-  }
-
-  const delta = button.dataset.exportNav === "previous" ? 1 : -1;
-  const nextDate = availableDates[currentIndex + delta]?.date;
-  const exportDate = String(nextDate || "").slice(0, 10);
-  if (!exportDate || exportDate === appState.selectedExportDate) {
-    return;
-  }
-
-  appState.selectedExportDate = exportDate;
-  refreshDashboard({ preserveSelection: true, focusMode: "none" });
+  moveExportDateByWeek(button.dataset.exportNav === "previous" ? -1 : 1);
 }
 
 function onExportDateSwitcherChange(event) {
@@ -3067,6 +3513,21 @@ function formatDuration(totalMinutes) {
   }
 
   return `${mins}m`;
+}
+
+function formatEtaLeadTime(totalMinutes) {
+  if (!Number.isFinite(totalMinutes)) {
+    return "";
+  }
+
+  const value = Math.round(totalMinutes);
+  if (value <= 0) {
+    return "";
+  }
+
+  const hours = Math.floor(value / 60);
+  const mins = value % 60;
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
 }
 
 function formatTime(date) {

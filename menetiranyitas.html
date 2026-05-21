@@ -57,26 +57,36 @@
       <div id="timeline-container">Betöltés...</div>
     </section>
 
-    <!-- Fő munkaterület -->
-    <section class="monitor-workspace monitor-workspace-fullwidth">
-      <div class="monitor-main-column">
-        <!-- Napi gépjárművezető lista -->
-        <section class="panel export-table-panel export-table-fullwidth">
-          <div class="panel-title">📋 Napi gépjárművezető lista</div>
-          <div id="export-date-switcher" class="export-date-switcher"></div>
-          <div id="export-table-filters" class="export-table-filters"></div>
-          <div id="export-table-container" class="export-table-container"></div>
-        </section>
-
-        <!-- Tachográf monitor -->
-        <section id="monitor-main-panel" class="panel monitor-main-panel">
-          <div class="panel-title">⏱️ Tachográf monitor és timeline overlay</div>
-          <div id="tacho-main-content"></div>
-        </section>
-      </div>
+    <section class="panel monitor-date-switcher-panel" aria-label="Napi dátumválasztó">
+      <div id="export-date-switcher" class="export-date-switcher"></div>
     </section>
 
-    <!-- Térkép - legalul -->
+    <section class="dispatch-ops-grid" aria-label="Menetirányítási üzleti panelek">
+      <section class="panel dispatch-ops-panel dispatch-ops-panel-computed">
+        <div class="panel-title">1️⃣ Számított elérhetőség</div>
+        <div id="kornye-prediction-list" class="dispatch-ops-list"></div>
+      </section>
+
+      <section class="panel dispatch-ops-panel dispatch-ops-panel-driver-confirmed">
+        <div class="panel-title">2️⃣ Sofőr által igazolt elérhetőség</div>
+        <div id="titbox-feedback-list" class="dispatch-ops-list"></div>
+      </section>
+
+      <section class="panel dispatch-ops-panel dispatch-ops-panel-capturable">
+        <div class="panel-title">3️⃣ Fogható erőforrás • Napi gépjárművezető lista</div>
+        <div id="dispatcher-availability-list" class="dispatch-ops-summary"></div>
+        <div id="export-table-filters" class="export-table-filters"></div>
+        <div id="export-table-container" class="export-table-container"></div>
+      </section>
+    </section>
+
+    <!-- Tachográf monitor - az elérhetőségi boxok alatt -->
+    <section id="monitor-main-panel" class="panel monitor-main-panel">
+      <div class="panel-title">⏱️ Tachográf monitor és timeline overlay</div>
+      <div id="tacho-main-content"></div>
+    </section>
+
+    <!-- Térkép - a sárga/kék/zöld boxok alatt -->
     <section class="panel monitor-map-panel monitor-map-panel-bottom">
       <div class="panel-title">🗺️ MapView szinkron (Rig + Tacho)</div>
       <div class="monitor-map-layer-switch">
@@ -86,23 +96,6 @@
         <span class="monitor-map-layer-pill depot">🏭 Depók</span>
       </div>
       <div id="monitor-map-container"></div>
-    </section>
-
-    <section class="dispatch-ops-grid" aria-label="Menetirányítási üzleti panelek">
-      <section class="panel dispatch-ops-panel">
-        <div class="panel-title">🏁 Prediktált beérkezés Környe telephelyre</div>
-        <div id="kornye-prediction-list" class="dispatch-ops-list"></div>
-      </section>
-
-      <section class="panel dispatch-ops-panel">
-        <div class="panel-title">📲 Titbox sofőr visszajelzések és push megerősítés</div>
-        <div id="titbox-feedback-list" class="dispatch-ops-list"></div>
-      </section>
-
-      <section class="panel dispatch-ops-panel">
-        <div class="panel-title">✅ 100% pontosságú menetirányítói elérhetőség</div>
-        <div id="dispatcher-availability-list" class="dispatch-ops-list"></div>
-      </section>
     </section>
 
     <!-- Predikció panel - összecsukható, alapértelmezetten összecsukva -->

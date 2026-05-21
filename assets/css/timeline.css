@@ -422,6 +422,11 @@
   background: #2c2e33;
 }
 
+.timeline-resource-name.timeline-resource-jump-highlight {
+  box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.72);
+  background: rgba(79, 195, 247, 0.16);
+}
+
 .timeline-resource-name.match-ok {
   background: linear-gradient(120deg, rgba(38, 70, 52, 0.95), rgba(27, 42, 33, 0.95));
 }

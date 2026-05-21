@@ -2,6 +2,7 @@ import { SOFOROK } from "./soforok.js";
 import { VONTATOK } from "./vontatok.js";
 
 let loadedPlanningData = null;
+const GENERATED_DATE_SHIFT_MONTHS = 2;
 
 function normalizeText(value) {
   return String(value || "")
@@ -64,6 +65,57 @@ function replaceArrayContents(target, nextItems) {
 
 function normalizeDateOnly(value) {
   return String(value || "").slice(0, 10);
+}
+
+function shiftDateOnlyByMonths(dateOnly, monthOffset) {
+  const match = String(dateOnly || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match || !monthOffset) {
+    return String(dateOnly || "");
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const shifted = new Date(Date.UTC(year, month - 1 + monthOffset, day));
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function shiftLeadingIsoDateByMonths(value, monthOffset) {
+  const raw = String(value || "");
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})(.*)$/);
+  if (!match || !monthOffset) {
+    return raw;
+  }
+
+  const shiftedDate = shiftDateOnlyByMonths(match[1], monthOffset);
+  return `${shiftedDate}${match[2] || ""}`;
+}
+
+function shiftDatesInData(node, monthOffset) {
+  if (!monthOffset) {
+    return node;
+  }
+
+  if (Array.isArray(node)) {
+    return node.map((item) => shiftDatesInData(item, monthOffset));
+  }
+
+  if (node && typeof node === "object") {
+    const next = {};
+    Object.entries(node).forEach(([key, value]) => {
+      next[key] = shiftDatesInData(value, monthOffset);
+    });
+    return next;
+  }
+
+  if (typeof node === "string") {
+    return shiftLeadingIsoDateByMonths(node, monthOffset);
+  }
+
+  return node;
 }
 
 function mapGeneratedVehicles(vehicles, drivers) {
@@ -218,7 +270,7 @@ export async function loadGeneratedPlanningData() {
   }
 
   try {
-    const [planningContext, drivers, driverSchedules, vehicles, importReport, rosterAssignments, exportAssignments] = await Promise.all([
+    const [rawPlanningContext, rawDrivers, rawDriverSchedules, rawVehicles, rawImportReport, rawRosterAssignments, rawExportAssignments] = await Promise.all([
       fetchJson("./assets/js/data/generated/planning-context.json"),
       fetchJson("./assets/js/data/generated/drivers.json"),
       fetchJson("./assets/js/data/generated/driver-schedules.json"),
@@ -227,6 +279,14 @@ export async function loadGeneratedPlanningData() {
       fetchJson("./assets/js/data/generated/roster-assignments.json"),
       fetchJson("./assets/js/data/generated/export-assignments.json")
     ]);
+
+    const planningContext = shiftDatesInData(rawPlanningContext, GENERATED_DATE_SHIFT_MONTHS);
+    const drivers = shiftDatesInData(rawDrivers, GENERATED_DATE_SHIFT_MONTHS);
+    const driverSchedules = shiftDatesInData(rawDriverSchedules, GENERATED_DATE_SHIFT_MONTHS);
+    const vehicles = shiftDatesInData(rawVehicles, GENERATED_DATE_SHIFT_MONTHS);
+    const importReport = shiftDatesInData(rawImportReport, GENERATED_DATE_SHIFT_MONTHS);
+    const rosterAssignments = shiftDatesInData(rawRosterAssignments, GENERATED_DATE_SHIFT_MONTHS);
+    const exportAssignments = shiftDatesInData(rawExportAssignments, GENERATED_DATE_SHIFT_MONTHS);
 
     if (!Array.isArray(drivers) || drivers.length === 0) {
       loadedPlanningData = { planningContext, drivers: [], driverSchedules, vehicles: [], importReport, loaded: false };

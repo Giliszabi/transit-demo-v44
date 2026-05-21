@@ -329,6 +329,15 @@ body.monitor-page::before {
   display: none;
 }
 
+.monitor-date-switcher-panel {
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+}
+
+.monitor-date-switcher-panel .export-date-switcher {
+  margin-bottom: 0;
+}
+
 .export-date-switcher {
   display: block;
   margin-bottom: 12px;
@@ -372,6 +381,47 @@ body.monitor-page::before {
   grid-template-columns: auto minmax(220px, 360px) auto;
   align-items: center;
   gap: 10px;
+}
+
+.export-date-switcher-controls-pills {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.export-date-strip-label {
+  margin-right: 4px;
+}
+
+.export-date-pill-strip {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+}
+
+.export-date-pill {
+  min-width: 90px;
+  justify-content: center;
+}
+
+.export-date-pill-nav {
+  border: 1px solid rgba(255, 189, 89, 0.32);
+  background: rgba(255, 189, 89, 0.1);
+  color: #ffe9c4;
+  border-radius: 999px;
+}
+
+.export-date-pill.active {
+  background: rgba(255, 189, 89, 0.26);
+  border-color: rgba(255, 189, 89, 0.76);
+  box-shadow: 0 0 0 1px rgba(255, 189, 89, 0.34) inset;
+}
+
+.export-date-pill-nav:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .export-date-nav {
@@ -437,6 +487,34 @@ body.monitor-page::before {
   vertical-align: top;
   font-size: 12px;
   border-bottom: 1px solid rgba(121, 156, 183, 0.18);
+}
+
+/* Elso es masodik oszlop kozt a tavolsag eros csokkentese (~80%). */
+.export-table-view th:nth-child(1),
+.export-table-view td:nth-child(1) {
+  padding-right: 1px;
+}
+
+.export-table-view th:nth-child(2),
+.export-table-view td:nth-child(2) {
+  padding-left: 1px;
+}
+
+/* Elérhetőségi ablak (4.) es Fuvarfeladat (5.) oszlop kozelebbre huzasa. */
+.export-table-view th:nth-child(4),
+.export-table-view td:nth-child(4) {
+  padding-right: 2px;
+}
+
+.export-table-view th:nth-child(5),
+.export-table-view td:nth-child(5) {
+  padding-left: 2px;
+}
+
+/* A felszabadulo helyet a Megjegyzes oszlop kapja. */
+.export-table-view th:last-child,
+.export-table-view td:last-child {
+  min-width: 360px;
 }
 
 .export-table-view th {
@@ -519,10 +597,18 @@ body.monitor-page::before {
   font-family: "IBM Plex Sans", sans-serif;
 }
 
+.export-note-edit {
+  min-width: 340px;
+}
+
 .export-start-time-edit,
 .export-availability-from-edit,
 .export-availability-to-edit {
   color-scheme: dark;
+  width: 21ch;
+  min-width: 21ch;
+  max-width: 21ch;
+  padding-right: 6px;
 }
 
 .export-start-time-edit::-webkit-calendar-picker-indicator,
@@ -531,6 +617,8 @@ body.monitor-page::before {
   cursor: pointer;
   opacity: 1;
   filter: brightness(0) invert(1);
+  margin-left: 2px;
+  padding: 0;
 }
 
 .export-note-edit:focus,
@@ -556,7 +644,7 @@ body.monitor-page::before {
 
 .export-availability-from-edit,
 .export-availability-to-edit {
-  flex: 1;
+  flex: 0 0 auto;
 }
 
 .export-table-header-actions {
@@ -1650,7 +1738,7 @@ body.monitor-page::before {
 
 .dispatch-ops-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -1659,9 +1747,54 @@ body.monitor-page::before {
   min-width: 0;
 }
 
+.dispatch-ops-panel .panel-title {
+  margin-bottom: 10px;
+}
+
+.dispatch-ops-panel-computed {
+  border: 1px solid rgba(255, 210, 92, 0.5);
+  background: linear-gradient(165deg, rgba(50, 42, 16, 0.92), rgba(32, 29, 14, 0.95));
+}
+
+.dispatch-ops-panel-computed .panel-title {
+  color: #f5d462;
+  border-bottom-color: rgba(245, 212, 98, 0.35);
+}
+
+.dispatch-ops-panel-driver-confirmed {
+  border: 1px solid rgba(78, 157, 236, 0.5);
+  background: linear-gradient(165deg, rgba(15, 49, 82, 0.9), rgba(14, 37, 63, 0.95));
+}
+
+.dispatch-ops-panel-driver-confirmed .panel-title {
+  color: #79bffb;
+  border-bottom-color: rgba(121, 191, 251, 0.35);
+}
+
+.dispatch-ops-panel-capturable {
+  grid-column: 1 / -1;
+  border: 1px solid rgba(109, 170, 108, 0.5);
+  background: linear-gradient(165deg, rgba(30, 58, 32, 0.9), rgba(23, 44, 25, 0.95));
+}
+
+.dispatch-ops-panel-capturable .panel-title {
+  color: #9ed89e;
+  border-bottom-color: rgba(158, 216, 158, 0.35);
+}
+
+.dispatch-ops-summary {
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: rgba(224, 242, 226, 0.9);
+}
+
 .dispatch-ops-list {
   display: grid;
   gap: 8px;
+  min-height: 520px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .dispatch-ops-item {
@@ -1702,6 +1835,39 @@ body.monitor-page::before {
 .dispatch-ops-driver {
   font-weight: 700;
   color: var(--monitor-text);
+}
+
+.dispatch-ops-driver-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.dispatch-ops-driver-link {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.dispatch-ops-driver-link:hover,
+.dispatch-ops-driver-link:focus-visible {
+  color: #9fdfff;
+}
+
+.dispatch-ops-driver-link:focus-visible {
+  outline: 2px solid rgba(42, 215, 244, 0.55);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.dispatch-ops-driver-separator {
+  color: var(--monitor-muted);
 }
 
 .dispatch-ops-meta {
