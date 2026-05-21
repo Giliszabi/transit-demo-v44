@@ -226,7 +226,8 @@ const appState = {
   titboxConfirmations: {},
   dispatcherAvailability: {},
   dispatcherConfirmedDriverIds: new Set(),
-  dispatcherConfirmedEntityCount: 0
+  dispatcherConfirmedEntityCount: 0,
+  titboxEtaByDriverId: new Map()
 };
 
 const TIMELINE_PANEL_IDS = ["assembly-timeline", "resource-timeline"];
@@ -403,6 +404,8 @@ function onExportTableCellBlur(event) {
   } else if (input.classList?.contains?.("export-availability-to-edit")) {
     assignment.availabilityTo = input.value;
   }
+
+  renderExportTable(appState.profiles, appState.selectedDriverId);
 }
 
 function toDateTimeLocalValue(value) {
@@ -1105,6 +1108,50 @@ function collectExportRowDriverIds(row, profileByDriverId) {
   });
 
   return ids;
+}
+
+function resolveTitboxEtaForRow(row, profileByDriverId) {
+  const etaByDriverId = appState.titboxEtaByDriverId;
+  if (!(etaByDriverId instanceof Map) || etaByDriverId.size === 0) {
+    return null;
+  }
+
+  const rowDriverIds = collectExportRowDriverIds(row, profileByDriverId);
+  for (const driverId of rowDriverIds) {
+    const eta = etaByDriverId.get(driverId);
+    if (eta) {
+      return eta;
+    }
+  }
+
+  return null;
+}
+
+function resolveNextWeeklyRestStart(profile, fallbackDate = null) {
+  const weeklyRestDeadlineMin = Number(profile?.metrics?.weeklyRestDeadlineMin);
+  if (!Number.isFinite(weeklyRestDeadlineMin)) {
+    return null;
+  }
+
+  const base = fallbackDate instanceof Date ? fallbackDate : new Date();
+  return addMinutes(base, Math.max(0, Math.floor(weeklyRestDeadlineMin)));
+}
+
+function resolveDateFieldState(explicitValue, defaultValue) {
+  const explicitNormalized = toDateTimeLocalValue(explicitValue);
+  const defaultNormalized = toDateTimeLocalValue(defaultValue);
+
+  if (explicitNormalized) {
+    return {
+      value: explicitNormalized,
+      isCalculated: Boolean(defaultNormalized) && explicitNormalized === defaultNormalized
+    };
+  }
+
+  return {
+    value: defaultNormalized,
+    isCalculated: Boolean(defaultNormalized)
+  };
 }
 
 function renderExportTableFilters(profiles) {
@@ -2100,8 +2147,12 @@ function renderExportTable(profiles, selectedDriverId) {
   const visibleCols = { jobId: true, weeklyKm: true, workSchedule: true };
 
   const rowsHtml = sortedRows
-    .map(({ assignment, profile, match }) => {
+    .map((row) => {
+      const { assignment, profile, match } = row;
       const selectedClass = profile?.driver.id === selectedDriverId ? "selected" : "";
+      const resolvedPrimaryProfile = (match.primaryProfile?.id && profileByDriverId.get(match.primaryProfile.id))
+        || profile
+        || null;
       const resolvedPrimaryDriver = (match.primaryProfile?.id && profileByDriverId.get(match.primaryProfile.id)?.driver)
         || profile?.driver
         || null;
@@ -2117,9 +2168,20 @@ function renderExportTable(profiles, selectedDriverId) {
       const driverIdAttr = rowDriverId ? ` data-driver-id="${escapeHtml(rowDriverId)}" role="button" tabindex="0"` : "";
       const assignmentId = assignment.assignmentId || "";
       const dispatchNote = assignment.dispatchNote || "";
-      const startTimeValue = toDateTimeLocalValue(assignment.startTime);
-      const availabilityFromValue = toDateTimeLocalValue(assignment.availabilityFrom);
-      const availabilityToValue = toDateTimeLocalValue(assignment.availabilityTo);
+      const titboxEta = resolveTitboxEtaForRow(row, profileByDriverId);
+      const weeklyRestStart = resolveNextWeeklyRestStart(resolvedPrimaryProfile, titboxEta || new Date());
+      const startState = resolveDateFieldState(assignment.startTime, titboxEta);
+      const availabilityFromState = resolveDateFieldState(assignment.availabilityFrom, startState.value);
+      const availabilityToState = resolveDateFieldState(assignment.availabilityTo, weeklyRestStart);
+      const startTimeValue = startState.value;
+      const availabilityFromValue = availabilityFromState.value;
+      const availabilityToValue = availabilityToState.value;
+      const startBadgeClass = startState.isCalculated ? "is-calculated" : "is-manual";
+      const startBadgeLabel = startState.isCalculated ? "kalkulált" : "kézi";
+      const availabilityFromBadgeClass = availabilityFromState.isCalculated ? "is-calculated" : "is-manual";
+      const availabilityFromBadgeLabel = availabilityFromState.isCalculated ? "kalkulált" : "kézi";
+      const availabilityToBadgeClass = availabilityToState.isCalculated ? "is-calculated" : "is-manual";
+      const availabilityToBadgeLabel = availabilityToState.isCalculated ? "kalkulált" : "kézi";
 
       // Maradék vezetési idő
       const driving = profile?.driver.driving || {};
@@ -2145,37 +2207,46 @@ function renderExportTable(profiles, selectedDriverId) {
         <tr class="export-table-row ${selectedClass}"${driverIdAttr}>
           <td>${escapeHtml(driverNames)}</td>
           <td>
-            <input 
-              type="datetime-local" 
-              class="export-start-time-edit" 
-              value="${startTimeValue}"
-              step="60"
-              data-assignment-id="${escapeHtml(assignmentId)}"
-              placeholder="Mikortól..."
-            />
+            <div class="export-datetime-field">
+              <input 
+                type="datetime-local" 
+                class="export-start-time-edit" 
+                value="${startTimeValue}"
+                step="60"
+                data-assignment-id="${escapeHtml(assignmentId)}"
+                placeholder="Mikortól..."
+              />
+              <span class="export-field-state-badge ${startBadgeClass}">${startBadgeLabel}</span>
+            </div>
           </td>
           <td>${escapeHtml(drivingLabel)}</td>
           <td>
             <div class="export-availability-window">
-              <input 
-                type="datetime-local" 
-                class="export-availability-from-edit" 
-                value="${availabilityFromValue}"
-                step="60"
-                data-assignment-id="${escapeHtml(assignmentId)}"
-                placeholder="-tól"
-                title="Elérhetőségi ablak kezdete"
-              />
+              <div class="export-datetime-field">
+                <input 
+                  type="datetime-local" 
+                  class="export-availability-from-edit" 
+                  value="${availabilityFromValue}"
+                  step="60"
+                  data-assignment-id="${escapeHtml(assignmentId)}"
+                  placeholder="-tól"
+                  title="Elérhetőségi ablak kezdete"
+                />
+                <span class="export-field-state-badge ${availabilityFromBadgeClass}">${availabilityFromBadgeLabel}</span>
+              </div>
               <span class="export-availability-sep">–</span>
-              <input 
-                type="datetime-local" 
-                class="export-availability-to-edit" 
-                value="${availabilityToValue}"
-                step="60"
-                data-assignment-id="${escapeHtml(assignmentId)}"
-                placeholder="-ig"
-                title="Elérhetőségi ablak vége"
-              />
+              <div class="export-datetime-field">
+                <input 
+                  type="datetime-local" 
+                  class="export-availability-to-edit" 
+                  value="${availabilityToValue}"
+                  step="60"
+                  data-assignment-id="${escapeHtml(assignmentId)}"
+                  placeholder="-ig"
+                  title="Elérhetőségi ablak vége"
+                />
+                <span class="export-field-state-badge ${availabilityToBadgeClass}">${availabilityToBadgeLabel}</span>
+              </div>
             </div>
           </td>
           ${optionalCellsHtml}
@@ -2902,6 +2973,7 @@ function renderDispatchOpsPanels(profiles, now) {
 
   appState.dispatcherConfirmedDriverIds = new Set();
   appState.dispatcherConfirmedEntityCount = 0;
+  appState.titboxEtaByDriverId = new Map();
 
   if (!profiles.length) {
     renderDispatchOpsEmpty(kornyeList, "Nincs elérhető sofőr adat a panelhez.");
@@ -2925,6 +2997,25 @@ function renderDispatchOpsPanels(profiles, now) {
 
   const entities = buildDispatchOpsEntities(dispatchProfiles, selectedExportDate);
   ensureDispatchOpsState(entities, now);
+
+  entities.forEach((entity) => {
+    const titboxEntry = appState.titboxConfirmations[entity.key];
+    if (!titboxEntry?.driverReportedEta) {
+      return;
+    }
+
+    const eta = new Date(titboxEntry.driverReportedEta);
+    if (!Number.isFinite(eta.getTime())) {
+      return;
+    }
+
+    getDispatchOpsEntityDrivers(entity).forEach((driver) => {
+      const driverId = String(driver?.id || "").trim();
+      if (driverId && !appState.titboxEtaByDriverId.has(driverId)) {
+        appState.titboxEtaByDriverId.set(driverId, eta);
+      }
+    });
+  });
 
   const sortedByEta = [...entities]
     .sort((left, right) => {

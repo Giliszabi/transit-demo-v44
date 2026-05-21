@@ -637,6 +637,38 @@ body.monitor-page::before {
   align-items: center;
 }
 
+.export-datetime-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.export-field-state-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  user-select: none;
+  opacity: 0.9;
+}
+
+.export-field-state-badge.is-calculated {
+  background: rgba(89, 212, 148, 0.1);
+  border-color: rgba(89, 212, 148, 0.3);
+  color: #c9f4dc;
+}
+
+.export-field-state-badge.is-manual {
+  background: rgba(121, 191, 251, 0.1);
+  border-color: rgba(121, 191, 251, 0.32);
+  color: #cfe8ff;
+}
+
 .export-availability-sep {
   color: var(--monitor-muted);
   white-space: nowrap;
