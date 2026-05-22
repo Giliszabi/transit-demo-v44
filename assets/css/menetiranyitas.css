@@ -1779,8 +1779,24 @@ body.monitor-page::before {
   min-width: 0;
 }
 
+.dispatch-ops-panel-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  justify-content: space-between;
+}
+
 .dispatch-ops-panel .panel-title {
   margin-bottom: 10px;
+}
+
+.dispatch-ops-panel-header .panel-title {
+  margin-bottom: 10px;
+}
+
+.dispatch-ops-btn-bulk {
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .dispatch-ops-panel-computed {

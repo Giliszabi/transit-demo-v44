@@ -3183,6 +3183,31 @@ function onTitboxPanelClick(event) {
   }
 
   const action = button.dataset.titboxAction;
+
+  if (action === "send-push-all") {
+    const now = new Date();
+    const selectedExportDate = getSelectedExportDate();
+    const dispatchProfiles = appState.profiles.filter((profile) => (profile.exportAssignments || []).length > 0);
+    const entities = buildDispatchOpsEntities(dispatchProfiles, selectedExportDate);
+
+    entities.forEach((entity) => {
+      const titboxEntry = appState.titboxConfirmations[entity.key];
+      const dispatcherEntry = appState.dispatcherAvailability[entity.key];
+      if (!titboxEntry || !dispatcherEntry) {
+        return;
+      }
+      if (dispatcherEntry.recordedAt || titboxEntry.confirmedAt) {
+        return;
+      }
+
+      titboxEntry.pushSentAt = now;
+    });
+
+    renderDispatchOpsPanels(appState.profiles, now);
+    renderExportTable(appState.profiles, appState.selectedDriverId);
+    return;
+  }
+
   const entityKey = button.dataset.entityKey;
   if (!entityKey) {
     return;
