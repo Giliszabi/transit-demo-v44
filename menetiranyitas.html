@@ -136,6 +136,30 @@
     </section> -->
   </main>
 
+  <div id="dispatch-question-modal" class="dispatch-question-modal" hidden>
+    <div class="dispatch-question-modal-backdrop" data-dispatch-question-close="backdrop"></div>
+    <div class="dispatch-question-dialog" role="dialog" aria-modal="true" aria-labelledby="dispatch-question-title">
+      <div class="dispatch-question-dialog-header">
+        <div>
+          <h3 id="dispatch-question-title">Visszakérdezés a gépkocsivezető felé</h3>
+          <p id="dispatch-question-subtitle" class="dispatch-question-dialog-subtitle"></p>
+        </div>
+        <button type="button" class="dispatch-question-dialog-close" data-dispatch-question-close="button" aria-label="Bezárás">×</button>
+      </div>
+      <div id="dispatch-question-context" class="dispatch-question-context"></div>
+      <form id="dispatch-question-form" class="dispatch-question-form">
+        <label class="dispatch-question-field">
+          <span>Kérdés a gépkocsivezető felé</span>
+          <textarea id="dispatch-question-text" rows="5" placeholder="Példa: kérlek pontosítsd a következő indulási időt és hogy a heti kereted alapján meddig tudsz még dolgozni."></textarea>
+        </label>
+        <div class="dispatch-question-form-actions">
+          <button type="button" class="dispatch-ops-btn" data-dispatch-question-close="cancel">Mégsem</button>
+          <button type="submit" class="dispatch-ops-btn dispatch-question-submit">Kérdés küldése</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="

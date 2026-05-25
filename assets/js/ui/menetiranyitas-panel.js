@@ -227,7 +227,12 @@ const appState = {
   dispatcherAvailability: {},
   dispatcherConfirmedDriverIds: new Set(),
   dispatcherConfirmedEntityCount: 0,
-  titboxEtaByDriverId: new Map()
+  titboxEtaByDriverId: new Map(),
+  dispatchSortMetaByDriverId: new Map(),
+  dispatchQuestionModal: {
+    isOpen: false,
+    entityKey: null
+  }
 };
 
 const TIMELINE_PANEL_IDS = ["assembly-timeline", "resource-timeline"];
@@ -300,6 +305,8 @@ async function initMenetiranyitasPanel() {
   const exportTableContainer = document.getElementById("export-table-container");
   const alertsList = document.getElementById("monitor-alerts-list");
   const dispatchOpsGrid = document.querySelector(".dispatch-ops-grid");
+  const dispatchQuestionModal = document.getElementById("dispatch-question-modal");
+  const dispatchQuestionForm = document.getElementById("dispatch-question-form");
   const riskLegend = document.getElementById("risk-legend");
 
   if (driverList) {
@@ -348,6 +355,14 @@ async function initMenetiranyitasPanel() {
   if (dispatchOpsGrid) {
     dispatchOpsGrid.addEventListener("click", onTitboxPanelClick);
     dispatchOpsGrid.addEventListener("keydown", onTitboxPanelKeydown);
+  }
+
+  if (dispatchQuestionModal) {
+    dispatchQuestionModal.addEventListener("click", onDispatchQuestionModalClick);
+  }
+
+  if (dispatchQuestionForm) {
+    dispatchQuestionForm.addEventListener("submit", onDispatchQuestionFormSubmit);
   }
 
   // riskLegend is hidden - not needed
@@ -2129,6 +2144,32 @@ function renderExportTable(profiles, selectedDriverId) {
     const leftPair = resolveStableLinkedPair(leftDriver, profileByDriverId);
     const rightPair = resolveStableLinkedPair(rightDriver, profileByDriverId);
 
+    const leftDriverIds = [
+      String(leftDriver?.id || "").trim(),
+      ...((leftPair?.ids || []).map((id) => String(id || "").trim()))
+    ].filter(Boolean);
+    const rightDriverIds = [
+      String(rightDriver?.id || "").trim(),
+      ...((rightPair?.ids || []).map((id) => String(id || "").trim()))
+    ].filter(Boolean);
+    const leftSortMeta = leftDriverIds
+      .map((driverId) => appState.dispatchSortMetaByDriverId.get(driverId))
+      .find(Boolean) || {
+        locationRank: leftPair ? 0 : 1,
+        etaTimestamp: toSortableTimestamp(resolveTitboxEtaForRow(left, profileByDriverId) || left.assignment?.startTime)
+      };
+    const rightSortMeta = rightDriverIds
+      .map((driverId) => appState.dispatchSortMetaByDriverId.get(driverId))
+      .find(Boolean) || {
+        locationRank: rightPair ? 0 : 1,
+        etaTimestamp: toSortableTimestamp(resolveTitboxEtaForRow(right, profileByDriverId) || right.assignment?.startTime)
+      };
+
+    const sortDecision = compareDispatchSortMeta(leftSortMeta, rightSortMeta);
+    if (sortDecision !== 0) {
+      return sortDecision;
+    }
+
     if (Boolean(leftPair) !== Boolean(rightPair)) {
       return leftPair ? -1 : 1;
     }
@@ -2962,6 +3003,189 @@ function renderDispatchOpsEmpty(listElement, message) {
   listElement.innerHTML = `<div class="dispatch-ops-empty">${escapeHtml(message)}</div>`;
 }
 
+function buildTitboxDriverRequest(profile, seed) {
+  const metrics = profile?.metrics || {};
+  const requests = [];
+
+  if (metrics.continuousRemainingMin <= 45) {
+    requests.push("30-45 percen belül rövid pihenőt kérek.");
+  }
+  if (metrics.weeklyRemainingMin <= 180) {
+    requests.push("A heti vezetési időm szoros, rövidebb ráállást kérek.");
+  }
+  if (metrics.fortnightRemainingMin <= 300) {
+    requests.push("A kétheti keret miatt a következő fuvar legyen rövidebb.");
+  }
+
+  if (!requests.length) {
+    requests.push(
+      "Nincs külön kérésem.",
+      "Indulás előtt kérek egy gyors rakodási visszajelzést.",
+      "Ha lehet, a következő indulást pontos címre erősítsétek meg."
+    );
+  }
+
+  return requests[randomInt(seed + 1013, 0, requests.length - 1)] || "Nincs külön kérésem.";
+}
+
+function findDispatchOpsEntityByKey(entityKey) {
+  const normalizedKey = String(entityKey || "").trim();
+  if (!normalizedKey) {
+    return null;
+  }
+
+  const selectedExportDate = getSelectedExportDate();
+  const dispatchProfiles = appState.profiles.filter((profile) => (profile.exportAssignments || []).length > 0);
+  const entities = buildDispatchOpsEntities(dispatchProfiles, selectedExportDate);
+  return entities.find((entity) => entity.key === normalizedKey) || null;
+}
+
+function renderDispatchQuestionModal() {
+  const modal = document.getElementById("dispatch-question-modal");
+  const subtitle = document.getElementById("dispatch-question-subtitle");
+  const context = document.getElementById("dispatch-question-context");
+  const textarea = document.getElementById("dispatch-question-text");
+  if (!modal || !subtitle || !context || !textarea) {
+    return;
+  }
+
+  const { isOpen, entityKey } = appState.dispatchQuestionModal || {};
+  const entity = isOpen ? findDispatchOpsEntityByKey(entityKey) : null;
+  const titboxEntry = entity ? appState.titboxConfirmations[entity.key] : null;
+  const profile = entity?.primaryProfile || null;
+
+  if (!isOpen || !entity || !titboxEntry || !profile) {
+    modal.hidden = true;
+    document.body.classList.remove("dispatch-question-modal-open");
+    return;
+  }
+
+  subtitle.textContent = formatDispatchOpsEntityLabel(entity);
+  context.innerHTML = [
+    ["Elérhetőségi helyszín", titboxEntry.reportedLocation || "-"],
+    ["Következő indulási idő", formatTime(titboxEntry.nextDepartureAt) || "-"],
+    ["Heti maradék", formatDuration(titboxEntry.weeklyRemainingMin)],
+    ["Kétheti maradék", formatDuration(titboxEntry.fortnightRemainingMin)],
+    ["Meddig tud dolgozni", formatTime(titboxEntry.canWorkUntil) || "-"],
+    ["Sofőr kérése", titboxEntry.driverRequest || "-"],
+    ["Indíthatósági idő", formatTime(titboxEntry.driverReportedEta) || "-"],
+    ["Kalkulált ETA", formatTime(profile.eta?.correctedEta) || "-"]
+  ].map(([label, value]) => {
+    return `
+      <div class="dispatch-question-context-item">
+        <span class="dispatch-question-context-label">${escapeHtml(label)}</span>
+        <span class="dispatch-question-context-value">${escapeHtml(value)}</span>
+      </div>
+    `;
+  }).join("");
+
+  textarea.value = titboxEntry.latestDispatcherQuestion?.message || "";
+  modal.hidden = false;
+  document.body.classList.add("dispatch-question-modal-open");
+}
+
+function openDispatchQuestionModal(entityKey) {
+  appState.dispatchQuestionModal = {
+    isOpen: true,
+    entityKey: String(entityKey || "").trim()
+  };
+  renderDispatchQuestionModal();
+  const textarea = document.getElementById("dispatch-question-text");
+  textarea?.focus();
+}
+
+function closeDispatchQuestionModal() {
+  appState.dispatchQuestionModal = {
+    isOpen: false,
+    entityKey: null
+  };
+  renderDispatchQuestionModal();
+}
+
+function onDispatchQuestionModalClick(event) {
+  const closeTrigger = event.target.closest("[data-dispatch-question-close]");
+  if (!closeTrigger) {
+    return;
+  }
+
+  closeDispatchQuestionModal();
+}
+
+function onDispatchQuestionFormSubmit(event) {
+  event.preventDefault();
+
+  const entityKey = appState.dispatchQuestionModal?.entityKey;
+  const textArea = document.getElementById("dispatch-question-text");
+  const message = String(textArea?.value || "").trim();
+  if (!entityKey || !message) {
+    textArea?.focus();
+    return;
+  }
+
+  const titboxEntry = appState.titboxConfirmations[entityKey];
+  if (!titboxEntry) {
+    closeDispatchQuestionModal();
+    return;
+  }
+
+  const question = {
+    message,
+    askedAt: new Date().toISOString(),
+    status: "open"
+  };
+  titboxEntry.followUpQuestions = [question, ...(titboxEntry.followUpQuestions || [])];
+  titboxEntry.latestDispatcherQuestion = question;
+
+  closeDispatchQuestionModal();
+  refreshDashboard({ preserveSelection: true, focusMode: "none" });
+}
+
+function isKornyeAvailabilityLocation(rawLocation) {
+  return normalizeText(rawLocation).includes("kornye");
+}
+
+function resolveDispatchLocationRank(rawLocation) {
+  return isKornyeAvailabilityLocation(rawLocation) ? 2 : 1;
+}
+
+function resolveDispatchEntityLocation(entity, titboxEntry = null) {
+  return titboxEntry?.reportedLocation
+    || entity?.primaryProfile?.driver?.jelenlegi_pozicio?.hely
+    || entity?.primaryProfile?.predictionEvents?.[0]?.locationLabel
+    || "ismeretlen";
+}
+
+function toSortableTimestamp(value) {
+  const time = new Date(value || "").getTime();
+  return Number.isFinite(time) ? time : Number.POSITIVE_INFINITY;
+}
+
+function resolveDispatchEntitySortMeta(entity, options = {}) {
+  const isPair = Boolean(entity?.pair);
+  const location = options.location ?? resolveDispatchEntityLocation(entity, options.titboxEntry || null);
+  const locationRank = isPair ? 0 : resolveDispatchLocationRank(location);
+  const etaValue = options.etaValue ?? entity?.primaryProfile?.eta?.correctedEta ?? null;
+
+  return {
+    isPair,
+    location,
+    locationRank,
+    etaTimestamp: toSortableTimestamp(etaValue)
+  };
+}
+
+function compareDispatchSortMeta(leftMeta, rightMeta) {
+  if (leftMeta.locationRank !== rightMeta.locationRank) {
+    return leftMeta.locationRank - rightMeta.locationRank;
+  }
+
+  if (leftMeta.etaTimestamp !== rightMeta.etaTimestamp) {
+    return leftMeta.etaTimestamp - rightMeta.etaTimestamp;
+  }
+
+  return 0;
+}
+
 function renderDispatchOpsPanels(profiles, now) {
   const kornyeList = document.getElementById("kornye-prediction-list");
   const titboxList = document.getElementById("titbox-feedback-list");
@@ -2974,6 +3198,8 @@ function renderDispatchOpsPanels(profiles, now) {
   appState.dispatcherConfirmedDriverIds = new Set();
   appState.dispatcherConfirmedEntityCount = 0;
   appState.titboxEtaByDriverId = new Map();
+  appState.dispatchSortMetaByDriverId = new Map();
+  renderDispatchQuestionModal();
 
   if (!profiles.length) {
     renderDispatchOpsEmpty(kornyeList, "Nincs elérhető sofőr adat a panelhez.");
@@ -3017,21 +3243,11 @@ function renderDispatchOpsPanels(profiles, now) {
     });
   });
 
-  const sortedByEta = [...entities]
-    .sort((left, right) => {
-      const leftIsPair = Boolean(left.pair);
-      const rightIsPair = Boolean(right.pair);
-      if (leftIsPair !== rightIsPair) {
-        return leftIsPair ? -1 : 1;
-      }
-      return left.primaryProfile.eta.nowToEtaMin - right.primaryProfile.eta.nowToEtaMin;
-    });
-
   const calculatedEntities = [];
   const driverConfirmedEntities = [];
   const dispatcherConfirmedEntities = [];
 
-  sortedByEta.forEach((entity) => {
+  entities.forEach((entity) => {
     const titboxEntry = appState.titboxConfirmations[entity.key];
     const dispatcherEntry = appState.dispatcherAvailability[entity.key];
 
@@ -3046,6 +3262,49 @@ function renderDispatchOpsPanels(profiles, now) {
     }
 
     calculatedEntities.push(entity);
+  });
+
+  calculatedEntities.sort((left, right) => {
+    return compareDispatchSortMeta(
+      resolveDispatchEntitySortMeta(left, {
+        location: left.primaryProfile?.driver?.jelenlegi_pozicio?.hely,
+        etaValue: left.primaryProfile?.eta?.correctedEta
+      }),
+      resolveDispatchEntitySortMeta(right, {
+        location: right.primaryProfile?.driver?.jelenlegi_pozicio?.hely,
+        etaValue: right.primaryProfile?.eta?.correctedEta
+      })
+    );
+  });
+
+  driverConfirmedEntities.sort((left, right) => {
+    return compareDispatchSortMeta(
+      resolveDispatchEntitySortMeta(left, {
+        titboxEntry: appState.titboxConfirmations[left.key],
+        location: appState.titboxConfirmations[left.key]?.reportedLocation,
+        etaValue: appState.titboxConfirmations[left.key]?.driverReportedEta
+      }),
+      resolveDispatchEntitySortMeta(right, {
+        titboxEntry: appState.titboxConfirmations[right.key],
+        location: appState.titboxConfirmations[right.key]?.reportedLocation,
+        etaValue: appState.titboxConfirmations[right.key]?.driverReportedEta
+      })
+    );
+  });
+
+  dispatcherConfirmedEntities.sort((left, right) => {
+    return compareDispatchSortMeta(
+      resolveDispatchEntitySortMeta(left, {
+        titboxEntry: appState.titboxConfirmations[left.key],
+        location: appState.titboxConfirmations[left.key]?.reportedLocation,
+        etaValue: appState.dispatcherAvailability[left.key]?.agreedArrivalAt || appState.titboxConfirmations[left.key]?.driverReportedEta
+      }),
+      resolveDispatchEntitySortMeta(right, {
+        titboxEntry: appState.titboxConfirmations[right.key],
+        location: appState.titboxConfirmations[right.key]?.reportedLocation,
+        etaValue: appState.dispatcherAvailability[right.key]?.agreedArrivalAt || appState.titboxConfirmations[right.key]?.driverReportedEta
+      })
+    );
   });
 
   if (!calculatedEntities.length) {
@@ -3070,12 +3329,12 @@ function renderDispatchOpsPanels(profiles, now) {
             <span class="dispatch-ops-chip ${escapeHtml(profile.risk.level)}">${escapeHtml(profile.risk.label)}</span>
           </div>
           <div class="dispatch-ops-meta">Fuvarfeladat: ${escapeHtml(fuvarLabel)}</div>
-          <div class="dispatch-ops-meta">Várható beérkezés (Környe): ${escapeHtml(formatTime(profile.eta.correctedEta))}${escapeHtml(etaMeta)}</div>
-          <div class="dispatch-ops-meta">Kiinduló hely: ${escapeHtml(profile.driver.jelenlegi_pozicio?.hely || "ismeretlen")}</div>
+          <div class="dispatch-ops-meta">Indíthatósági idő: ${escapeHtml(formatTime(profile.eta.correctedEta))}${escapeHtml(etaMeta)}</div>
+          <div class="dispatch-ops-meta">Elérhetőségi helyszín: ${escapeHtml(profile.driver.jelenlegi_pozicio?.hely || "ismeretlen")}</div>
           <div class="dispatch-ops-meta">${escapeHtml(pushState)}</div>
           <div class="dispatch-ops-actions">
             <button type="button" class="dispatch-ops-btn" data-titbox-action="send-push" data-entity-key="${escapeHtml(entity.key)}">Push küldése</button>
-            <button type="button" class="dispatch-ops-btn" data-titbox-action="mark-driver-confirmed" data-entity-key="${escapeHtml(entity.key)}" ${entry?.pushSentAt ? "" : "disabled"}>Sofőr visszaigazolta</button>
+            <button type="button" class="dispatch-ops-btn" data-titbox-action="mark-driver-confirmed" data-entity-key="${escapeHtml(entity.key)}">Sofőr adatot rögzített</button>
           </div>
         </article>
       `;
@@ -3099,13 +3358,39 @@ function renderDispatchOpsPanels(profiles, now) {
           <div class="dispatch-ops-status-stack">
             <span class="dispatch-ops-chip confirmed">Visszaigazolt</span>
             <div class="dispatch-ops-actions dispatch-ops-actions-compact">
+              <button type="button" class="dispatch-ops-btn" data-titbox-action="open-dispatch-question" data-entity-key="${escapeHtml(entity.key)}">Visszakérdezés</button>
               <button type="button" class="dispatch-ops-btn" data-titbox-action="mark-dispatcher-confirmed" data-entity-key="${escapeHtml(entity.key)}">Visszaigazolás rögzítése</button>
             </div>
           </div>
-          <div class="dispatch-ops-meta">Titbox ETA: ${escapeHtml(formatTime(entry.driverReportedEta))} • Hely: ${escapeHtml(entry.reportedLocation)}</div>
-          <div class="dispatch-ops-meta">Push kérés: ${escapeHtml(entry.pushSentAt ? formatTime(entry.pushSentAt) : "még nem küldve")}</div>
-          <div class="dispatch-ops-meta">Sofőr visszaigazolta: ${escapeHtml(entry.confirmedAt ? formatTime(entry.confirmedAt) : "még nem")}</div>
-          <div class="dispatch-ops-meta">Kalkulált ETA: ${escapeHtml(formatTime(profile.eta.correctedEta))}</div>
+          <div class="dispatch-ops-meta-grid">
+            <div class="dispatch-ops-meta-tile">
+              <span class="dispatch-ops-meta-label">Elérhetőségi helyszín</span>
+              <span class="dispatch-ops-meta-value">${escapeHtml(entry.reportedLocation)}</span>
+            </div>
+            <div class="dispatch-ops-meta-tile">
+              <span class="dispatch-ops-meta-label">Következő indulási idő</span>
+              <span class="dispatch-ops-meta-value">${escapeHtml(formatTime(entry.nextDepartureAt))}</span>
+            </div>
+            <div class="dispatch-ops-meta-tile">
+              <span class="dispatch-ops-meta-label">Heti vezetési idő maradék</span>
+              <span class="dispatch-ops-meta-value">${escapeHtml(formatDuration(entry.weeklyRemainingMin))}</span>
+            </div>
+            <div class="dispatch-ops-meta-tile">
+              <span class="dispatch-ops-meta-label">Kétheti vezetési idő maradék</span>
+              <span class="dispatch-ops-meta-value">${escapeHtml(formatDuration(entry.fortnightRemainingMin))}</span>
+            </div>
+            <div class="dispatch-ops-meta-tile">
+              <span class="dispatch-ops-meta-label">Meddig tud dolgozni</span>
+              <span class="dispatch-ops-meta-value">${escapeHtml(formatTime(entry.canWorkUntil))}</span>
+            </div>
+            <div class="dispatch-ops-meta-tile">
+              <span class="dispatch-ops-meta-label">Sofőr kérése</span>
+              <span class="dispatch-ops-meta-value">${escapeHtml(entry.driverRequest)}</span>
+            </div>
+          </div>
+          <div class="dispatch-ops-meta dispatch-ops-meta-summary">Indíthatósági idő: ${escapeHtml(formatTime(entry.driverReportedEta))} • Kalkulált ETA: ${escapeHtml(formatTime(profile.eta.correctedEta))}</div>
+          <div class="dispatch-ops-meta dispatch-ops-meta-summary">Push kérés: ${escapeHtml(entry.pushSentAt ? formatTime(entry.pushSentAt) : "nem szükséges / nincs elküldve")} • Sofőr rögzítette: ${escapeHtml(entry.confirmedAt ? formatTime(entry.confirmedAt) : "még nem")}</div>
+          ${entry.latestDispatcherQuestion ? `<div class="dispatch-ops-meta dispatch-ops-followup-note">Nyitott visszakérdezés: ${escapeHtml(entry.latestDispatcherQuestion.message)} • ${escapeHtml(formatTime(entry.latestDispatcherQuestion.askedAt))}</div>` : ""}
         </article>
       `;
       })
@@ -3124,10 +3409,18 @@ function renderDispatchOpsPanels(profiles, now) {
 
   const confirmedDriverIds = new Set();
   dispatcherConfirmedEntities.forEach((entity) => {
+    const sortMeta = resolveDispatchEntitySortMeta(entity, {
+      titboxEntry: appState.titboxConfirmations[entity.key],
+      location: appState.titboxConfirmations[entity.key]?.reportedLocation,
+      etaValue: appState.dispatcherAvailability[entity.key]?.agreedArrivalAt || appState.titboxConfirmations[entity.key]?.driverReportedEta
+    });
     getDispatchOpsEntityDrivers(entity).forEach((driver) => {
       const driverId = String(driver?.id || "").trim();
       if (driverId) {
         confirmedDriverIds.add(driverId);
+        if (!appState.dispatchSortMetaByDriverId.has(driverId)) {
+          appState.dispatchSortMetaByDriverId.set(driverId, sortMeta);
+        }
       }
     });
   });
@@ -3143,9 +3436,18 @@ function ensureDispatchOpsState(entities, now) {
 
     if (!appState.titboxConfirmations[entity.key]) {
       const etaOffsetMin = randomInt(seed + 901, -20, 24);
+      const nextDepartureAt = addMinutes(primaryProfile.eta.correctedEta, randomInt(seed + 907, 20, 180));
+      const canWorkUntil = addMinutes(now, Math.max(30, Number(primaryProfile.metrics?.weeklyRestDeadlineMin) || 0));
       appState.titboxConfirmations[entity.key] = {
         driverReportedEta: addMinutes(primaryProfile.eta.correctedEta, etaOffsetMin),
         reportedLocation: locationLabel,
+        nextDepartureAt,
+        weeklyRemainingMin: Math.max(0, Number(primaryProfile.metrics?.weeklyRemainingMin) || 0),
+        fortnightRemainingMin: Math.max(0, Number(primaryProfile.metrics?.fortnightRemainingMin) || 0),
+        canWorkUntil,
+        driverRequest: buildTitboxDriverRequest(primaryProfile, seed),
+        followUpQuestions: [],
+        latestDispatcherQuestion: null,
         pushSentAt: null,
         confirmedAt: null
       };
@@ -3222,10 +3524,10 @@ function onTitboxPanelClick(event) {
   const now = new Date();
   if (action === "send-push") {
     titboxEntry.pushSentAt = now;
+  } else if (action === "open-dispatch-question") {
+    openDispatchQuestionModal(entityKey);
+    return;
   } else if (action === "mark-driver-confirmed") {
-    if (!titboxEntry.pushSentAt) {
-      return;
-    }
     titboxEntry.confirmedAt = now;
   } else if (action === "mark-dispatcher-confirmed" || action === "mark-confirmed") {
     if (!titboxEntry.confirmedAt) {
@@ -3339,7 +3641,16 @@ function onRiskLegendKeydown(event) {
 }
 
 function onGlobalKeydown(event) {
-  if (event.key !== "Escape" || !appState.selectedDriverId) {
+  if (event.key !== "Escape") {
+    return;
+  }
+
+  if (appState.dispatchQuestionModal?.isOpen) {
+    closeDispatchQuestionModal();
+    return;
+  }
+
+  if (!appState.selectedDriverId) {
     return;
   }
 
