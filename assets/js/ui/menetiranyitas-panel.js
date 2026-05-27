@@ -3318,20 +3318,24 @@ function renderDispatchOpsPanels(profiles, now) {
         const fuvarLabel = fuvar?.megnevezes
           ? `${fuvar.id} • ${fuvar.megnevezes}`
           : "Nincs hozzárendelt fuvarfeladat";
-        const pushState = entry?.pushSentAt ? `Push kérés: ${formatTime(entry.pushSentAt)}` : "Push kérés: még nem küldve";
+        const pushPending = !entry?.pushSentAt;
+        const pushState = pushPending ? "Push kérés: még nem küldve" : `Push kérés: ${formatTime(entry.pushSentAt)}`;
+        const pushFlagLabel = pushPending ? "PUSH HIÁNYZIK" : "Push elküldve";
+        const pushFlagClass = pushPending ? "push-pending" : "push-sent";
         const etaLead = formatEtaLeadTime(profile.eta.nowToEtaMin);
         const etaMeta = etaLead ? ` • ${etaLead} múlva` : "";
 
         return `
-        <article class="dispatch-ops-item">
+        <article class="dispatch-ops-item ${pushPending ? "dispatch-ops-item-push-pending" : "dispatch-ops-item-push-sent"}">
           <div class="dispatch-ops-item-header">
             <div class="dispatch-ops-driver-list">${buildDispatchOpsDriverMarkup(entity)}</div>
             <span class="dispatch-ops-chip ${escapeHtml(profile.risk.level)}">${escapeHtml(profile.risk.label)}</span>
           </div>
+          <div class="dispatch-ops-push-flag ${pushFlagClass}">${pushFlagLabel}</div>
           <div class="dispatch-ops-meta">Fuvarfeladat: ${escapeHtml(fuvarLabel)}</div>
           <div class="dispatch-ops-meta">Indíthatósági idő: ${escapeHtml(formatTime(profile.eta.correctedEta))}${escapeHtml(etaMeta)}</div>
           <div class="dispatch-ops-meta">Elérhetőségi helyszín: ${escapeHtml(profile.driver.jelenlegi_pozicio?.hely || "ismeretlen")}</div>
-          <div class="dispatch-ops-meta">${escapeHtml(pushState)}</div>
+          <div class="dispatch-ops-meta dispatch-ops-meta-push-state ${pushFlagClass}">${escapeHtml(pushState)}</div>
           <div class="dispatch-ops-actions">
             <button type="button" class="dispatch-ops-btn" data-titbox-action="send-push" data-entity-key="${escapeHtml(entity.key)}">Push küldése</button>
             <button type="button" class="dispatch-ops-btn" data-titbox-action="mark-driver-confirmed" data-entity-key="${escapeHtml(entity.key)}">Sofőr adatot rögzített</button>

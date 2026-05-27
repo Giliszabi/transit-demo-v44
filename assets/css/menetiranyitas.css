@@ -1852,6 +1852,58 @@ body.monitor-page::before {
   min-height: 124px;
 }
 
+.dispatch-ops-item-push-pending {
+  border-color: rgba(255, 184, 84, 0.86);
+  background:
+    linear-gradient(90deg, rgba(255, 180, 74, 0.3) 0, rgba(255, 180, 74, 0.3) 6px, rgba(14, 30, 45, 0.76) 6px),
+    rgba(14, 30, 45, 0.76);
+  box-shadow: 0 0 0 1px rgba(255, 184, 84, 0.22) inset;
+}
+
+.dispatch-ops-item-push-sent {
+  border-color: rgba(89, 212, 148, 0.35);
+}
+
+.dispatch-ops-push-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  width: fit-content;
+  margin-bottom: 6px;
+}
+
+.dispatch-ops-push-flag.push-pending {
+  border: 1px solid rgba(255, 194, 110, 0.62);
+  color: #ffe1b3;
+  background: rgba(255, 194, 110, 0.22);
+}
+
+.dispatch-ops-push-flag.push-sent {
+  border: 1px solid rgba(89, 212, 148, 0.48);
+  color: #d9ffe8;
+  background: rgba(89, 212, 148, 0.18);
+}
+
+.dispatch-ops-meta-push-state.push-pending {
+  color: #ffd9a1;
+  font-weight: 700;
+}
+
+.dispatch-ops-meta-push-state.push-sent {
+  color: #c6f6da;
+}
+
+.dispatch-ops-item-push-pending .dispatch-ops-btn[data-titbox-action="send-push"] {
+  border-color: rgba(255, 184, 84, 0.82);
+  background: rgba(255, 184, 84, 0.2);
+  color: #ffe2b4;
+}
+
 .dispatch-ops-item-titbox {
   position: relative;
   padding-right: 206px;
