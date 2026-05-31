@@ -232,6 +232,10 @@ const appState = {
   dispatchQuestionModal: {
     isOpen: false,
     entityKey: null
+  },
+  dispatchTableSort: {
+    computed: { col: null, dir: "asc" },
+    driverConfirmed: { col: null, dir: "asc" }
   }
 };
 
@@ -3186,6 +3190,25 @@ function compareDispatchSortMeta(leftMeta, rightMeta) {
   return 0;
 }
 
+function buildDispatchThBtn(panelKey, colKey, label) {
+  const sort = appState.dispatchTableSort[panelKey] || {};
+  const isActive = sort.col === colKey;
+  const icon = isActive ? (sort.dir === "asc" ? " ▲" : " ▼") : "";
+  return `<button type="button" class="dispatch-ops-th-btn${isActive ? " is-active" : ""}" data-dispatch-sort-panel="${escapeHtml(panelKey)}" data-dispatch-sort-col="${escapeHtml(colKey)}">${escapeHtml(label)}${icon}</button>`;
+}
+
+function applyDispatchColumnSort(entities, panelKey, getVal) {
+  const sort = appState.dispatchTableSort[panelKey] || {};
+  if (!sort.col) return entities;
+  return [...entities].sort((a, b) => {
+    const va = getVal(a, sort.col);
+    const vb = getVal(b, sort.col);
+    if (va === vb) return 0;
+    const cmp = va < vb ? -1 : 1;
+    return sort.dir === "asc" ? cmp : -cmp;
+  });
+}
+
 function renderDispatchOpsPanels(profiles, now) {
   const kornyeList = document.getElementById("kornye-prediction-list");
   const titboxList = document.getElementById("titbox-feedback-list");
@@ -3310,95 +3333,116 @@ function renderDispatchOpsPanels(profiles, now) {
   if (!calculatedEntities.length) {
     renderDispatchOpsEmpty(kornyeList, "Nincs nyitott, számított elérhetőségű erőforrás.");
   } else {
-    kornyeList.innerHTML = calculatedEntities
-      .map((entity) => {
-        const profile = entity.primaryProfile;
-        const entry = appState.titboxConfirmations[entity.key];
+    const sortedCalcEntities = applyDispatchColumnSort(calculatedEntities, "computed", (entity, col) => {
+      const profile = entity.primaryProfile;
+      const entry = appState.titboxConfirmations[entity.key];
+      if (col === "driver") return formatDispatchOpsEntityLabel(entity).toLowerCase();
+      if (col === "risk") return profile.risk?.score ?? 0;
+      if (col === "fuvar") {
         const fuvar = profile.activeFuvar?.fuvar;
-        const fuvarLabel = fuvar?.megnevezes
-          ? `${fuvar.id} • ${fuvar.megnevezes}`
-          : "Nincs hozzárendelt fuvarfeladat";
-        const pushPending = !entry?.pushSentAt;
-        const pushState = pushPending ? "Push kérés: még nem küldve" : `Push kérés: ${formatTime(entry.pushSentAt)}`;
-        const pushFlagLabel = pushPending ? "PUSH HIÁNYZIK" : "Push elküldve";
-        const pushFlagClass = pushPending ? "push-pending" : "push-sent";
-        const etaLead = formatEtaLeadTime(profile.eta.nowToEtaMin);
-        const etaMeta = etaLead ? ` • ${etaLead} múlva` : "";
-
-        return `
-        <article class="dispatch-ops-item ${pushPending ? "dispatch-ops-item-push-pending" : "dispatch-ops-item-push-sent"}">
-          <div class="dispatch-ops-item-header">
-            <div class="dispatch-ops-driver-list">${buildDispatchOpsDriverMarkup(entity)}</div>
-            <span class="dispatch-ops-chip ${escapeHtml(profile.risk.level)}">${escapeHtml(profile.risk.label)}</span>
-          </div>
-          <div class="dispatch-ops-push-flag ${pushFlagClass}">${pushFlagLabel}</div>
-          <div class="dispatch-ops-meta">Fuvarfeladat: ${escapeHtml(fuvarLabel)}</div>
-          <div class="dispatch-ops-meta">Indíthatósági idő: ${escapeHtml(formatTime(profile.eta.correctedEta))}${escapeHtml(etaMeta)}</div>
-          <div class="dispatch-ops-meta">Elérhetőségi helyszín: ${escapeHtml(profile.driver.jelenlegi_pozicio?.hely || "ismeretlen")}</div>
-          <div class="dispatch-ops-meta dispatch-ops-meta-push-state ${pushFlagClass}">${escapeHtml(pushState)}</div>
-          <div class="dispatch-ops-actions">
-            <button type="button" class="dispatch-ops-btn" data-titbox-action="send-push" data-entity-key="${escapeHtml(entity.key)}">Push küldése</button>
-            <button type="button" class="dispatch-ops-btn" data-titbox-action="mark-driver-confirmed" data-entity-key="${escapeHtml(entity.key)}">Sofőr adatot rögzített</button>
-          </div>
-        </article>
-      `;
-      })
-      .join("");
+        return fuvar?.megnevezes ? `${fuvar.id} ${fuvar.megnevezes}`.toLowerCase() : "";
+      }
+      if (col === "eta") return new Date(profile.eta?.correctedEta || "").getTime() || 0;
+      if (col === "location") return (profile.driver.jelenlegi_pozicio?.hely || "").toLowerCase();
+      if (col === "push") return entry?.pushSentAt ? 1 : 0;
+      return "";
+    });
+    kornyeList.innerHTML = `<div class="dispatch-ops-table-wrapper">
+      <table class="dispatch-ops-table dispatch-ops-table-computed">
+        <thead>
+          <tr>
+            <th>${buildDispatchThBtn("computed", "driver", "Gépkocsivezető")}</th>
+            <th>${buildDispatchThBtn("computed", "risk", "Kockázat")}</th>
+            <th>${buildDispatchThBtn("computed", "fuvar", "Fuvarfeladat")}</th>
+            <th>${buildDispatchThBtn("computed", "eta", "Indíthatósági idő")}</th>
+            <th>${buildDispatchThBtn("computed", "location", "Helyszín")}</th>
+            <th>${buildDispatchThBtn("computed", "push", "Push")}</th>
+            <th class="dispatch-ops-th-static">Műveletek</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sortedCalcEntities.map((entity) => {
+            const profile = entity.primaryProfile;
+            const entry = appState.titboxConfirmations[entity.key];
+            const fuvar = profile.activeFuvar?.fuvar;
+            const fuvarLabel = fuvar?.megnevezes
+              ? `${fuvar.id} • ${fuvar.megnevezes}`
+              : "Nincs hozzárendelt fuvarfeladat";
+            const pushPending = !entry?.pushSentAt;
+            const pushFlagLabel = pushPending ? "PUSH HIÁNYZIK" : "Push elküldve";
+            const pushFlagClass = pushPending ? "push-pending" : "push-sent";
+            const etaLead = formatEtaLeadTime(profile.eta.nowToEtaMin);
+            const etaMeta = etaLead ? ` • ${etaLead} múlva` : "";
+            return `
+          <tr class="dispatch-ops-row ${pushPending ? "row-push-pending" : "row-push-sent"}">
+            <td class="dispatch-ops-td-driver"><div class="dispatch-ops-driver-list">${buildDispatchOpsDriverMarkup(entity)}</div></td>
+            <td><span class="dispatch-ops-chip ${escapeHtml(profile.risk.level)}">${escapeHtml(profile.risk.label)}</span></td>
+            <td class="dispatch-ops-td-fuvar">${escapeHtml(fuvarLabel)}</td>
+            <td class="dispatch-ops-td-time">${escapeHtml(formatTime(profile.eta.correctedEta))}${escapeHtml(etaMeta)}</td>
+            <td class="dispatch-ops-td-location">${escapeHtml(profile.driver.jelenlegi_pozicio?.hely || "—")}</td>
+            <td><span class="dispatch-ops-push-flag ${pushFlagClass}">${pushFlagLabel}</span></td>
+            <td class="dispatch-ops-td-actions">
+              <button type="button" class="dispatch-ops-btn" data-titbox-action="send-push" data-entity-key="${escapeHtml(entity.key)}">Push küldése</button>
+              <button type="button" class="dispatch-ops-btn" data-titbox-action="mark-driver-confirmed" data-entity-key="${escapeHtml(entity.key)}">Sofőr rögzített</button>
+            </td>
+          </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>`;
   }
 
   if (!driverConfirmedEntities.length) {
     renderDispatchOpsEmpty(titboxList, "Nincs sofőr által visszaigazolt, rögzítésre váró erőforrás.");
   } else {
-    titboxList.innerHTML = driverConfirmedEntities
-      .map((entity) => {
-        const profile = entity.primaryProfile;
-        const entry = appState.titboxConfirmations[entity.key];
-
-        return `
-        <article class="dispatch-ops-item dispatch-ops-item-titbox">
-          <div class="dispatch-ops-item-header">
-            <div class="dispatch-ops-driver-list">${buildDispatchOpsDriverMarkup(entity)}</div>
-          </div>
-          <div class="dispatch-ops-status-stack">
-            <span class="dispatch-ops-chip confirmed">Visszaigazolt</span>
-            <div class="dispatch-ops-actions dispatch-ops-actions-compact">
+    const sortedConfirmedEntities = applyDispatchColumnSort(driverConfirmedEntities, "driverConfirmed", (entity, col) => {
+      const entry = appState.titboxConfirmations[entity.key];
+      if (col === "driver") return formatDispatchOpsEntityLabel(entity).toLowerCase();
+      if (col === "location") return (entry?.reportedLocation || "").toLowerCase();
+      if (col === "departure") return new Date(entry?.nextDepartureAt || "").getTime() || 0;
+      if (col === "weekly") return entry?.weeklyRemainingMin ?? 0;
+      if (col === "fortnight") return entry?.fortnightRemainingMin ?? 0;
+      if (col === "canwork") return new Date(entry?.canWorkUntil || "").getTime() || 0;
+      if (col === "request") return (entry?.driverRequest || "").toLowerCase();
+      return "";
+    });
+    titboxList.innerHTML = `<div class="dispatch-ops-table-wrapper">
+      <table class="dispatch-ops-table dispatch-ops-table-driver-confirmed">
+        <thead>
+          <tr>
+            <th>${buildDispatchThBtn("driverConfirmed", "driver", "Gépkocsivezető")}</th>
+            <th>${buildDispatchThBtn("driverConfirmed", "location", "Helyszín")}</th>
+            <th>${buildDispatchThBtn("driverConfirmed", "departure", "Köv. indulás")}</th>
+            <th>${buildDispatchThBtn("driverConfirmed", "weekly", "Heti maradék")}</th>
+            <th>${buildDispatchThBtn("driverConfirmed", "fortnight", "Kétheti maradék")}</th>
+            <th>${buildDispatchThBtn("driverConfirmed", "canwork", "Meddig dolgozik")}</th>
+            <th>${buildDispatchThBtn("driverConfirmed", "request", "Kérés")}</th>
+            <th class="dispatch-ops-th-static">Műveletek</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sortedConfirmedEntities.map((entity) => {
+            const profile = entity.primaryProfile;
+            const entry = appState.titboxConfirmations[entity.key];
+            const hasQuestion = Boolean(entry.latestDispatcherQuestion);
+            return `
+          <tr class="dispatch-ops-row dispatch-ops-row-driver-confirmed${hasQuestion ? " has-followup" : ""}">
+            <td class="dispatch-ops-td-driver"><div class="dispatch-ops-driver-list">${buildDispatchOpsDriverMarkup(entity)}</div></td>
+            <td>${escapeHtml(entry.reportedLocation)}</td>
+            <td class="dispatch-ops-td-time">${escapeHtml(formatTime(entry.nextDepartureAt))}</td>
+            <td class="dispatch-ops-td-time">${escapeHtml(formatDuration(entry.weeklyRemainingMin))}</td>
+            <td class="dispatch-ops-td-time">${escapeHtml(formatDuration(entry.fortnightRemainingMin))}</td>
+            <td class="dispatch-ops-td-time">${escapeHtml(formatTime(entry.canWorkUntil))}</td>
+            <td class="dispatch-ops-td-request">${escapeHtml(entry.driverRequest || "—")}${hasQuestion ? `<div class="dispatch-ops-followup-inline">↩ ${escapeHtml(entry.latestDispatcherQuestion.message)}</div>` : ""}</td>
+            <td class="dispatch-ops-td-actions">
               <button type="button" class="dispatch-ops-btn" data-titbox-action="open-dispatch-question" data-entity-key="${escapeHtml(entity.key)}">Visszakérdezés</button>
-              <button type="button" class="dispatch-ops-btn" data-titbox-action="mark-dispatcher-confirmed" data-entity-key="${escapeHtml(entity.key)}">Visszaigazolás rögzítése</button>
-            </div>
-          </div>
-          <div class="dispatch-ops-meta-grid">
-            <div class="dispatch-ops-meta-tile">
-              <span class="dispatch-ops-meta-label">Elérhetőségi helyszín</span>
-              <span class="dispatch-ops-meta-value">${escapeHtml(entry.reportedLocation)}</span>
-            </div>
-            <div class="dispatch-ops-meta-tile">
-              <span class="dispatch-ops-meta-label">Következő indulási idő</span>
-              <span class="dispatch-ops-meta-value">${escapeHtml(formatTime(entry.nextDepartureAt))}</span>
-            </div>
-            <div class="dispatch-ops-meta-tile">
-              <span class="dispatch-ops-meta-label">Heti vezetési idő maradék</span>
-              <span class="dispatch-ops-meta-value">${escapeHtml(formatDuration(entry.weeklyRemainingMin))}</span>
-            </div>
-            <div class="dispatch-ops-meta-tile">
-              <span class="dispatch-ops-meta-label">Kétheti vezetési idő maradék</span>
-              <span class="dispatch-ops-meta-value">${escapeHtml(formatDuration(entry.fortnightRemainingMin))}</span>
-            </div>
-            <div class="dispatch-ops-meta-tile">
-              <span class="dispatch-ops-meta-label">Meddig tud dolgozni</span>
-              <span class="dispatch-ops-meta-value">${escapeHtml(formatTime(entry.canWorkUntil))}</span>
-            </div>
-            <div class="dispatch-ops-meta-tile">
-              <span class="dispatch-ops-meta-label">Sofőr kérése</span>
-              <span class="dispatch-ops-meta-value">${escapeHtml(entry.driverRequest)}</span>
-            </div>
-          </div>
-          <div class="dispatch-ops-meta dispatch-ops-meta-summary">Indíthatósági idő: ${escapeHtml(formatTime(entry.driverReportedEta))} • Kalkulált ETA: ${escapeHtml(formatTime(profile.eta.correctedEta))}</div>
-          <div class="dispatch-ops-meta dispatch-ops-meta-summary">Push kérés: ${escapeHtml(entry.pushSentAt ? formatTime(entry.pushSentAt) : "nem szükséges / nincs elküldve")} • Sofőr rögzítette: ${escapeHtml(entry.confirmedAt ? formatTime(entry.confirmedAt) : "még nem")}</div>
-          ${entry.latestDispatcherQuestion ? `<div class="dispatch-ops-meta dispatch-ops-followup-note">Nyitott visszakérdezés: ${escapeHtml(entry.latestDispatcherQuestion.message)} • ${escapeHtml(formatTime(entry.latestDispatcherQuestion.askedAt))}</div>` : ""}
-        </article>
-      `;
-      })
-      .join("");
+              <button type="button" class="dispatch-ops-btn" data-titbox-action="mark-dispatcher-confirmed" data-entity-key="${escapeHtml(entity.key)}">Rögzítés</button>
+            </td>
+          </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>`;
   }
 
   if (!dispatcherConfirmedEntities.length) {
@@ -3480,6 +3524,19 @@ function onTitboxPanelClick(event) {
     if (driverId) {
       scrollResourceTimelineToDriver(driverId);
     }
+    return;
+  }
+
+  const sortBtn = event.target.closest("[data-dispatch-sort-panel]");
+  if (sortBtn && event.currentTarget.contains(sortBtn)) {
+    const panelKey = sortBtn.dataset.dispatchSortPanel;
+    const colKey = sortBtn.dataset.dispatchSortCol;
+    const current = appState.dispatchTableSort[panelKey] || { col: null, dir: "asc" };
+    appState.dispatchTableSort[panelKey] = {
+      col: colKey,
+      dir: current.col === colKey && current.dir === "asc" ? "desc" : "asc"
+    };
+    renderDispatchOpsPanels(appState.profiles, new Date());
     return;
   }
 
