@@ -3190,6 +3190,45 @@ function compareDispatchSortMeta(leftMeta, rightMeta) {
   return 0;
 }
 
+function resolveComputedRowState(entity, entry) {
+  if (entry?.pushSentAt) {
+    return "push-sent";
+  }
+
+  const profile = entity.primaryProfile;
+  const fuvar = profile?.activeFuvar?.fuvar;
+  const block = profile?.activeFuvar?.block;
+  const viszonylat = fuvar?.viszonylat || block?.kategoria || "";
+
+  if (viszonylat === "import") {
+    return "loaded-returning";
+  }
+
+  if (viszonylat === "export") {
+    const hasLinked = fuvar?.utofutasImportFuvarId || fuvar?.kapcsoltImportFuvarId;
+    return hasLinked ? "has-import" : "outbound-no-import";
+  }
+
+  if (viszonylat === "belfold") {
+    if (fuvar?.utofutasImportFuvarId || fuvar?.kapcsoltImportFuvarId) {
+      return "has-import";
+    }
+    return "outbound-no-import";
+  }
+
+  // Demo fallback: determinisztikusan szétterítjük az állapotokat
+  const seed = makeSeed(entity.key);
+  const r = randomInt(seed + 7813, 0, 2);
+  return ["outbound-no-import", "has-import", "loaded-returning"][r];
+}
+
+const COMPUTED_ROW_STATE_LABELS = {
+  "outbound-no-import": "Kifelé tart, nincs importja",
+  "has-import": "Van importja, de még nem kezdte el",
+  "loaded-returning": "Megrakodott, visszafelé tart",
+  "push-sent": "Push üzenet ki lett küldve"
+};
+
 function buildDispatchThBtn(panelKey, colKey, label) {
   const sort = appState.dispatchTableSort[panelKey] || {};
   const isActive = sort.col === colKey;
@@ -3347,7 +3386,13 @@ function renderDispatchOpsPanels(profiles, now) {
       if (col === "push") return entry?.pushSentAt ? 1 : 0;
       return "";
     });
-    kornyeList.innerHTML = `<div class="dispatch-ops-table-wrapper">
+    kornyeList.innerHTML = `<div class="dispatch-ops-state-legend">
+            <span class="dispatch-ops-legend-item legend-outbound-no-import">Kifelé tart, nincs importja</span>
+            <span class="dispatch-ops-legend-item legend-has-import">Van importja, de még nem kezdte el</span>
+            <span class="dispatch-ops-legend-item legend-loaded-returning">Megrakodott, visszafelé tart</span>
+            <span class="dispatch-ops-legend-item legend-push-sent">Push üzenet ki lett küldve</span>
+          </div>
+          <div class="dispatch-ops-table-wrapper">
       <table class="dispatch-ops-table dispatch-ops-table-computed">
         <thead>
           <tr>
@@ -3368,13 +3413,14 @@ function renderDispatchOpsPanels(profiles, now) {
             const fuvarLabel = fuvar?.megnevezes
               ? `${fuvar.id} • ${fuvar.megnevezes}`
               : "Nincs hozzárendelt fuvarfeladat";
-            const pushPending = !entry?.pushSentAt;
-            const pushFlagLabel = pushPending ? "PUSH HIÁNYZIK" : "Push elküldve";
-            const pushFlagClass = pushPending ? "push-pending" : "push-sent";
+            const rowState = resolveComputedRowState(entity, entry);
+            const pushFlagLabel = entry?.pushSentAt ? "Push elküldve" : "PUSH HIÁNYZIK";
+            const pushFlagClass = entry?.pushSentAt ? "push-sent" : "push-pending";
             const etaLead = formatEtaLeadTime(profile.eta.nowToEtaMin);
             const etaMeta = etaLead ? ` • ${etaLead} múlva` : "";
+            const stateLabel = COMPUTED_ROW_STATE_LABELS[rowState] || "";
             return `
-          <tr class="dispatch-ops-row ${pushPending ? "row-push-pending" : "row-push-sent"}">
+          <tr class="dispatch-ops-row dispatch-ops-row-state-${escapeHtml(rowState)}" title="${escapeHtml(stateLabel)}">
             <td class="dispatch-ops-td-driver"><div class="dispatch-ops-driver-list">${buildDispatchOpsDriverMarkup(entity)}</div></td>
             <td><span class="dispatch-ops-chip ${escapeHtml(profile.risk.level)}">${escapeHtml(profile.risk.label)}</span></td>
             <td class="dispatch-ops-td-fuvar">${escapeHtml(fuvarLabel)}</td>

@@ -1907,12 +1907,72 @@ body.monitor-page::before {
 }
 
 .dispatch-ops-row.row-push-pending {
-  border-left: 3px solid rgba(255, 184, 84, 0.86);
-  background: rgba(255, 180, 74, 0.06);
+
+.dispatch-ops-state-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 8px;
+  padding: 6px 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.dispatch-ops-row.row-push-sent {
-  border-left: 3px solid rgba(89, 212, 148, 0.35);
+.dispatch-ops-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: rgba(188, 219, 246, 0.75);
+}
+
+.dispatch-ops-legend-item::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.dispatch-ops-legend-item.legend-outbound-no-import::before {
+  background: rgba(120, 155, 185, 0.55);
+  border: 1px solid rgba(120, 155, 185, 0.7);
+}
+
+.dispatch-ops-legend-item.legend-has-import::before {
+  background: rgba(79, 155, 230, 0.5);
+  border: 1px solid rgba(79, 155, 230, 0.8);
+}
+
+.dispatch-ops-legend-item.legend-loaded-returning::before {
+  background: rgba(89, 212, 148, 0.5);
+  border: 1px solid rgba(89, 212, 148, 0.8);
+}
+
+.dispatch-ops-legend-item.legend-push-sent::before {
+  background: rgba(255, 184, 84, 0.5);
+  border: 1px solid rgba(255, 184, 84, 0.8);
+}
+
+/* 4 utazási állapot: sárga panel sorai */
+.dispatch-ops-row-state-outbound-no-import {
+  background: rgba(14, 30, 45, 0.50);
+  border-left: 3px solid rgba(120, 155, 185, 0.45);
+}
+
+.dispatch-ops-row-state-has-import {
+  background: rgba(30, 70, 120, 0.38);
+  border-left: 3px solid rgba(79, 155, 230, 0.72);
+}
+
+.dispatch-ops-row-state-loaded-returning {
+  background: rgba(22, 68, 38, 0.42);
+  border-left: 3px solid rgba(89, 212, 148, 0.72);
+}
+
+.dispatch-ops-row-state-push-sent {
+  background: rgba(50, 40, 12, 0.42);
+  border-left: 3px solid rgba(255, 184, 84, 0.86);
 }
 
 .dispatch-ops-row.has-followup {
@@ -1962,6 +2022,7 @@ body.monitor-page::before {
 }
 
 .dispatch-ops-row.row-push-pending .dispatch-ops-btn[data-titbox-action="send-push"] {
+.dispatch-ops-row-state-push-sent .dispatch-ops-btn[data-titbox-action="send-push"] {
   border-color: rgba(255, 184, 84, 0.82);
   background: rgba(255, 184, 84, 0.2);
   color: #ffe2b4;
