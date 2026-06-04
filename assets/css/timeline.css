@@ -338,6 +338,15 @@
   box-shadow: inset 0 0 0 1px rgba(255, 204, 0, 0.2);
 }
 
+.timeline-resource.sofor-finalized {
+  border-color: rgba(76, 217, 100, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(76, 217, 100, 0.3);
+}
+
+.timeline-resource.sofor-finalized.match-bad {
+  opacity: 1;
+}
+
 /* Fejlécek */
 .timeline-resource-name {
   padding: 8px 12px;
@@ -354,6 +363,10 @@
   min-width: 260px;
   border-right: 1px solid #2e3238;
   will-change: transform;
+}
+
+.timeline-resource-name.has-dispatch-note {
+  padding-right: 34px;
 }
 
 .timeline-resource-main-line {
@@ -437,6 +450,62 @@
 
 .timeline-resource-name.match-warn {
   background: linear-gradient(120deg, rgba(70, 59, 32, 0.95), rgba(47, 41, 24, 0.95));
+}
+
+.timeline-resource-name.sofor-finalized {
+  background: linear-gradient(122deg, rgba(35, 96, 61, 0.95), rgba(27, 68, 45, 0.95));
+  border-right-color: rgba(107, 221, 140, 0.45);
+}
+
+.timeline-resource-name.sofor-finalized:hover {
+  background: linear-gradient(122deg, rgba(42, 116, 73, 0.95), rgba(30, 80, 52, 0.95));
+}
+
+.driver-dispatch-note-indicator {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(117, 72, 35, 0.32);
+  border: 1px solid rgba(171, 112, 52, 0.72);
+  color: #8b4f18;
+  font-size: 11px;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  cursor: help;
+}
+
+.driver-dispatch-note-tooltip {
+  position: absolute;
+  top: 22px;
+  right: 0;
+  min-width: 180px;
+  max-width: 300px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(58, 38, 23, 0.96);
+  border: 1px solid rgba(181, 126, 71, 0.86);
+  color: #f9ead9;
+  font-size: 11px;
+  line-height: 1.35;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  z-index: 60;
+  white-space: normal;
+}
+
+.driver-dispatch-note-indicator:hover .driver-dispatch-note-tooltip,
+.driver-dispatch-note-indicator:focus-visible .driver-dispatch-note-tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Timeline sáv */

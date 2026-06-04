@@ -6,6 +6,8 @@ function normalizeText(value) {
     .trim();
 }
 
+  const IGNORE_DRIVER_TIME_MATCHING = true;
+
 function toDate(value) {
   if (!value) {
     return null;
@@ -315,7 +317,7 @@ function evaluateGlobalAvailability(driver, schedule, vehicles, planningDate) {
   }
 
   const driving = getDrivingProfile(driver);
-  if ((driving.restMinutesEarned || 0) < 45 && (driving.dailyDrivenHours || 0) > 4.5) {
+  if (!IGNORE_DRIVER_TIME_MATCHING && (driving.restMinutesEarned || 0) < 45 && (driving.dailyDrivenHours || 0) > 4.5) {
     reasons.push(createReason("REQUIRED_REST_PENDING", "A gépjárművezetőnek kötelező szünetet kell tartania."));
     earliestStart = addMinutes(earliestStart, 45 - (driving.restMinutesEarned || 0)) || earliestStart;
   }
@@ -345,9 +347,10 @@ export function evaluateDriverAgainstJob({ driver, schedule, vehicles, job, plan
   }
 
   const requiredHands = getJobRequiredHands(job);
-  if (requiredHands !== getDriverRequiredHands(driver)) {
+  const driverHands = getDriverRequiredHands(driver);
+  if (requiredHands > driverHands) {
     const formatHandsLabel = (hands) => (Number(hands) === 2 ? "4 kezes" : `${Number(hands) || 1} kezes`);
-    reasons.push(createReason("HAND_COUNT_MISMATCH", `A fuvar ${formatHandsLabel(requiredHands)}, a gépjárművezető ${formatHandsLabel(getDriverRequiredHands(driver))}.`));
+    reasons.push(createReason("HAND_COUNT_MISMATCH", `A fuvar ${formatHandsLabel(requiredHands)}, a gépjárművezető ${formatHandsLabel(driverHands)}.`));
   }
 
   if (getJobAdr(job) && !getDriverAdr(driver)) {
@@ -364,10 +367,10 @@ export function evaluateDriverAgainstJob({ driver, schedule, vehicles, job, plan
   const requiredHours = calculateRequiredDrivingHours(job);
   const remainingDailyHours = (driving.dailyLimitHours || 0) - (driving.dailyDrivenHours || 0);
   const remainingWeeklyHours = (driving.weeklyLimitHours || 0) - (driving.weeklyDrivenHours || 0);
-  if (requiredHours > remainingDailyHours) {
+  if (!IGNORE_DRIVER_TIME_MATCHING && requiredHours > remainingDailyHours) {
     reasons.push(createReason("NO_DAILY_DRIVE_TIME", "Nincs elég napi vezetési időkeret."));
   }
-  if (requiredHours > remainingWeeklyHours) {
+  if (!IGNORE_DRIVER_TIME_MATCHING && requiredHours > remainingWeeklyHours) {
     reasons.push(createReason("NO_WEEKLY_DRIVE_TIME", "Nincs elég heti vezetési időkeret."));
   }
 
@@ -378,7 +381,7 @@ export function evaluateDriverAgainstJob({ driver, schedule, vehicles, job, plan
 
   const blockingEnd = findBlockingTimelineEnd(timeline, pickupAt, dropoffAt, { ignoredJob: job });
   const effectiveEarliestStart = blockingEnd && blockingEnd > globalState.earliestStart ? blockingEnd : globalState.earliestStart;
-  if (pickupDate < effectiveEarliestStart) {
+  if (!IGNORE_DRIVER_TIME_MATCHING && pickupDate < effectiveEarliestStart) {
     reasons.push(createReason("JOB_TIME_WINDOW_MISS", "A fuvar indulási ideje korábbi, mint a gépjárművezető első lehetséges indulása."));
   }
 

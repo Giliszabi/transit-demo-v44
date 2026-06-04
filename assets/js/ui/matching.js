@@ -66,6 +66,7 @@ const MAX_SINGLE_DRIVER_DAILY_HOURS = 9;
 const MAX_CONTINUOUS_DRIVE_HOURS = 4.5;
 const MANDATORY_BREAK_HOURS = 0.75;
 const MANDATORY_DAILY_REST_HOURS = 11;
+const IGNORE_DRIVER_TIME_MATCHING = true;
 
 export function getMatchGradePriority(matchGrade) {
   if (matchGrade === "ok") return 0;
@@ -292,7 +293,7 @@ export function evaluateSoforForFuvar(sofor, fuvar) {
   }
 
   // Vezetési órák ellenőrzése
-  if (sofor.driving) {
+  if (sofor.driving && !IGNORE_DRIVER_TIME_MATCHING) {
     let requiredHours = calculateRequiredDrivingHours(fuvar);
 
     // service-focus profil: etaBuffer hozzáadódik a szükséges időhöz

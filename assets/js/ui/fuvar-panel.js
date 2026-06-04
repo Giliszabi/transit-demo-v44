@@ -36,6 +36,7 @@ const BASE_CARD_COLUMN_OPTIONS = [
   { id: "delivery", label: "Lerakás dátuma" },
   { id: "client", label: "Megbízó" },
   { id: "distance", label: "Távolság" },
+  { id: "latestDeparture", label: "Legkésőbbi indulás" },
   { id: "type", label: "Típus" },
   { id: "status", label: "Státusz" },
   { id: "driver", label: "Gépjárművezető" },
@@ -125,6 +126,7 @@ export const DEFAULT_FUVAR_CARD_COLUMNS = [
   "delivery",
   "client",
   "distance",
+  "latestDeparture",
 ];
 
 export function createDefaultFuvarFilterState() {
@@ -358,6 +360,7 @@ const CITY_ALIASES = {
 };
 const ROAD_DISTANCE_CACHE = new Map();
 const ROAD_DISTANCE_FALLBACK_MULTIPLIER = 1.2;
+const AVERAGE_ROUTE_SPEED_KMH = 80;
 let roadDistanceRefreshTimer = null;
 let focusedFuvarId = null;
 let focusedAssemblyId = null;
@@ -406,6 +409,7 @@ function getColumnMeta(columnId) {
     delivery: { width: 146, sortType: "date" },
     client: { width: 188, sortType: "text" },
     distance: { width: 88, sortType: "number" },
+    latestDeparture: { width: 172, sortType: "date" },
     type: { width: 116, sortType: "text" },
     status: { width: 130, sortType: "text" },
     driver: { width: 180, sortType: "text" },
@@ -670,6 +674,60 @@ function resolveFuvarDistanceKm(fuvar) {
   return Number.isFinite(computedKm) ? computedKm : null;
 }
 
+function calculateRouteTravelMinutes(distanceKm) {
+  if (!Number.isFinite(distanceKm) || distanceKm < 0) {
+    return null;
+  }
+
+  return Math.max(1, Math.round((distanceKm / AVERAGE_ROUTE_SPEED_KMH) * 60));
+}
+
+function getLatestDepartureReferenceTimeMs(fuvar) {
+  const relation = normalizeText(fuvar?.viszonylat || fuvar?.kategoria || "");
+
+  if (relation.includes("export")) {
+    return new Date(fuvar?.lerakas?.ido || "").getTime();
+  }
+
+  if (relation.includes("import")) {
+    return new Date(fuvar?.felrakas?.ido || "").getTime();
+  }
+
+  return new Date(fuvar?.felrakas?.ido || "").getTime();
+}
+
+function getLatestDepartureEstimate(fuvar) {
+  const referenceTimeMs = getLatestDepartureReferenceTimeMs(fuvar);
+  const pickupAddress = fuvar?.felrakas?.cim;
+  const dropoffAddress = fuvar?.lerakas?.cim;
+
+  if (!Number.isFinite(referenceTimeMs) || !pickupAddress || !dropoffAddress) {
+    return null;
+  }
+
+  const routeDistanceKm = resolveFuvarDistanceKm(fuvar);
+  if (!Number.isFinite(routeDistanceKm)) {
+    return null;
+  }
+
+  const singleMinutes = calculateRouteTravelMinutes(routeDistanceKm);
+  const doubleMinutes = Number.isFinite(singleMinutes) ? Math.max(1, Math.round(singleMinutes / 2)) : null;
+
+  if (!Number.isFinite(singleMinutes) || !Number.isFinite(doubleMinutes)) {
+    return null;
+  }
+
+  const singleMs = referenceTimeMs - (singleMinutes * 60 * 1000);
+  const doubleMs = referenceTimeMs - (doubleMinutes * 60 * 1000);
+
+  return {
+    singleMs,
+    doubleMs,
+    singleIso: new Date(singleMs).toISOString(),
+    doubleIso: new Date(doubleMs).toISOString()
+  };
+}
+
 function getCountryFromAddress(address) {
   const normalized = normalizeText(address);
   if (normalized.includes("magyarorszag") || normalized.includes("hungary")) {
@@ -829,6 +887,14 @@ function getBaseColumnDisplayValue(fuvar, columnId, context) {
     const resolvedDistanceKm = resolveFuvarDistanceKm(fuvar);
     return Number.isFinite(resolvedDistanceKm) ? `${Math.round(resolvedDistanceKm)} km` : "-";
   }
+  if (columnId === "latestDeparture") {
+    const departure = getLatestDepartureEstimate(fuvar);
+    if (!departure) {
+      return "👤 -\n👥 -";
+    }
+
+    return `👤 ${formatDate(departure.singleIso)}\n👥 ${formatDate(departure.doubleIso)}`;
+  }
   if (columnId === "type") {
     return context.viszonylatLabel;
   }
@@ -875,6 +941,10 @@ function getBaseColumnSortValue(fuvar, columnId, context) {
 
     const resolvedDistanceKm = resolveFuvarDistanceKm(fuvar);
     return Number.isFinite(resolvedDistanceKm) ? resolvedDistanceKm : 0;
+  }
+  if (columnId === "latestDeparture") {
+    const departure = getLatestDepartureEstimate(fuvar);
+    return Number.isFinite(departure?.singleMs) ? departure.singleMs : Number.NEGATIVE_INFINITY;
   }
   if (columnId === "type") {
     return normalizeText(context.viszonylatLabel);
@@ -3486,7 +3556,12 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
   }
 
   const visibleColumns = regionAwareRequestedColumns.filter((id) => allowedColumnIds.has(id));
-  const effectiveColumns = visibleColumns.length > 0 ? visibleColumns : DEFAULT_FUVAR_CARD_COLUMNS;
+  const effectiveColumnsBase = visibleColumns.length > 0 ? visibleColumns : DEFAULT_FUVAR_CARD_COLUMNS;
+  const effectiveColumns = [...effectiveColumnsBase];
+  const distanceIndex = effectiveColumns.indexOf("distance");
+  if (distanceIndex >= 0 && !effectiveColumns.includes("latestDeparture")) {
+    effectiveColumns.splice(distanceIndex + 1, 0, "latestDeparture");
+  }
   const importRecommendation = filterState.category === "import" ? findRecommendedImportForFocusedExport() : null;
   const renderList = [...FUVAROK];
   const assemblyDropoffAddress = getFocusedAssemblyDropoffAddress();
@@ -3687,6 +3762,8 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
 
       const extraClass = columnId === "distance"
         ? " fuvar-card-distance"
+        : columnId === "latestDeparture"
+          ? " fuvar-card-latest-departure"
         : "";
 
       return `

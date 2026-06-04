@@ -1218,6 +1218,11 @@ function sanitizeFuvarColumns(raw) {
   const incoming = Array.isArray(raw) ? raw : DEFAULT_FUVAR_CARD_COLUMNS;
   const normalized = incoming.filter((id) => allowed.has(id));
 
+  const distanceIndex = normalized.indexOf("distance");
+  if (distanceIndex >= 0 && !normalized.includes("latestDeparture") && allowed.has("latestDeparture")) {
+    normalized.splice(distanceIndex + 1, 0, "latestDeparture");
+  }
+
   if (!normalized.includes("client") && hasSameColumnCollection(normalized, LEGACY_DEFAULT_FUVAR_COLUMNS)) {
     return [...DEFAULT_FUVAR_CARD_COLUMNS];
   }

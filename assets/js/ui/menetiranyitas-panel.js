@@ -7,8 +7,10 @@ import { buildEligibilityIndex } from "../core/eligibility-engine.js";
 import { ensureContinuousTimelines } from "./timeline-generator.js";
 import { renderTimeline } from "./timeline.js";
 import { renderSzerelvenyMap } from "./szerelveny-map.js";
-import { getAssemblyOperationLogEntries, renderSzerelvenyTimeline } from "./szerelveny-timeline.js";
+import { applyAssemblyAssignmentSync, getAssemblyOperationLogEntries, renderSzerelvenyTimeline } from "./szerelveny-timeline.js";
 import { loadSessionState, applySessionStateSnapshots } from "../core/session-state.js";
+import { areAllDriversFinalized, toggleDriversFinalized } from "../core/driver-finalization-state.js";
+import { setDriverDispatchNote } from "../core/driver-dispatch-notes-state.js";
 import "./resource-panel.js";
 
 const CONTINUOUS_LIMIT_MIN = 4 * 60 + 30;
@@ -375,6 +377,8 @@ async function initMenetiranyitasPanel() {
   //   riskLegend.addEventListener("keydown", onRiskLegendKeydown);
   // }
 
+  initFuvarszervezesSyncListener();
+
   refreshDashboard({ preserveSelection: false, focusMode: "none" });
   startAutoRefresh();
 
@@ -384,6 +388,54 @@ async function initMenetiranyitasPanel() {
       syncMapFocus(selectedProfile, "none");
     }
   }, 220);
+}
+
+const DISPATCH_ASSIGNMENT_SYNC_KEY = "transit.v44.assignmentSync";
+const DISPATCH_CHANNEL_NAME = "transit.v44.dockLayout.channel";
+let lastHandledAssignmentSyncToken = "";
+
+function applyIncomingAssignmentSync(payload) {
+  const token = String(payload?.token || "");
+  if (token && token === lastHandledAssignmentSyncToken) {
+    return;
+  }
+
+  const fuvarId = payload?.fuvarId || "";
+  const assignment = payload?.assignment || null;
+  if (!fuvarId || !assignment) {
+    return;
+  }
+
+  if (token) {
+    lastHandledAssignmentSyncToken = token;
+  }
+
+  applyAssemblyAssignmentSync(fuvarId, assignment, { emit: true });
+}
+
+function initFuvarszervezesSyncListener() {
+  const canBroadcast = typeof BroadcastChannel !== "undefined";
+  if (canBroadcast) {
+    const channel = new BroadcastChannel(DISPATCH_CHANNEL_NAME);
+    channel.onmessage = (event) => {
+      if (event?.data?.type === "assembly:assignment:save") {
+        applyIncomingAssignmentSync(event.data);
+      }
+    };
+  }
+
+  window.addEventListener("storage", (event) => {
+    if (event.key !== DISPATCH_ASSIGNMENT_SYNC_KEY || !event.newValue) {
+      return;
+    }
+
+    try {
+      const payload = JSON.parse(event.newValue);
+      applyIncomingAssignmentSync(payload);
+    } catch (_error) {
+      // no-op
+    }
+  });
 }
 
 function initCollapsibleSections() {
@@ -416,6 +468,10 @@ function onExportTableCellBlur(event) {
 
   if (input.classList?.contains?.("export-note-edit")) {
     assignment.dispatchNote = input.value;
+    const rowDriverIds = readDriverIdsFromExportTableRow(input);
+    if (rowDriverIds.length > 0) {
+      setDriverDispatchNote(rowDriverIds, input.value);
+    }
   } else if (input.classList?.contains?.("export-start-time-edit")) {
     assignment.startTime = input.value;
   } else if (input.classList?.contains?.("export-availability-from-edit")) {
@@ -424,7 +480,88 @@ function onExportTableCellBlur(event) {
     assignment.availabilityTo = input.value;
   }
 
+  const isDateTimeEdit =
+    input.classList?.contains?.("export-start-time-edit")
+    || input.classList?.contains?.("export-availability-from-edit")
+    || input.classList?.contains?.("export-availability-to-edit");
+
+  if (isDateTimeEdit) {
+    moveEditedAssignmentBackToDriverConfirmed(assignmentId, input);
+    renderDispatchOpsPanels(appState.profiles, new Date());
+  }
+
   renderExportTable(appState.profiles, appState.selectedDriverId);
+}
+
+function readDriverIdsFromExportTableRow(input) {
+  const row = input?.closest?.(".export-table-row");
+  if (!row) {
+    return [];
+  }
+
+  const source = row.querySelector('[data-action="toggle-driver-finalization"]')?.getAttribute("data-driver-ids") || "";
+  return String(source)
+    .split(",")
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+}
+
+function moveEditedAssignmentBackToDriverConfirmed(assignmentId, input) {
+  const selectedExportDate = getSelectedExportDate();
+  const dispatchProfiles = (appState.profiles || []).filter((profile) => {
+    return (profile.exportAssignments || []).length > 0;
+  });
+
+  if (!dispatchProfiles.length) {
+    return;
+  }
+
+  const entities = buildDispatchOpsEntities(dispatchProfiles, selectedExportDate);
+  if (!entities.length) {
+    return;
+  }
+
+  const normalizedValue = toDateTimeLocalValue(input?.value);
+  const fieldClassList = input?.classList;
+  const now = new Date();
+
+  entities.forEach((entity) => {
+    const belongsToEditedAssignment = (entity?.primaryProfile?.exportAssignments || []).some((item) => {
+      return item?.assignmentId === assignmentId;
+    });
+
+    if (!belongsToEditedAssignment) {
+      return;
+    }
+
+    const titboxEntry = appState.titboxConfirmations[entity.key];
+    const dispatcherEntry = appState.dispatcherAvailability[entity.key];
+    if (!titboxEntry || !dispatcherEntry) {
+      return;
+    }
+
+    if (normalizedValue) {
+      if (fieldClassList?.contains?.("export-start-time-edit")) {
+        titboxEntry.driverReportedEta = normalizedValue;
+        dispatcherEntry.agreedArrivalAt = normalizedValue;
+      } else if (fieldClassList?.contains?.("export-availability-from-edit")) {
+        titboxEntry.nextDepartureAt = normalizedValue;
+      } else if (fieldClassList?.contains?.("export-availability-to-edit")) {
+        titboxEntry.canWorkUntil = normalizedValue;
+      }
+    }
+
+    // If a dispatcher-approved record is edited, it must be re-confirmed by driver in the blue box.
+    if (dispatcherEntry.recordedAt) {
+      dispatcherEntry.recordedAt = null;
+    }
+
+    if (!titboxEntry.confirmedAt) {
+      titboxEntry.confirmedAt = now;
+    }
+
+    dispatcherEntry.updatedAt = now;
+  });
 }
 
 function toDateTimeLocalValue(value) {
@@ -868,9 +1005,55 @@ function resolveExportAssignmentsForDriver(driver, selectedExportDate) {
   });
 }
 
+function resolveCompletionDateOnlyFromTimelineEntry(entry) {
+  const completionValue = entry?.block?.end || entry?.fuvar?.lerakas?.ido || "";
+  const completionDate = new Date(completionValue);
+  if (!Number.isFinite(completionDate.getTime())) {
+    return "";
+  }
+
+  return toDateOnly(completionDate);
+}
+
+function collectImportExportCompletionDatesForProfile(profile) {
+  const completionDates = new Set();
+
+  buildDispatchTimelineEntries(profile).forEach((entry) => {
+    if (entry.direction !== "import" && entry.direction !== "export") {
+      return;
+    }
+
+    const completionDate = resolveCompletionDateOnlyFromTimelineEntry(entry);
+    if (completionDate) {
+      completionDates.add(completionDate);
+    }
+  });
+
+  return completionDates;
+}
+
+function doesProfileCompleteImportExportOnDate(profile, selectedDate) {
+  const targetDate = String(selectedDate || "").slice(0, 10);
+  if (!targetDate || !profile) {
+    return false;
+  }
+
+  // 1. Export assignment a kiválasztott napra (az Excel importból)
+  if ((profile.exportAssignments || []).some((a) =>
+    String(a.exportDate || "").slice(0, 10) === targetDate
+  )) {
+    return true;
+  }
+
+  // 2. Import/export fuvar timeline blokk befejezése a kiválasztott napon
+  //    (pl. live bekötött fuvar a fuvarszervezésről)
+  return collectImportExportCompletionDatesForProfile(profile).has(targetDate);
+}
+
 function getAvailableExportDates() {
-  const dates = appState.generatedPlanning?.planningContext?.availableExportDates;
   const expectedDriverCountsByDate = buildExpectedDriverCountsByDate();
+  const dates = appState.generatedPlanning?.planningContext?.availableExportDates;
+
   const buildDateMeta = (date, fallbackAssignmentCount = 0) => {
     const dateKey = String(date || "").slice(0, 10);
     const expectedDriverCount = expectedDriverCountsByDate.get(dateKey) || 0;
@@ -882,77 +1065,100 @@ function getAvailableExportDates() {
     };
   };
 
-  if (Array.isArray(dates) && dates.length) {
-    return dates
-      .filter((item) => Number(item.parsedAssignmentCount || 0) > 0)
-      .map((item) => buildDateMeta(item.date, item.parsedAssignmentCount))
-      .filter((item) => item.expectedDriverCount > 0)
-      .sort((left, right) => String(left.date || "").localeCompare(String(right.date || "")));
-  }
+  // Tervezési JSON dátumai (menetirányítás Excel)
+  const planningDates = Array.isArray(dates) && dates.length
+    ? dates.filter((item) => Number(item.parsedAssignmentCount || 0) > 0).map((item) => item.date)
+    : (appState.generatedPlanning?.exportAssignments || []).map((item) => String(item.exportDate || "").slice(0, 10));
 
-  const exportAssignments = appState.generatedPlanning?.exportAssignments || [];
-  const uniqueDates = [...new Set(exportAssignments.map((item) => String(item.exportDate || "").slice(0, 10)).filter(Boolean))].sort();
-  return uniqueDates
-    .map((date) => buildDateMeta(date, getExportAssignmentsForDate(date).length))
-    .filter((item) => Number(item.parsedAssignmentCount || 0) > 0 && item.expectedDriverCount > 0)
+  // Timeline-alapú befejezési dátumok (FUVAROK_REAL, live bekötött fuvarok)
+  const timelineDates = [...expectedDriverCountsByDate.keys()];
+
+  const allDates = [...new Set([...planningDates, ...timelineDates])].filter(Boolean).sort();
+
+  return allDates
+    .map((date) => {
+      const fromPlanning = Array.isArray(dates) && dates.length
+        ? (dates.find((d) => String(d.date || "").slice(0, 10) === date)?.parsedAssignmentCount || 0)
+        : getExportAssignmentsForDate(date).length;
+      return buildDateMeta(date, fromPlanning);
+    })
+    .filter((item) => item.expectedDriverCount > 0)
     .sort((left, right) => String(left.date || "").localeCompare(String(right.date || "")));
 }
 
 function buildExpectedDriverCountsByDate() {
-  const assignments = appState.generatedPlanning?.exportAssignments;
-  const countsByDate = new Map();
-  if (!Array.isArray(assignments) || !assignments.length) {
-    return countsByDate;
+  const assignments = appState.generatedPlanning?.exportAssignments || [];
+  const matchedDriversByDate = new Map();
+
+  // 1. rész: tervezési JSON (menetirányítás Excel importból) alapú számlálás
+  if (assignments.length) {
+    const driverIdsByNameKey = new Map();
+    const driverIdsByVehicleKey = new Map();
+
+    SOFOROK.forEach((driver) => {
+      const driverId = String(driver?.id || "").trim();
+      if (!driverId) {
+        return;
+      }
+
+      const driverNameKey = normalizePlanningKey(driver.nev || driver.name || driverId);
+      if (driverNameKey) {
+        const list = driverIdsByNameKey.get(driverNameKey) || [];
+        list.push(driverId);
+        driverIdsByNameKey.set(driverNameKey, list);
+      }
+
+      const dedicatedVehicleKey = normalizePlanningKey(driver.dedicatedVehiclePlate || "");
+      const linkedVehicleKey = normalizePlanningKey(resolveRigForDriver(driver)?.vontato?.rendszam || "");
+      const vehicleKeys = new Set([dedicatedVehicleKey, linkedVehicleKey]);
+
+      vehicleKeys.forEach((vehicleKey) => {
+        if (!vehicleKey) {
+          return;
+        }
+        const list = driverIdsByVehicleKey.get(vehicleKey) || [];
+        list.push(driverId);
+        driverIdsByVehicleKey.set(vehicleKey, list);
+      });
+    });
+
+    assignments.forEach((assignment) => {
+      const dateKey = String(assignment?.exportDate || "").slice(0, 10);
+      if (!dateKey) {
+        return;
+      }
+
+      const matched = matchedDriversByDate.get(dateKey) || new Set();
+      (assignment.driverNames || []).forEach((name) => {
+        const key = normalizePlanningKey(name);
+        (driverIdsByNameKey.get(key) || []).forEach((driverId) => matched.add(driverId));
+      });
+
+      const vehicleKey = normalizePlanningKey(assignment.vehiclePlate || "");
+      (driverIdsByVehicleKey.get(vehicleKey) || []).forEach((driverId) => matched.add(driverId));
+      matchedDriversByDate.set(dateKey, matched);
+    });
   }
 
-  const driverIdsByNameKey = new Map();
-  const driverIdsByVehicleKey = new Map();
-
+  // 2. rész: timeline-alapú befejezési dátumok (import/export fuvar lerakás a sofőr timeline-jából)
+  // Ez lefedi a valós FUVAROK_REAL adatokat, amelyek nem szerepelnek az Excel tervezésben
   SOFOROK.forEach((driver) => {
     const driverId = String(driver?.id || "").trim();
     if (!driverId) {
       return;
     }
-
-    const driverNameKey = normalizePlanningKey(driver.nev || driver.name || driverId);
-    if (driverNameKey) {
-      const list = driverIdsByNameKey.get(driverNameKey) || [];
-      list.push(driverId);
-      driverIdsByNameKey.set(driverNameKey, list);
-    }
-
-    const dedicatedVehicleKey = normalizePlanningKey(driver.dedicatedVehiclePlate || "");
-    const linkedVehicleKey = normalizePlanningKey(resolveRigForDriver(driver)?.vontato?.rendszam || "");
-    const vehicleKeys = new Set([dedicatedVehicleKey, linkedVehicleKey]);
-
-    vehicleKeys.forEach((vehicleKey) => {
-      if (!vehicleKey) {
+    const profile = { driver, rig: resolveRigForDriver(driver) };
+    collectImportExportCompletionDatesForProfile(profile).forEach((dateKey) => {
+      if (!dateKey) {
         return;
       }
-      const list = driverIdsByVehicleKey.get(vehicleKey) || [];
-      list.push(driverId);
-      driverIdsByVehicleKey.set(vehicleKey, list);
+      const matched = matchedDriversByDate.get(dateKey) || new Set();
+      matched.add(driverId);
+      matchedDriversByDate.set(dateKey, matched);
     });
   });
 
-  const matchedDriversByDate = new Map();
-  assignments.forEach((assignment) => {
-    const dateKey = String(assignment?.exportDate || "").slice(0, 10);
-    if (!dateKey) {
-      return;
-    }
-
-    const matched = matchedDriversByDate.get(dateKey) || new Set();
-    (assignment.driverNames || []).forEach((name) => {
-      const key = normalizePlanningKey(name);
-      (driverIdsByNameKey.get(key) || []).forEach((driverId) => matched.add(driverId));
-    });
-
-    const vehicleKey = normalizePlanningKey(assignment.vehiclePlate || "");
-    (driverIdsByVehicleKey.get(vehicleKey) || []).forEach((driverId) => matched.add(driverId));
-    matchedDriversByDate.set(dateKey, matched);
-  });
-
+  const countsByDate = new Map();
   matchedDriversByDate.forEach((driverIds, dateKey) => {
     countsByDate.set(dateKey, driverIds.size);
   });
@@ -963,18 +1169,29 @@ function buildExpectedDriverCountsByDate() {
 function ensureSelectedExportDate() {
   const availableDates = getAvailableExportDates();
   if (!availableDates.length) {
-    appState.selectedExportDate = appState.generatedPlanning?.planningContext?.effectiveExportDate
-      || appState.generatedPlanning?.planningContext?.planningDate
-      || null;
+    appState.selectedExportDate = toDateOnly(new Date());
     return;
   }
 
   const availableDateKeys = new Set(availableDates.map((item) => item.date));
   if (!appState.selectedExportDate || !availableDateKeys.has(appState.selectedExportDate)) {
-    const effectiveDate = appState.generatedPlanning?.planningContext?.effectiveExportDate;
-    appState.selectedExportDate = availableDateKeys.has(effectiveDate)
-      ? effectiveDate
-      : availableDates[0].date;
+    // Alapértelmezett: az aktuális hét legkorábbi elérhető napja
+    const todayKey = toDateOnly(new Date());
+    const currentWeekStart = getWeekStartDateOnly(todayKey);
+    const currentWeekDates = Array.from({ length: 7 }, (_, idx) => addDaysToDateOnly(currentWeekStart, idx));
+    const inCurrentWeek = currentWeekDates.find((d) => availableDateKeys.has(d));
+    if (inCurrentWeek) {
+      appState.selectedExportDate = inCurrentWeek;
+      return;
+    }
+    // Ha az aktuális héten nincs adat, a legközelebbi elérhető dátum
+    const todayMs = parseDateOnly(todayKey)?.getTime() || Date.now();
+    const closest = availableDates.reduce((best, item) => {
+      const itemMs = parseDateOnly(item.date)?.getTime() || 0;
+      const bestMs = parseDateOnly(best.date)?.getTime() || 0;
+      return Math.abs(itemMs - todayMs) < Math.abs(bestMs - todayMs) ? item : best;
+    });
+    appState.selectedExportDate = closest.date;
   }
 }
 
@@ -2221,18 +2438,16 @@ function renderExportTable(profiles, selectedDriverId) {
       const startTimeValue = startState.value;
       const availabilityFromValue = availabilityFromState.value;
       const availabilityToValue = availabilityToState.value;
-      const startBadgeClass = startState.isCalculated ? "is-calculated" : "is-manual";
-      const startBadgeLabel = startState.isCalculated ? "kalkulált" : "kézi";
-      const availabilityFromBadgeClass = availabilityFromState.isCalculated ? "is-calculated" : "is-manual";
-      const availabilityFromBadgeLabel = availabilityFromState.isCalculated ? "kalkulált" : "kézi";
-      const availabilityToBadgeClass = availabilityToState.isCalculated ? "is-calculated" : "is-manual";
-      const availabilityToBadgeLabel = availabilityToState.isCalculated ? "kalkulált" : "kézi";
 
       // Maradék vezetési idő
       const driving = profile?.driver.driving || {};
       const dailyRemaining = Math.max(0, Number(driving.dailyLimitHours || 0) - Number(driving.dailyDrivenHours || 0));
       const weeklyRemaining = Math.max(0, Number(driving.weeklyLimitHours || 0) - Number(driving.weeklyDrivenHours || 0));
       const drivingLabel = `${(Math.round(dailyRemaining * 10) / 10).toFixed(1)}/${(Math.round(weeklyRemaining * 10) / 10).toFixed(1)}`;
+      const rowDriverIds = [...collectExportRowDriverIds(row, profileByDriverId)];
+      const isFinalized = areAllDriversFinalized(rowDriverIds);
+      const finalizationBtnLabel = isFinalized ? "Véglegesítve" : "Véglegesítés";
+      const finalizationBtnClass = isFinalized ? " active" : "";
 
       // Opcionális oszlopok
       let optionalCellsHtml = "";
@@ -2249,7 +2464,7 @@ function renderExportTable(profiles, selectedDriverId) {
       }
 
       return `
-        <tr class="export-table-row ${selectedClass}"${driverIdAttr}>
+        <tr class="export-table-row ${selectedClass}${isFinalized ? " is-driver-finalized" : ""}"${driverIdAttr}>
           <td>${escapeHtml(driverNames)}</td>
           <td>
             <div class="export-datetime-field">
@@ -2261,7 +2476,6 @@ function renderExportTable(profiles, selectedDriverId) {
                 data-assignment-id="${escapeHtml(assignmentId)}"
                 placeholder="Mikortól..."
               />
-              <span class="export-field-state-badge ${startBadgeClass}">${startBadgeLabel}</span>
             </div>
           </td>
           <td>${escapeHtml(drivingLabel)}</td>
@@ -2277,7 +2491,6 @@ function renderExportTable(profiles, selectedDriverId) {
                   placeholder="-tól"
                   title="Elérhetőségi ablak kezdete"
                 />
-                <span class="export-field-state-badge ${availabilityFromBadgeClass}">${availabilityFromBadgeLabel}</span>
               </div>
               <span class="export-availability-sep">–</span>
               <div class="export-datetime-field">
@@ -2290,7 +2503,6 @@ function renderExportTable(profiles, selectedDriverId) {
                   placeholder="-ig"
                   title="Elérhetőségi ablak vége"
                 />
-                <span class="export-field-state-badge ${availabilityToBadgeClass}">${availabilityToBadgeLabel}</span>
               </div>
             </div>
           </td>
@@ -2303,6 +2515,16 @@ function renderExportTable(profiles, selectedDriverId) {
               data-assignment-id="${escapeHtml(assignmentId)}"
               placeholder="Megjegyzés..."
             />
+          </td>
+          <td>
+            <button
+              type="button"
+              class="export-finalize-btn${finalizationBtnClass}"
+              data-action="toggle-driver-finalization"
+              data-driver-ids="${escapeHtml(rowDriverIds.join(","))}"
+              aria-pressed="${isFinalized ? "true" : "false"}"
+              title="${isFinalized ? "Véglegesítés visszavonása" : "Sofőr véglegesítése"}"
+            >${finalizationBtnLabel}</button>
           </td>
         </tr>
       `;
@@ -2332,6 +2554,7 @@ function renderExportTable(profiles, selectedDriverId) {
             <th>Elérhetőségi ablak</th>
             ${optionalHeadersHtml}
             <th>Megjegyzés</th>
+            <th>Véglegesítés</th>
           </tr>
         </thead>
         <tbody>
@@ -3044,6 +3267,87 @@ function findDispatchOpsEntityByKey(entityKey) {
   return entities.find((entity) => entity.key === normalizedKey) || null;
 }
 
+const DISPATCH_FIELD_CONFIRM_META = {
+  departure: { label: "Köv. indulás" },
+  weekly: { label: "Heti maradék" },
+  fortnight: { label: "Kétheti maradék" },
+  canwork: { label: "Meddig dolgozik" }
+};
+
+function ensureDispatchFieldConfirmations(titboxEntry) {
+  if (!titboxEntry) {
+    return;
+  }
+
+  if (!titboxEntry.fieldConfirmations || typeof titboxEntry.fieldConfirmations !== "object") {
+    titboxEntry.fieldConfirmations = {};
+  }
+
+  Object.keys(DISPATCH_FIELD_CONFIRM_META).forEach((fieldKey) => {
+    const current = titboxEntry.fieldConfirmations[fieldKey];
+    if (current && typeof current === "object") {
+      return;
+    }
+
+    titboxEntry.fieldConfirmations[fieldKey] = {
+      status: "question",
+      askedAt: null,
+      respondedAt: null,
+      questionMessage: "",
+      rejectedReplacement: ""
+    };
+  });
+}
+
+function resolveDispatchFieldConfirmation(titboxEntry, fieldKey) {
+  ensureDispatchFieldConfirmations(titboxEntry);
+  return titboxEntry?.fieldConfirmations?.[fieldKey] || {
+    status: "question",
+    askedAt: null,
+    respondedAt: null,
+    questionMessage: "",
+    rejectedReplacement: ""
+  };
+}
+
+function buildDispatchFieldConfirmationMarkup(entityKey, fieldKey, titboxEntry, displayedValue) {
+  const meta = DISPATCH_FIELD_CONFIRM_META[fieldKey];
+  if (!meta) {
+    return "";
+  }
+
+  const confirmation = resolveDispatchFieldConfirmation(titboxEntry, fieldKey);
+  const status = confirmation.status || "question";
+  const icon = status === "accepted" ? "✓" : status === "rejected" ? "✕" : "?";
+  const title = status === "accepted"
+    ? "Sofőr elfogadta az adatot"
+    : status === "rejected"
+      ? "Sofőr elutasította az adatot"
+      : "Rákérdezés a sofőrnél";
+
+  const rejectedText = status === "rejected" && confirmation.rejectedReplacement
+    ? `<div class="dispatch-field-rejected-note">Sofőr szerint: ${escapeHtml(confirmation.rejectedReplacement)}</div>`
+    : "";
+
+  return `
+    <div class="dispatch-field-confirm-wrap">
+      <span class="dispatch-field-confirm-value">${escapeHtml(displayedValue || "-")}</span>
+      <button
+        type="button"
+        class="dispatch-field-confirm-btn status-${escapeHtml(status)}"
+        data-titbox-action="ask-field-confirmation"
+        data-entity-key="${escapeHtml(entityKey)}"
+        data-field-key="${escapeHtml(fieldKey)}"
+        data-field-label="${escapeHtml(meta.label)}"
+        data-field-value="${escapeHtml(displayedValue || "")}" 
+        title="${escapeHtml(title)}"
+        aria-label="${escapeHtml(meta.label)}: ${escapeHtml(title)}"
+      >${escapeHtml(icon)}</button>
+    </div>
+    ${rejectedText}
+  `;
+}
+
 function renderDispatchQuestionModal() {
   const modal = document.getElementById("dispatch-question-modal");
   const subtitle = document.getElementById("dispatch-question-subtitle");
@@ -3067,13 +3371,13 @@ function renderDispatchQuestionModal() {
   subtitle.textContent = formatDispatchOpsEntityLabel(entity);
   context.innerHTML = [
     ["Elérhetőségi helyszín", titboxEntry.reportedLocation || "-"],
-    ["Következő indulási idő", formatTime(titboxEntry.nextDepartureAt) || "-"],
+    ["Következő indulási idő", formatDateTime(titboxEntry.nextDepartureAt) || "-"],
     ["Heti maradék", formatDuration(titboxEntry.weeklyRemainingMin)],
     ["Kétheti maradék", formatDuration(titboxEntry.fortnightRemainingMin)],
-    ["Meddig tud dolgozni", formatTime(titboxEntry.canWorkUntil) || "-"],
+    ["Meddig tud dolgozni", formatDateTime(titboxEntry.canWorkUntil) || "-"],
     ["Sofőr kérése", titboxEntry.driverRequest || "-"],
-    ["Indíthatósági idő", formatTime(titboxEntry.driverReportedEta) || "-"],
-    ["Kalkulált ETA", formatTime(profile.eta?.correctedEta) || "-"]
+    ["Indíthatósági idő", formatDateTime(titboxEntry.driverReportedEta) || "-"],
+    ["Kalkulált ETA", formatDateTime(profile.eta?.correctedEta) || "-"]
   ].map(([label, value]) => {
     return `
       <div class="dispatch-question-context-item">
@@ -3144,6 +3448,65 @@ function onDispatchQuestionFormSubmit(event) {
   refreshDashboard({ preserveSelection: true, focusMode: "none" });
 }
 
+function onDispatchFieldConfirmationAction(entityKey, fieldKey, fieldLabel, currentValue) {
+  const titboxEntry = appState.titboxConfirmations[entityKey];
+  if (!titboxEntry || !Object.hasOwn(DISPATCH_FIELD_CONFIRM_META, fieldKey)) {
+    return;
+  }
+
+  ensureDispatchFieldConfirmations(titboxEntry);
+  const confirmation = titboxEntry.fieldConfirmations[fieldKey];
+  const nowIso = new Date().toISOString();
+  const fallbackQuestion = `Megerősíted ezt az értéket? (${fieldLabel}: ${currentValue || "-"})`;
+
+  const questionMessage = window.prompt(
+    `${fieldLabel} visszakérdezés üzenete a sofőrnek`,
+    confirmation.questionMessage || fallbackQuestion
+  );
+
+  if (questionMessage === null) {
+    return;
+  }
+
+  const normalizedQuestion = String(questionMessage || "").trim() || fallbackQuestion;
+  confirmation.status = "question";
+  confirmation.questionMessage = normalizedQuestion;
+  confirmation.askedAt = nowIso;
+  confirmation.respondedAt = null;
+  confirmation.rejectedReplacement = "";
+
+  const response = window.prompt(
+    `${fieldLabel} - sofőr válasza\nÜresen hagyva: még nincs válasz\n\"ok\": elfogadta\nMinden más szöveg: elutasította, és ez lesz a helyette megadott érték`,
+    ""
+  );
+
+  const normalizedResponse = String(response || "").trim();
+  if (normalizedResponse) {
+    if (/^(ok|igen|elfogadta|elfogadom|jo|jó)$/i.test(normalizedResponse)) {
+      confirmation.status = "accepted";
+      confirmation.respondedAt = nowIso;
+    } else {
+      confirmation.status = "rejected";
+      confirmation.respondedAt = nowIso;
+      confirmation.rejectedReplacement = normalizedResponse;
+    }
+  }
+
+  titboxEntry.latestDispatcherQuestion = {
+    message: normalizedQuestion,
+    askedAt: nowIso,
+    status: confirmation.status === "question" ? "open" : "answered",
+    fieldKey,
+    driverResponse: confirmation.status === "accepted"
+      ? "Elfogadta"
+      : confirmation.status === "rejected"
+        ? confirmation.rejectedReplacement
+        : "Nincs még válasz"
+  };
+
+  renderDispatchOpsPanels(appState.profiles, new Date());
+}
+
 function isKornyeAvailabilityLocation(rawLocation) {
   return normalizeText(rawLocation).includes("kornye");
 }
@@ -3190,44 +3553,164 @@ function compareDispatchSortMeta(leftMeta, rightMeta) {
   return 0;
 }
 
-function resolveComputedRowState(entity, entry) {
-  if (entry?.pushSentAt) {
-    return "push-sent";
+function resolveDispatchFuvarForBlock(block) {
+  if (!block?.fuvarId) {
+    return null;
   }
 
-  const profile = entity.primaryProfile;
-  const fuvar = profile?.activeFuvar?.fuvar;
-  const block = profile?.activeFuvar?.block;
-  const viszonylat = fuvar?.viszonylat || block?.kategoria || "";
-
-  if (viszonylat === "import") {
-    return "loaded-returning";
-  }
-
-  if (viszonylat === "export") {
-    const hasLinked = fuvar?.utofutasImportFuvarId || fuvar?.kapcsoltImportFuvarId;
-    return hasLinked ? "has-import" : "outbound-no-import";
-  }
-
-  if (viszonylat === "belfold") {
-    if (fuvar?.utofutasImportFuvarId || fuvar?.kapcsoltImportFuvarId) {
-      return "has-import";
-    }
-    return "outbound-no-import";
-  }
-
-  // Demo fallback: determinisztikusan szétterítjük az állapotokat
-  const seed = makeSeed(entity.key);
-  const r = randomInt(seed + 7813, 0, 2);
-  return ["outbound-no-import", "has-import", "loaded-returning"][r];
+  return FUVAROK.find((item) => item.id === block.fuvarId) || null;
 }
 
-const COMPUTED_ROW_STATE_LABELS = {
-  "outbound-no-import": "Kifelé tart, nincs importja",
-  "has-import": "Van importja, de még nem kezdte el",
-  "loaded-returning": "Megrakodott, visszafelé tart",
-  "push-sent": "Push üzenet ki lett küldve"
-};
+function resolveDispatchTestStateOverride(profile) {
+  const note = String(profile?.primaryExportAssignment?.dispatchNote || "");
+  const match = note.match(/\[TESZT_ALLAPOT=([^\]]+)\]/i);
+  if (!match) {
+    return null;
+  }
+
+  const key = String(match[1] || "").trim().toLowerCase();
+  const allowed = new Set([
+    "outbound-no-import",
+    "outbound-with-import-not-started",
+    "import-loaded-returning",
+    "export-assigned-not-started",
+    "push-sent"
+  ]);
+
+  return allowed.has(key) ? key : null;
+}
+
+function resolveDispatchDirection(fuvar, block) {
+  if (fuvar?.viszonylat === "import" || fuvar?.utofutasImportFuvarId) {
+    return "import";
+  }
+
+  if (fuvar?.viszonylat === "export" || fuvar?.elofutasExportFuvarId) {
+    return "export";
+  }
+
+  const category = normalizeText(
+    fuvar?.kategoria
+    || fuvar?.viszonylat
+    || block?.kategoria
+    || ""
+  );
+
+  if (category.includes("import")) {
+    return "import";
+  }
+
+  if (category.includes("export")) {
+    return "export";
+  }
+
+  return "other";
+}
+
+function resolveDispatchBlockTimes(block, fuvar) {
+  const startMs = new Date(block?.start || fuvar?.felrakas?.ido || "").getTime();
+  const endMs = new Date(block?.end || fuvar?.lerakas?.ido || "").getTime();
+
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+    return null;
+  }
+
+  return { startMs, endMs };
+}
+
+function buildDispatchTimelineEntries(profile) {
+  const blocks = Array.isArray(profile?.rig?.fuvarBlocks) ? profile.rig.fuvarBlocks : [];
+
+  return blocks
+    .map((block) => {
+      const fuvar = resolveDispatchFuvarForBlock(block);
+      const times = resolveDispatchBlockTimes(block, fuvar);
+      if (!times) {
+        return null;
+      }
+
+      return {
+        block,
+        fuvar,
+        direction: resolveDispatchDirection(fuvar, block),
+        ...times
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => left.startMs - right.startMs);
+}
+
+function resolveComputedAvailabilityRowState(entity, now = new Date()) {
+  const profile = entity?.primaryProfile;
+  const forcedState = resolveDispatchTestStateOverride(profile);
+  if (forcedState) {
+    return {
+      key: forcedState,
+      rowClass: `row-state-${forcedState}`
+    };
+  }
+
+  const titboxEntry = appState.titboxConfirmations[entity?.key];
+  if (titboxEntry?.pushSentAt) {
+    return {
+      key: "push-sent",
+      rowClass: "row-state-push-sent"
+    };
+  }
+
+  const timelineEntries = buildDispatchTimelineEntries(profile);
+  const nowMs = Number.isFinite(now?.getTime()) ? now.getTime() : Date.now();
+
+  const activeImport = timelineEntries.find((entry) => {
+    return entry.direction === "import" && entry.startMs <= nowMs && entry.endMs > nowMs;
+  });
+
+  if (activeImport) {
+    return {
+      key: "import-loaded-returning",
+      rowClass: "row-state-import-loaded-returning"
+    };
+  }
+
+  const activeExport = timelineEntries.find((entry) => {
+    return entry.direction === "export" && entry.startMs <= nowMs && entry.endMs > nowMs;
+  });
+
+  const futureImport = timelineEntries.find((entry) => {
+    return entry.direction === "import" && entry.startMs > nowMs;
+  });
+
+  if (activeExport && futureImport) {
+    return {
+      key: "outbound-with-import-not-started",
+      rowClass: "row-state-outbound-with-import-not-started"
+    };
+  }
+
+  if (activeExport) {
+    return {
+      key: "outbound-no-import",
+      rowClass: "row-state-outbound-no-import"
+    };
+  }
+
+  const futureExport = timelineEntries.find((entry) => {
+    return entry.direction === "export" && entry.startMs > nowMs;
+  });
+
+  const hasExportAssignment = Boolean((profile?.exportAssignments || []).length) || Boolean(futureExport);
+  if (hasExportAssignment) {
+    return {
+      key: "export-assigned-not-started",
+      rowClass: "row-state-export-assigned-not-started"
+    };
+  }
+
+  return {
+    key: "none",
+    rowClass: ""
+  };
+}
 
 function buildDispatchThBtn(panelKey, colKey, label) {
   const sort = appState.dispatchTableSort[panelKey] || {};
@@ -3273,9 +3756,11 @@ function renderDispatchOpsPanels(profiles, now) {
   }
 
   const selectedExportDate = getSelectedExportDate();
-  const dispatchProfiles = profiles.filter((profile) => (profile.exportAssignments || []).length > 0);
+  const dispatchProfiles = profiles.filter((profile) => {
+    return doesProfileCompleteImportExportOnDate(profile, selectedExportDate);
+  });
   if (!dispatchProfiles.length) {
-    renderDispatchOpsEmpty(kornyeList, "A kiválasztott dátumhoz nincs megjeleníthető gépjárművezető.");
+    renderDispatchOpsEmpty(kornyeList, "A kiválasztott napon nincs import vagy export feladatot befejező gépjárművezető.");
     renderDispatchOpsEmpty(titboxList, "A kiválasztott dátumhoz még nincs sofőr visszaigazolás.");
     if (dispatcherList) {
       dispatcherList.textContent = "A kiválasztott dátumhoz még nincs fogható erőforrás rögzítve.";
@@ -3382,17 +3867,12 @@ function renderDispatchOpsPanels(profiles, now) {
         return fuvar?.megnevezes ? `${fuvar.id} ${fuvar.megnevezes}`.toLowerCase() : "";
       }
       if (col === "eta") return new Date(profile.eta?.correctedEta || "").getTime() || 0;
+      if (col === "arrival") return new Date(profile.eta?.baseEta || "").getTime() || 0;
       if (col === "location") return (profile.driver.jelenlegi_pozicio?.hely || "").toLowerCase();
       if (col === "push") return entry?.pushSentAt ? 1 : 0;
       return "";
     });
-    kornyeList.innerHTML = `<div class="dispatch-ops-state-legend">
-            <span class="dispatch-ops-legend-item legend-outbound-no-import">Kifelé tart, nincs importja</span>
-            <span class="dispatch-ops-legend-item legend-has-import">Van importja, de még nem kezdte el</span>
-            <span class="dispatch-ops-legend-item legend-loaded-returning">Megrakodott, visszafelé tart</span>
-            <span class="dispatch-ops-legend-item legend-push-sent">Push üzenet ki lett küldve</span>
-          </div>
-          <div class="dispatch-ops-table-wrapper">
+    kornyeList.innerHTML = `<div class="dispatch-ops-table-wrapper">
       <table class="dispatch-ops-table dispatch-ops-table-computed">
         <thead>
           <tr>
@@ -3400,6 +3880,7 @@ function renderDispatchOpsPanels(profiles, now) {
             <th>${buildDispatchThBtn("computed", "risk", "Kockázat")}</th>
             <th>${buildDispatchThBtn("computed", "fuvar", "Fuvarfeladat")}</th>
             <th>${buildDispatchThBtn("computed", "eta", "Indíthatósági idő")}</th>
+            <th>${buildDispatchThBtn("computed", "arrival", "Várható érkezési idő")}</th>
             <th>${buildDispatchThBtn("computed", "location", "Helyszín")}</th>
             <th>${buildDispatchThBtn("computed", "push", "Push")}</th>
             <th class="dispatch-ops-th-static">Műveletek</th>
@@ -3410,21 +3891,23 @@ function renderDispatchOpsPanels(profiles, now) {
             const profile = entity.primaryProfile;
             const entry = appState.titboxConfirmations[entity.key];
             const fuvar = profile.activeFuvar?.fuvar;
+            const rowState = resolveComputedAvailabilityRowState(entity, now);
             const fuvarLabel = fuvar?.megnevezes
               ? `${fuvar.id} • ${fuvar.megnevezes}`
               : "Nincs hozzárendelt fuvarfeladat";
-            const rowState = resolveComputedRowState(entity, entry);
-            const pushFlagLabel = entry?.pushSentAt ? "Push elküldve" : "PUSH HIÁNYZIK";
-            const pushFlagClass = entry?.pushSentAt ? "push-sent" : "push-pending";
+            const pushPending = !entry?.pushSentAt;
+            const pushFlagLabel = pushPending ? "PUSH HIÁNYZIK" : "Push elküldve";
+            const pushFlagClass = pushPending ? "push-pending" : "push-sent";
             const etaLead = formatEtaLeadTime(profile.eta.nowToEtaMin);
             const etaMeta = etaLead ? ` • ${etaLead} múlva` : "";
-            const stateLabel = COMPUTED_ROW_STATE_LABELS[rowState] || "";
+            const expectedArrival = formatDateTime(profile.eta.baseEta);
             return `
-          <tr class="dispatch-ops-row dispatch-ops-row-state-${escapeHtml(rowState)}" title="${escapeHtml(stateLabel)}">
+          <tr class="dispatch-ops-row ${pushPending ? "row-push-pending" : "row-push-sent"} ${rowState.rowClass}" data-dispatch-row-state="${escapeHtml(rowState.key)}">
             <td class="dispatch-ops-td-driver"><div class="dispatch-ops-driver-list">${buildDispatchOpsDriverMarkup(entity)}</div></td>
             <td><span class="dispatch-ops-chip ${escapeHtml(profile.risk.level)}">${escapeHtml(profile.risk.label)}</span></td>
             <td class="dispatch-ops-td-fuvar">${escapeHtml(fuvarLabel)}</td>
-            <td class="dispatch-ops-td-time">${escapeHtml(formatTime(profile.eta.correctedEta))}${escapeHtml(etaMeta)}</td>
+            <td class="dispatch-ops-td-time">${escapeHtml(formatDateTime(profile.eta.correctedEta))}${escapeHtml(etaMeta)}</td>
+            <td class="dispatch-ops-td-time">${escapeHtml(expectedArrival)}</td>
             <td class="dispatch-ops-td-location">${escapeHtml(profile.driver.jelenlegi_pozicio?.hely || "—")}</td>
             <td><span class="dispatch-ops-push-flag ${pushFlagClass}">${pushFlagLabel}</span></td>
             <td class="dispatch-ops-td-actions">
@@ -3471,14 +3954,38 @@ function renderDispatchOpsPanels(profiles, now) {
             const profile = entity.primaryProfile;
             const entry = appState.titboxConfirmations[entity.key];
             const hasQuestion = Boolean(entry.latestDispatcherQuestion);
+            const departureMarkup = buildDispatchFieldConfirmationMarkup(
+              entity.key,
+              "departure",
+              entry,
+              formatDateTime(entry.nextDepartureAt)
+            );
+            const weeklyMarkup = buildDispatchFieldConfirmationMarkup(
+              entity.key,
+              "weekly",
+              entry,
+              formatDuration(entry.weeklyRemainingMin)
+            );
+            const fortnightMarkup = buildDispatchFieldConfirmationMarkup(
+              entity.key,
+              "fortnight",
+              entry,
+              formatDuration(entry.fortnightRemainingMin)
+            );
+            const canWorkMarkup = buildDispatchFieldConfirmationMarkup(
+              entity.key,
+              "canwork",
+              entry,
+              formatDateTime(entry.canWorkUntil)
+            );
             return `
           <tr class="dispatch-ops-row dispatch-ops-row-driver-confirmed${hasQuestion ? " has-followup" : ""}">
             <td class="dispatch-ops-td-driver"><div class="dispatch-ops-driver-list">${buildDispatchOpsDriverMarkup(entity)}</div></td>
             <td>${escapeHtml(entry.reportedLocation)}</td>
-            <td class="dispatch-ops-td-time">${escapeHtml(formatTime(entry.nextDepartureAt))}</td>
-            <td class="dispatch-ops-td-time">${escapeHtml(formatDuration(entry.weeklyRemainingMin))}</td>
-            <td class="dispatch-ops-td-time">${escapeHtml(formatDuration(entry.fortnightRemainingMin))}</td>
-            <td class="dispatch-ops-td-time">${escapeHtml(formatTime(entry.canWorkUntil))}</td>
+            <td class="dispatch-ops-td-time">${departureMarkup}</td>
+            <td class="dispatch-ops-td-time">${weeklyMarkup}</td>
+            <td class="dispatch-ops-td-time">${fortnightMarkup}</td>
+            <td class="dispatch-ops-td-time">${canWorkMarkup}</td>
             <td class="dispatch-ops-td-request">${escapeHtml(entry.driverRequest || "—")}${hasQuestion ? `<div class="dispatch-ops-followup-inline">↩ ${escapeHtml(entry.latestDispatcherQuestion.message)}</div>` : ""}</td>
             <td class="dispatch-ops-td-actions">
               <button type="button" class="dispatch-ops-btn" data-titbox-action="open-dispatch-question" data-entity-key="${escapeHtml(entity.key)}">Visszakérdezés</button>
@@ -3527,6 +4034,7 @@ function ensureDispatchOpsState(entities, now) {
     const primaryProfile = entity.primaryProfile;
     const seed = makeSeed(entity.key);
     const locationLabel = primaryProfile.predictionEvents?.[0]?.locationLabel || primaryProfile.driver.jelenlegi_pozicio?.hely || "ismeretlen";
+    const forcedState = resolveDispatchTestStateOverride(primaryProfile);
 
     if (!appState.titboxConfirmations[entity.key]) {
       const etaOffsetMin = randomInt(seed + 901, -20, 24);
@@ -3547,6 +4055,8 @@ function ensureDispatchOpsState(entities, now) {
       };
     }
 
+    ensureDispatchFieldConfirmations(appState.titboxConfirmations[entity.key]);
+
     if (!appState.dispatcherAvailability[entity.key]) {
       appState.dispatcherAvailability[entity.key] = {
         agreedArrivalAt: addMinutes(primaryProfile.eta.correctedEta, randomInt(seed + 947, -8, 8)),
@@ -3554,6 +4064,10 @@ function ensureDispatchOpsState(entities, now) {
         updatedAt: now,
         recordedAt: null
       };
+    }
+
+    if (forcedState === "push-sent" && !appState.titboxConfirmations[entity.key].pushSentAt) {
+      appState.titboxConfirmations[entity.key].pushSentAt = now;
     }
   });
 }
@@ -3634,6 +4148,12 @@ function onTitboxPanelClick(event) {
   } else if (action === "open-dispatch-question") {
     openDispatchQuestionModal(entityKey);
     return;
+  } else if (action === "ask-field-confirmation") {
+    const fieldKey = String(button.dataset.fieldKey || "").trim();
+    const fieldLabel = String(button.dataset.fieldLabel || "").trim() || DISPATCH_FIELD_CONFIRM_META[fieldKey]?.label || "Mező";
+    const fieldValue = String(button.dataset.fieldValue || "").trim();
+    onDispatchFieldConfirmationAction(entityKey, fieldKey, fieldLabel, fieldValue);
+    return;
   } else if (action === "mark-driver-confirmed") {
     titboxEntry.confirmedAt = now;
   } else if (action === "mark-dispatcher-confirmed" || action === "mark-confirmed") {
@@ -3664,6 +4184,25 @@ function onTitboxPanelKeydown(event) {
 }
 
 function onDriverListClick(event) {
+  const finalizationButton = event.target.closest('[data-action="toggle-driver-finalization"]');
+  if (finalizationButton && event.currentTarget.contains(finalizationButton)) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const driverIds = String(finalizationButton.dataset.driverIds || "")
+      .split(",")
+      .map((item) => String(item || "").trim())
+      .filter(Boolean);
+
+    if (!driverIds.length) {
+      return;
+    }
+
+    toggleDriversFinalized(driverIds);
+    refreshDashboard({ preserveSelection: true, focusMode: "none" });
+    return;
+  }
+
   if (event.target.closest("input, textarea, select, button, label")) {
     return;
   }
@@ -4066,6 +4605,21 @@ function formatEtaLeadTime(totalMinutes) {
 
 function formatTime(date) {
   return new Date(date).toLocaleTimeString("hu-HU", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function formatDateTime(date) {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) {
+    return "-";
+  }
+
+  return parsed.toLocaleString("hu-HU", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit"
   });

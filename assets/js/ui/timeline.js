@@ -11,6 +11,8 @@ import { FUVAROK } from "../data/fuvarok.js";
 import { evaluateFuvarTags, getResourceMatchSortValue, sortResourcesByMatchQuality } from "./matching.js";
 import { getCategoryPalette } from "./colors.js";
 import { buildSoforMetaTooltip, renderSoforMetaBadges } from "./sofor-display-meta.js";
+import { isDriverFinalized } from "../core/driver-finalization-state.js";
+import { getDriverDispatchNote } from "../core/driver-dispatch-notes-state.js";
 
 const HOUR_WIDTH = 40;               // 1 óra = 40px
 const TIMELINE_HOURS = 72;           // 3 nap
@@ -158,6 +160,14 @@ function bindTimelineBlockHoverTooltip(target, content) {
 window.addEventListener("fuvar:focus", (event) => {
   focusedFuvarId = event?.detail?.fuvarId || null;
   focusTimelineToFuvarPickup(focusedFuvarId);
+});
+
+window.addEventListener("driver-finalization-changed", () => {
+  rerenderCurrentTimeline();
+});
+
+window.addEventListener("driver-dispatch-note-changed", () => {
+  rerenderCurrentTimeline();
 });
 
 function normalizeSearchText(value) {
@@ -648,17 +658,61 @@ function applySoforPairPrioritySortTL(list, compareWithinBucket) {
 }
 
 function applySoforSortTL(list) {
+  const applyFinalizedPriority = (sorted) => {
+    return [...sorted]
+      .map((sofor, index) => ({ sofor, index }))
+      .sort((left, right) => {
+        const leftFinalized = isDriverFinalized(left.sofor?.id);
+        const rightFinalized = isDriverFinalized(right.sofor?.id);
+
+        if (leftFinalized !== rightFinalized) {
+          return leftFinalized ? -1 : 1;
+        }
+
+        if (leftFinalized && rightFinalized) {
+          const getFinalizedCategoryPriority = (sofor) => {
+            if (String(sofor?.kezes || "") === "2") {
+              return 0;
+            }
+
+            const tipus = normalizeSearchText(sofor?.tipus || "");
+            if (tipus.includes("nemzetkozi")) {
+              return 1;
+            }
+
+            if (tipus.includes("belfold")) {
+              return 2;
+            }
+
+            return 3;
+          };
+
+          const categoryDiff = getFinalizedCategoryPriority(left.sofor) - getFinalizedCategoryPriority(right.sofor);
+          if (categoryDiff !== 0) {
+            return categoryDiff;
+          }
+        }
+
+        return left.index - right.index;
+      })
+      .map(({ sofor }) => sofor);
+  };
+
   const state = window._soforSortState;
   if (!state?.columnId) {
-    return applySoforPairPrioritySortTL(sortResourcesByMatch(list), () => 0);
+    return applyFinalizedPriority(applySoforPairPrioritySortTL(sortResourcesByMatch(list), () => 0));
   }
   const dir = state.direction === "asc" ? 1 : -1;
   if (state.columnId === "abc") {
-    return applySoforPairPrioritySortTL(list, (a, b) => getSoforSortNameTL(a).localeCompare(getSoforSortNameTL(b), "hu-HU") * dir);
+    return applyFinalizedPriority(
+      applySoforPairPrioritySortTL(list, (a, b) => getSoforSortNameTL(a).localeCompare(getSoforSortNameTL(b), "hu-HU") * dir)
+    );
   }
-  return applySoforPairPrioritySortTL(list, (a, b) => {
-    return (getSoforSortValueTL(a, state.columnId) - getSoforSortValueTL(b, state.columnId)) * dir;
-  });
+  return applyFinalizedPriority(
+    applySoforPairPrioritySortTL(list, (a, b) => {
+      return (getSoforSortValueTL(a, state.columnId) - getSoforSortValueTL(b, state.columnId)) * dir;
+    })
+  );
 }
 
 function buildTimelineSoforSortBar() {
@@ -2668,8 +2722,14 @@ function renderResourceRow(parent, r, type) {
   row.dataset.resourceType = type;
   row.dataset.resourceId = r.id;
 
+  const isFinalizedSofor = type === "sofor" && isDriverFinalized(r.id);
+  if (isFinalizedSofor) {
+    row.classList.add("sofor-finalized");
+  }
+
   const displayName = r.rendszam || r.nev || "-";
   const location = r.jelenlegi_pozicio?.hely || "-";
+  const dispatchNote = type === "sofor" ? getDriverDispatchNote(r.id) : "";
   row.dataset.searchText = normalizeSearchText(`${displayName} ${location}`);
 
   // MATCHING HIGHLIGHT (ok/bad/warn)
@@ -2693,6 +2753,10 @@ function renderResourceRow(parent, r, type) {
     name.classList.add("match-bad");
   } else if (r.matchGrade === "warn") {
     name.classList.add("match-warn");
+  }
+
+  if (isFinalizedSofor) {
+    name.classList.add("sofor-finalized");
   }
 
   name.dataset.resourceType = type;
@@ -2755,6 +2819,25 @@ function renderResourceRow(parent, r, type) {
     ${partnerMeta}
     ${matchReasonsHtml}
   `;
+
+  if (type === "sofor" && dispatchNote) {
+    name.classList.add("has-dispatch-note");
+
+    const noteIndicator = document.createElement("span");
+    noteIndicator.className = "driver-dispatch-note-indicator";
+    noteIndicator.setAttribute("aria-label", "Menetirányítói megjegyzés");
+    noteIndicator.textContent = "💬";
+
+    const noteTooltip = document.createElement("span");
+    noteTooltip.className = "driver-dispatch-note-tooltip";
+    noteTooltip.textContent = dispatchNote;
+
+    noteIndicator.appendChild(noteTooltip);
+    noteIndicator.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
+    name.appendChild(noteIndicator);
+  }
 
   if (type === "sofor") {
     name.title = [buildSoforMetaTooltip(r), ...(r.matchReasons || [])].filter(Boolean).join("\n");

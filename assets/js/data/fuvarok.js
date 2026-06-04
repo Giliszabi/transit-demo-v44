@@ -6,19 +6,77 @@ const FINAL_FUVAR_DATE_SHIFT_DAYS = 20;
 const GLOBAL_EARLIER_SHIFT_DAYS = -10;
 const GLOBAL_FINAL_PLUS_DAYS = 15;
 const MEBIZO_COMPANIES = [
-  "Hankook Tire Magyarorszag Kft",
-  "NNOCORE VISION KFT",
   "PANADDITÍV KFT",
   "Grundfos Operation A/S",
-  "SCHENKER Neutraubling",
-  "NTG GONDRAND KFT",
+  "DHL FREIGHT MAGYARORSZÁG KFT",
+  "EVI Precíziós Termelés & EHS Kereskedelmi és Szolgáltató Korlátolt Felelősségű Társaság",
+  "Zoltek Vegyipari Zártkörűen Működő Részvénytársaság",
+  "DÖHLER HUNGARY KFT",
+  "CHEMARK NÖVÉNYVÉDŐSZER GYÁRTÓ ZRT",
   "KÜHNE + NAGEL KFT",
-  "UNITED SHIPPING HUNGÁRIA KFT",
+  "XPO Logistics Netherlands B.V",
   "DONECK PRONAT KFT",
-  "XPO Transport Solutions Netherlands BV",
-  "Hummels Trade Kft",
-  "DHL FREIGHT MAGYARORSZÁG KFT"
+  "NTG GONDRAND KFT",
+  "Jan de Rijk Freight Solutions B.V.",
+  "UNITED SHIPPING HUNGÁRIA Korlátolt Felelősségű Társaság",
+  "SCHENKER DEUTSCHLAND AG",
+  "QUEHENBERGER LOGISTICS HU KFT",
+  "Apollo Tyres (Europe) B.V.",
+  "BAV TATABÁNYA KFT",
+  "VDH TRANSPORT B.V.",
+  "Hamann International logistics BV",
+  "VaLa logistics sro",
+  "AGROFEED KFT.",
+  "Becton Dickinson Hungary Kereskedelmi Korlátolt Felelősségű Társaság",
+  "HANKOOK TIRE MAGYARORSZÁG KFT",
+  "HOWMET - KÖFÉM KFT",
+  "H. WILHELM SCHAUMANN ÁLLATTAKARMÁNYOZÁSI KFT",
+  "OTTO FUCHS HUNGARY KFT",
+  "HRT Spedition Kft",
+  "MAGYARÜDÍTŐ FORGALMAZÓ KFT",
+  "WELPA TRANS Kft",
+  "BRIDGESTONE EUROPE NV/SA NV",
+  "Coolbridge Kft.",
+  "MB-Fracht s.r.o.",
+  "Sonoco Metal Packaging Magyarország Kft.",
+  "Nifast Hungary Kft.",
+  "DSV Hungária Szállítmányozási Kft",
+  "BAR-LOG Szállítmányozási és Szolgáltató Korlátolt Felelősségű Társaság",
+  "RABEN TRANS EUROPEAN HUNGARY KFT",
+  "NUNNER Logistics B.V.",
+  "Feintool System Parts Tokod Kft.",
+  "GEDIA Hungary Fém, Műanyag Ipari és Kereskedelmi Korlátolt Felelősségű Társaság",
+  "Liquid Gold Kft",
+  "Gabriel Transport Kft.",
+  "DSV ROAD A/S",
+  "CARGOPORT SZÁLLÍTMÁNYOZÁSI ÉS LOG. KFT",
+  "RRUGA Logistics GmbH",
+  "LAPIDIBUS KFT.",
+  "Geis PL Sp. z o.o.",
+  "Transdanubia Logisztikai Kft",
+  "TRANSPORT VEDROVA NV",
+  "Reckitt Benckiser (ENA) B.V.",
+  "RECKITT BENCKISER TATABÁNYA KFT.",
+  "Flexlog Kereskedelmi és Szolgáltató Kft",
+  "SAMSUNG SDS GLOBAL SCL HUNGARY KFT",
+  "Bridgestone Hispania Manufacturing, SL",
+  "Reckitt Benckiser Health Limited",
+  "EH Group B.V.",
+  "Ertl Faipari Kft.",
+  "FIERS MECHANIKA KFT.",
+  "EUROGATE Logisztikai Kft.",
+  "HUNCARGO FORWARDING KFT",
+  "NAGY ÉS FIA Méhészeti és Kereskedelmi Korlátolt Felelősségű Társaság",
+  "3B Scientific Europe Kft.",
+  "TRANSINTERTOP Szállítmányozási és Fuvarozó Korlátolt Felelősségű Társaság",
+  "PETROLSPED KFT",
+  "VÉRTES KERESKEDŐHÁZ KFT",
+  "AIRMAX CARGO BUDAPEST ZRT"
 ];
+
+function isWorkbookDerivedFuvar(fuvar) {
+  return fuvar?.sourceDataset === "workbook" || fuvar?.sourceDataset === "workbook-relay";
+}
 
 function shiftIsoDateByDays(isoString, days) {
   if (!isoString) {
@@ -36,6 +94,10 @@ function shiftIsoDateByDays(isoString, days) {
 
 function shiftFuvarDatesInPlace(fuvarokList, days) {
   fuvarokList.forEach((fuvar) => {
+    if (isWorkbookDerivedFuvar(fuvar)) {
+      return;
+    }
+
     if (fuvar?.felrakas?.ido) {
       fuvar.felrakas.ido = shiftIsoDateByDays(fuvar.felrakas.ido, days);
     }
@@ -107,10 +169,23 @@ function syncLinkedRelayWindow(relayFuvar, linkedFuvar, mode) {
 }
 
 function assignFocusedFuvarDays(fuvarokList) {
-  const exportRelayList = fuvarokList.filter((fuvar) => fuvar?.viszonylat === "belfold" && fuvar?.elofutasExportFuvarId).slice(0, 2);
-  const importRelayList = fuvarokList.filter((fuvar) => fuvar?.viszonylat === "belfold" && fuvar?.utofutasImportFuvarId).slice(0, 2);
+  const exportRelayList = fuvarokList.filter((fuvar) => {
+    return fuvar?.viszonylat === "belfold"
+      && fuvar?.elofutasExportFuvarId
+      && !isWorkbookDerivedFuvar(fuvar);
+  }).slice(0, 2);
+  const importRelayList = fuvarokList.filter((fuvar) => {
+    return fuvar?.viszonylat === "belfold"
+      && fuvar?.utofutasImportFuvarId
+      && !isWorkbookDerivedFuvar(fuvar);
+  }).slice(0, 2);
   const regularDomesticList = fuvarokList
-    .filter((fuvar) => fuvar?.viszonylat === "belfold" && !fuvar?.elofutasExportFuvarId && !fuvar?.utofutasImportFuvarId)
+    .filter((fuvar) => {
+      return fuvar?.viszonylat === "belfold"
+        && !fuvar?.elofutasExportFuvarId
+        && !fuvar?.utofutasImportFuvarId
+        && !isWorkbookDerivedFuvar(fuvar);
+    })
     .slice(0, 2);
 
   exportRelayList.forEach((relayFuvar) => {
@@ -164,6 +239,10 @@ function getStableCompanyIndex(seed) {
 
 function assignMegbizoCompanies(fuvarokList) {
   fuvarokList.forEach((fuvar, index) => {
+    if (isWorkbookDerivedFuvar(fuvar)) {
+      return;
+    }
+
     const companyIndex = (getStableCompanyIndex(fuvar?.id || index) + index) % MEBIZO_COMPANIES.length;
     const companyName = MEBIZO_COMPANIES[companyIndex];
 
@@ -252,6 +331,10 @@ function generateRelayFuvarok(fuvarokList) {
 
   const result = [];
   fuvarokList.forEach((fuvar) => {
+    if (String(fuvar?.id || "").startsWith("ELO-") || String(fuvar?.id || "").startsWith("UTO-")) {
+      return;
+    }
+
     const felC = String(fuvar?.felrakas?.cim || "");
     const leC = String(fuvar?.lerakas?.cim || "");
 
@@ -264,13 +347,17 @@ function generateRelayFuvarok(fuvarokList) {
         id: `ELO-${fuvar.id}`,
         megnevezes: `Előfutás – ${felC} → Környe [${fuvar.id}]`,
         viszonylat: "belfold",
+        kategoria: "belfold",
         fixedDomestic: true,
         felrakas: { cim: felC, ido: addMinutes(startIdo, -travelMinutes) },
         lerakas: { cim: "Környe, Telephely", ido: startIdo },
         tavolsag_km: distanceKm,
         adr: false,
         surgos: false,
-        elofutasExportFuvarId: fuvar.id
+        elofutasExportFuvarId: fuvar.id,
+        megbizo: fuvar.megbizo,
+        megbizoRovid: fuvar.megbizoRovid,
+        sourceDataset: isWorkbookDerivedFuvar(fuvar) ? "workbook-relay" : undefined
       });
     }
 
@@ -283,20 +370,27 @@ function generateRelayFuvarok(fuvarokList) {
         id: `UTO-${fuvar.id}`,
         megnevezes: `Utófutás – Környe → ${leC} [${fuvar.id}]`,
         viszonylat: "belfold",
+        kategoria: "belfold",
         fixedDomestic: true,
         felrakas: { cim: "Környe, Telephely", ido: endIdo },
         lerakas: { cim: leC, ido: addMinutes(endIdo, travelMinutes) },
         tavolsag_km: distanceKm,
         adr: false,
         surgos: false,
-        utofutasImportFuvarId: fuvar.id
+        utofutasImportFuvarId: fuvar.id,
+        megbizo: fuvar.megbizo,
+        megbizoRovid: fuvar.megbizoRovid,
+        sourceDataset: isWorkbookDerivedFuvar(fuvar) ? "workbook-relay" : undefined
       });
     }
   });
   return result;
 }
 
+const HAS_WORKBOOK_FUVAROK = FUVAROK_REAL.length > 0;
+
 export const FUVAROK = [
+  ...(HAS_WORKBOOK_FUVAROK ? [] : [
   // ═══ EXPORT fuvarok (30 db) ═══
   { id: "EX-001", megnevezes: "Export – Környe → München", viszonylat: "export", felrakas: { cim: "Magyarország, Környe, Ipari Park", ido: "2026-04-13T06:00" }, lerakas: { cim: "München, Logistik Hub", ido: "2026-04-13T16:00" }, tavolsag_km: 540, adr: false, surgos: false },
   { id: "EX-002", megnevezes: "Export – Tatabánya → Milano", viszonylat: "export", felrakas: { cim: "Magyarország, Tatabánya, Disztribúciós központ", ido: "2026-04-13T07:30" }, lerakas: { cim: "Milano, Hub Nord", ido: "2026-04-13T19:30" }, tavolsag_km: 920, adr: false, surgos: false },
@@ -382,6 +476,7 @@ export const FUVAROK = [
     assignedSoforId: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeSoforId,
     assignedVontatoId: DEMO_NEARBY_FREE_PAIR_SCENARIO.alternativeVontatoId
   },
+  ]),
   // --- Valós fuvarok (fuvarösszesítő_20260330150011.xlsx) ---
   ...FUVAROK_REAL,
   // --- Auto-generált előfutás / utófutás feladatok (Környe elosztó) ---
@@ -544,7 +639,7 @@ function extractDomesticCitiesFromName(name) {
 
 function syncDomesticEndpointsToName() {
   FUVAROK
-    .filter((fuvar) => fuvar.viszonylat === "belfold" && !fuvar.fixedDomestic)
+    .filter((fuvar) => fuvar.viszonylat === "belfold" && !fuvar.fixedDomestic && !isWorkbookDerivedFuvar(fuvar))
     .forEach((fuvar) => {
       const cities = extractDomesticCitiesFromName(fuvar.megnevezes);
       if (!cities) {
@@ -558,7 +653,9 @@ function syncDomesticEndpointsToName() {
 }
 
 function applyRandomDomesticEndpoints() {
-  const belfoldFuvarok = FUVAROK.filter((f) => f.viszonylat === "belfold" && !f.fixedDomestic);
+  const belfoldFuvarok = FUVAROK.filter((f) => {
+    return f.viszonylat === "belfold" && !f.fixedDomestic && !isWorkbookDerivedFuvar(f);
+  });
   const cityPool = [...BELFOLD_NAGYVAROSOK];
 
   shuffle(cityPool);

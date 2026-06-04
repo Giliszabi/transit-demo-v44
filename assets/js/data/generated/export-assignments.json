@@ -140905,7 +140905,7 @@
     "originalWorkPatternCode": "2/1.",
     "workPatternCode": "2_1",
     "plannerNote": "1 357,13 km",
-    "dispatchNote": "megbeszélve vele az uindulás",
+    "dispatchNote": "[TESZT_ALLAPOT=outbound-no-import] megbeszélve vele az uindulás",
     "sourceRow": 14640
   },
   {
@@ -140919,7 +140919,7 @@
     "originalWorkPatternCode": "1/1.",
     "workPatternCode": "1_1",
     "plannerNote": "2 412,32 km",
-    "dispatchNote": null,
+    "dispatchNote": "[TESZT_ALLAPOT=outbound-with-import-not-started]",
     "sourceRow": 14641
   },
   {
@@ -140933,7 +140933,7 @@
     "originalWorkPatternCode": "5+2",
     "workPatternCode": "5_2",
     "plannerNote": "347,54 km",
-    "dispatchNote": null,
+    "dispatchNote": "[TESZT_ALLAPOT=import-loaded-returning]",
     "sourceRow": 14642
   },
   {
@@ -140947,7 +140947,7 @@
     "originalWorkPatternCode": "11+3",
     "workPatternCode": "11_3",
     "plannerNote": "2 443,97 km",
-    "dispatchNote": null,
+    "dispatchNote": "[TESZT_ALLAPOT=push-sent]",
     "sourceRow": 14643
   },
   {

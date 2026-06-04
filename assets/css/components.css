@@ -648,6 +648,15 @@ summary.btn {
   opacity: 0.85;
 }
 
+.fuvar-card-latest-departure {
+  align-items: flex-start;
+}
+
+.fuvar-card-latest-departure .fuvar-card-item-value {
+  white-space: pre-line;
+  line-height: 1.35;
+}
+
 #fuvar-list {
   max-height: min(46vh, 520px);
   overflow: auto;
