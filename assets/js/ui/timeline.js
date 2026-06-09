@@ -212,6 +212,10 @@ function findFuvarByTimelineBlock(block) {
   }) || null;
 }
 
+function hasCompleteFuvarAssignment(fuvar) {
+  return Boolean(fuvar?.assignedSoforId && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId);
+}
+
 const JARAT_FUVAR_REVENUE_PER_KM = 420;
 const JARAT_FUVAR_COST_PER_KM = 255;
 const JARAT_EMPTY_COST_PER_KM = 185;
@@ -2929,6 +2933,11 @@ function renderResourceRow(parent, r, type) {
           <div class="timeline-block-compact-line">${urgentHtml}${transitRoleHtml}<strong>${route.pickup} → ${route.dropoff}</strong><span class="timeline-compact-separator">•</span><span>${startText} → ${endText}</span>${proximityHintHtml}</div>
           ${partnerSummaryHtml}
         `;
+
+        const linkedFuvar = findFuvarByTimelineBlock(visibleBlock) || findFuvarByTimelineBlock(block);
+        if (linkedFuvar && !hasCompleteFuvarAssignment(linkedFuvar)) {
+          div.classList.add("assignment-missing-resources");
+        }
       } else {
         div.innerHTML = `
           <div class="timeline-block-title"><strong>${visibleBlock.label}</strong></div>

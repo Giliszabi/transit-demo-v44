@@ -980,6 +980,7 @@ import { evaluateAllResources, evaluateFuvarokForResource } from "./assets/js/ui
 import { setDispatchProfile as setMatchingDispatchProfile } from "./assets/js/ui/matching.js";
 import {
   enableFuvarDrag,
+  enableFuvarDropTargets,
   enableTimelineDrop,
   enableResourceCardDrop,
   setDragDropRefreshHandler
@@ -3646,6 +3647,7 @@ function updateFuvarCardsByCurrentFilter() {
 
   renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, getFuvarCardRenderOptions());
   enableFuvarDrag();
+  enableFuvarDropTargets();
   restoreSelectedFuvarCard();
 }
 
@@ -3831,6 +3833,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   if (document.getElementById("fuvar-list")) {
     renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, getFuvarCardRenderOptions());
     enableFuvarDrag();
+    enableFuvarDropTargets();
   }
 
   ensureContinuousTimelines(SOFOROK, VONTATOK, POTKOCSIK);
@@ -4104,6 +4107,7 @@ function restoreElementScrollPosition(element, position) {
     if (document.getElementById("fuvar-list")) {
       renderFuvarCards("fuvar-list", currentFuvarFilter, onSelectFuvar, getFuvarCardRenderOptions());
       enableFuvarDrag();
+      enableFuvarDropTargets();
       restoreSelectedFuvarCard();
     }
 

@@ -600,6 +600,10 @@
     0 0 0 1px rgba(255, 103, 64, 0.38);
 }
 
+.timeline-block.assignment-missing-resources {
+  border: 2px dashed rgba(255, 255, 255, 0.96) !important;
+}
+
 .timeline-fuvar-focus-range {
   position: absolute;
   top: 4px;

@@ -157,6 +157,10 @@ function hasCompleteAssignmentValue(assignment = {}) {
   return Boolean(assignment.soforId && assignment.vontatoId && assignment.potkocsiId);
 }
 
+function hasCompleteFuvarAssignment(fuvar) {
+  return Boolean(fuvar?.assignedSoforId && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId);
+}
+
 function getSavedAssignmentForFuvar(fuvar) {
   return {
     soforId: fuvar?.assignedSoforId || null,
@@ -313,6 +317,7 @@ export function applyAssemblyAssignmentSync(fuvarId, assignment, options = {}) {
   return true;
 }
 
+/*
 function saveDraftAssembly(fuvarId, soforok, vontatok, potkocsik) {
   const entry = assemblyDraftAssignments.get(fuvarId);
   if (!entry) {
@@ -358,6 +363,7 @@ function saveDraftAssembly(fuvarId, soforok, vontatok, potkocsik) {
   rerenderCurrentAssemblyTimeline();
   return { ok: true };
 }
+*/
 
 function renderDraftAssemblyBoard(container, soforok, vontatok, potkocsik) {
   const host = document.createElement("section");
@@ -426,7 +432,7 @@ function renderDraftAssemblyBoard(container, soforok, vontatok, potkocsik) {
         <div class="assembly-draft-actions">
           <button type="button" class="assembly-draft-secondary-btn" data-action="focus-fuvar">Fuvar fókusz</button>
           <button type="button" class="assembly-draft-secondary-btn" data-action="discard-draft">Tervezet törlése</button>
-          <button type="button" class="assembly-draft-save-btn" data-action="save-draft" ${complete ? "" : "disabled"}>Szerelvény mentése</button>
+          <!-- <button type="button" class="assembly-draft-save-btn" data-action="save-draft" ${complete ? "" : "disabled"}>Szerelvény mentése</button> -->
         </div>
       </article>
     `;
@@ -472,20 +478,21 @@ function renderDraftAssemblyBoard(container, soforok, vontatok, potkocsik) {
     });
   });
 
-  list.querySelectorAll("[data-action='save-draft']").forEach((button) => {
-    button.addEventListener("click", () => {
-      const card = button.closest(".assembly-draft-card");
-      const fuvarId = card?.dataset.fuvarId;
-      if (!fuvarId) {
-        return;
-      }
-
-      const result = saveDraftAssembly(fuvarId, soforok, vontatok, potkocsik);
-      if (!result.ok && result.message) {
-        alert(result.message);
-      }
-    });
-  });
+  // Szerelveny mentes kikapcsolva, a drag&drop azonnal veglegesiti a hozzarendelest.
+  // list.querySelectorAll("[data-action='save-draft']").forEach((button) => {
+  //   button.addEventListener("click", () => {
+  //     const card = button.closest(".assembly-draft-card");
+  //     const fuvarId = card?.dataset.fuvarId;
+  //     if (!fuvarId) {
+  //       return;
+  //     }
+  //
+  //     const result = saveDraftAssembly(fuvarId, soforok, vontatok, potkocsik);
+  //     if (!result.ok && result.message) {
+  //       alert(result.message);
+  //     }
+  //   });
+  // });
 
   container.appendChild(host);
 }
@@ -2497,6 +2504,9 @@ function renderAssemblyRow(parent, assembly, soforok, vontatok, potkocsik, lifec
       ? '<span class="timeline-inline-urgent">SÜRGŐS</span>'
       : "";
     const linkedFuvar = findFuvarByBlock(visibleBlock);
+    if (linkedFuvar && !hasCompleteFuvarAssignment(linkedFuvar)) {
+      div.classList.add("assignment-missing-resources");
+    }
     const transitRoleInfo = getDomesticTransitRoleInfo(linkedFuvar);
     const transitRoleHtml = transitRoleInfo
       ? `<span class="timeline-inline-transit-role ${transitRoleInfo.role}">${transitRoleInfo.label}</span>`
@@ -3156,6 +3166,11 @@ function renderAssemblyJaratTimelineRow(parent, assembly, segment, lifecycleFuva
       div.style.setProperty("--timeline-block-border", palette.borderStrong);
       div.style.setProperty("--timeline-block-glow", palette.glow);
       div.style.setProperty("--timeline-block-accent", palette.accent);
+    }
+
+    const linkedFuvar = findFuvarByBlock(visibleBlock);
+    if (linkedFuvar && !hasCompleteFuvarAssignment(linkedFuvar)) {
+      div.classList.add("assignment-missing-resources");
     }
 
     const route = getAssemblyRouteForBlock(visibleBlock);

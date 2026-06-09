@@ -11,7 +11,7 @@ import { VONTATOK } from "../data/vontatok.js";
 import { POTKOCSIK } from "../data/potkocsik.js";
 import { renderTimeline, refreshAutoDriverStatesForLinkedConvoys, refreshAutoTransitBlocksForResource } from "./timeline.js";
 import { getFuvarTagMeta, getCategoryPalette } from "./colors.js";
-import { enableFuvarDrag } from "./dragdrop.js";
+import { enableFuvarDrag, enableFuvarDropTargets } from "./dragdrop.js";
 import { getDomesticTransitRoleInfo } from "./transit-relations.js";
 import { openAutoAssignModal } from "./auto-assign-modal.js";
 
@@ -537,11 +537,9 @@ function isFuvarPickupOnDayOffset(fuvar, dayOffset, referenceDate) {
 }
 
 function getFuvarAssignmentStatusKey(fuvar) {
-  const hasRequiredDrivers = fuvar?.onlyTwoKezesRequired
-    ? Boolean(fuvar?.assignedSoforId && fuvar?.assignedSecondarySoforId)
-    : Boolean(fuvar?.assignedSoforId);
+  const hasAnyDriver = Boolean(fuvar?.assignedSoforId || fuvar?.assignedSecondarySoforId);
 
-  if (hasRequiredDrivers && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId) {
+  if (hasAnyDriver && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId) {
     return "ready";
   }
 
@@ -1258,11 +1256,9 @@ function isHungaryAddress(address) {
 }
 
 function hasFullAssignment(fuvar) {
-  const hasRequiredDrivers = fuvar?.onlyTwoKezesRequired
-    ? Boolean(fuvar?.assignedSoforId && fuvar?.assignedSecondarySoforId)
-    : Boolean(fuvar?.assignedSoforId);
+  const hasAnyDriver = Boolean(fuvar?.assignedSoforId || fuvar?.assignedSecondarySoforId);
 
-  return Boolean(hasRequiredDrivers && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId);
+  return Boolean(hasAnyDriver && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId);
 }
 
 function hasSameTrio(leftFuvar, rightFuvar) {
@@ -3481,12 +3477,17 @@ function buildChainRootDisplayData(rootModel, stageModels) {
     displayFuvar.tavolsag_km = Math.round(totalDistanceKm);
   }
 
+  const rootStatusKey = rootModel?.context?.assignmentStatusKey || getFuvarAssignmentStatusKey(rootFuvar);
   const stageStatusKeys = stageModels.map((stageModel) => stageModel?.context?.assignmentStatusKey || "unassigned");
-  const aggregateStatusKey = stageStatusKeys.every((key) => key === "ready")
+  const aggregateStatusKey = rootStatusKey === "ready"
     ? "ready"
-    : stageStatusKeys.some((key) => key === "ready" || key === "planning")
+    : rootStatusKey === "planning"
       ? "planning"
-      : "unassigned";
+      : stageStatusKeys.every((key) => key === "ready")
+        ? "ready"
+        : stageStatusKeys.some((key) => key === "ready" || key === "planning")
+          ? "planning"
+          : "unassigned";
   const aggregateStatusLabel = aggregateStatusKey === "ready"
     ? "✅ Kész"
     : aggregateStatusKey === "planning"
@@ -3746,6 +3747,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
 
       renderFuvarCards(containerId, filter, onSelectFuvar, options);
       enableFuvarDrag();
+      enableFuvarDropTargets();
     });
   });
 
@@ -3844,6 +3846,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
 
         renderFuvarCards(containerId, filter, onSelectFuvar, options);
         enableFuvarDrag();
+        enableFuvarDropTargets();
       });
     }
 
@@ -3875,6 +3878,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
         clearSpedicioAssignment(fuvar);
         renderFuvarCards(containerId, filter, onSelectFuvar, options);
         enableFuvarDrag();
+        enableFuvarDropTargets();
       });
     }
 
@@ -3910,6 +3914,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
 
         renderFuvarCards(containerId, filter, onSelectFuvar, options);
         enableFuvarDrag();
+        enableFuvarDropTargets();
         window.dispatchEvent(new CustomEvent("fuvar:focus", {
           detail: { fuvarId: fuvar.id }
         }));
@@ -3930,6 +3935,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
         clearFuvarResourceAssignment(fuvar);
         renderFuvarCards(containerId, filter, onSelectFuvar, options);
         enableFuvarDrag();
+        enableFuvarDropTargets();
 
         const results = evaluateAllResources(SOFOROK, VONTATOK, POTKOCSIK, fuvar);
         if (typeof onSelectFuvar === "function") {
@@ -4015,6 +4021,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
 
           renderFuvarCards(containerId, filter, onSelectFuvar, options);
           enableFuvarDrag();
+          enableFuvarDropTargets();
         });
 
         stageNode.addEventListener("dblclick", (event) => {

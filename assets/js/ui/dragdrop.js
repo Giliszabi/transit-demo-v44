@@ -11,7 +11,7 @@ import { distanceKm, formatDate } from "../utils.js";
 import { evaluateSoforForFuvar, evaluateVontatoForFuvar, evaluatePotkocsiForFuvar } from "./matching.js";
 import { addFuvarBlockToTimeline, hasCollision, refreshAutoDriverStatesForLinkedConvoys, refreshAutoTransitBlocksForResource } from "./timeline.js";
 import { assignFuvarToSpedicioPartner } from "./spedicio-partners.js";
-import { stageFuvarAssemblyDraft } from "./szerelveny-timeline.js";
+import { applyAssemblyAssignmentSync } from "./szerelveny-timeline.js";
 
 const dragState = {
   kind: null,
@@ -50,23 +50,6 @@ function runRefreshViews() {
   }
 }
 
-function emitAssemblyDraftStaged(fuvarId, assignment) {
-  if (!fuvarId || !assignment) {
-    return;
-  }
-
-  window.dispatchEvent(new CustomEvent("assembly:draft:staged", {
-    detail: {
-      fuvarId,
-      assignment: {
-        soforId: assignment.soforId || null,
-        vontatoId: assignment.vontatoId || null,
-        potkocsiId: assignment.potkocsiId || null
-      }
-    }
-  }));
-}
-
 function refreshAllAutoTransitSegments() {
   SOFOROK.forEach((sofor) => {
     refreshAutoTransitBlocksForResource(sofor, FUVAROK);
@@ -94,7 +77,13 @@ function clearHighlights() {
   document.querySelectorAll(".timeline-resource-name")
     .forEach((el) => el.classList.remove("drop-ok", "drop-bad"));
 
+  document.querySelectorAll(".timeline-resource-name.dragging")
+    .forEach((el) => el.classList.remove("dragging"));
+
   document.querySelectorAll(".resource-card")
+    .forEach((el) => el.classList.remove("drop-ok", "drop-bad"));
+
+  document.querySelectorAll(".menu-card, .fuvar-stage-card, .domestic-relay-card")
     .forEach((el) => el.classList.remove("drop-ok", "drop-bad"));
 }
 
@@ -1042,12 +1031,62 @@ async function handleFuvarDropOnResource(targetType, targetId, explicitFuvarId =
     return false;
   }
 
-  const staged = stageFuvarAssemblyDraft(fuvar.id, assignment);
-  if (staged) {
-    emitAssemblyDraftStaged(fuvar.id, assignment);
+  return applyAssemblyAssignmentSync(fuvar.id, assignment, { emit: true });
+}
+
+function getFuvarIdForDropTarget(target) {
+  if (!target) {
+    return null;
   }
 
-  return staged;
+  const directId = target.dataset?.fuvarId || target.dataset?.id;
+  if (directId && FUVAROK.some((item) => item.id === directId)) {
+    return directId;
+  }
+
+  const ancestor = target.closest?.("[data-fuvar-id], [data-id]");
+  if (!ancestor) {
+    return null;
+  }
+
+  const ancestorId = ancestor.dataset?.fuvarId || ancestor.dataset?.id;
+  if (!ancestorId) {
+    return null;
+  }
+
+  return FUVAROK.some((item) => item.id === ancestorId) ? ancestorId : null;
+}
+
+function getDropStateForFuvarTarget(targetFuvarId) {
+  if (dragState.kind !== "resource") {
+    return { allowed: false };
+  }
+
+  const fuvar = FUVAROK.find((item) => item.id === targetFuvarId);
+  const resource = getResourceByType(dragState.sourceType, dragState.sourceId);
+  if (!fuvar || !resource) {
+    return { allowed: false };
+  }
+
+  const assignment = normalizeFuvarAssignment(fuvar, dragState.sourceType, dragState.sourceId);
+  return {
+    allowed: true,
+    assignment,
+    fuvar
+  };
+}
+
+async function handleResourceDropOnFuvar(targetFuvarId) {
+  if (dragState.kind !== "resource") {
+    return false;
+  }
+
+  const dropState = getDropStateForFuvarTarget(targetFuvarId);
+  if (!dropState.allowed || !dropState.assignment || !dropState.fuvar) {
+    return false;
+  }
+
+  return applyAssemblyAssignmentSync(dropState.fuvar.id, dropState.assignment, { emit: true });
 }
 
 // DRAG START – FUVAR KÁRTYÁK
@@ -1096,9 +1135,105 @@ export function enableFuvarDrag() {
   });
 }
 
+export function enableFuvarDropTargets() {
+  const targets = document.querySelectorAll(
+    ".menu-card[data-id], .fuvar-stage-card[data-fuvar-id], .domestic-relay-card[data-fuvar-id]"
+  );
+
+  targets.forEach((target) => {
+    if (target.dataset.resourceDropBound === "1") {
+      return;
+    }
+
+    target.dataset.resourceDropBound = "1";
+
+    target.addEventListener("dragover", (event) => {
+      if (dragState.kind !== "resource") {
+        return;
+      }
+
+      const fuvarId = getFuvarIdForDropTarget(target);
+      if (!fuvarId) {
+        return;
+      }
+
+      const dropState = getDropStateForFuvarTarget(fuvarId);
+      if (!dropState.allowed) {
+        target.classList.add("drop-bad");
+        target.classList.remove("drop-ok");
+        return;
+      }
+
+      event.preventDefault();
+      target.classList.add("drop-ok");
+      target.classList.remove("drop-bad");
+    });
+
+    target.addEventListener("dragleave", () => {
+      target.classList.remove("drop-ok", "drop-bad");
+    });
+
+    target.addEventListener("drop", async (event) => {
+      if (dragState.kind !== "resource") {
+        return;
+      }
+
+      const fuvarId = getFuvarIdForDropTarget(target);
+      if (!fuvarId) {
+        return;
+      }
+
+      event.preventDefault();
+      target.classList.remove("drop-ok", "drop-bad");
+
+      const changed = await handleResourceDropOnFuvar(fuvarId);
+      if (!changed) {
+        return;
+      }
+
+      resetDragState();
+      clearHighlights();
+      runRefreshViews();
+    });
+  });
+}
+
 // DROP TARGET – TIMELINE (csak fuvar húzható ide)
 export function enableTimelineDrop() {
   document.querySelectorAll(".timeline-resource-name").forEach((row) => {
+    if (row.dataset.timelineDndBound === "1") {
+      return;
+    }
+    row.dataset.timelineDndBound = "1";
+
+    row.setAttribute("draggable", "true");
+
+    row.addEventListener("dragstart", (event) => {
+      const sourceType = row.dataset.resourceType;
+      const sourceId = row.dataset.resourceId;
+
+      if (!sourceType || !sourceId || sourceType === "partner") {
+        event.preventDefault();
+        return;
+      }
+
+      dragState.kind = "resource";
+      dragState.fuvarId = null;
+      dragState.sourceType = sourceType;
+      dragState.sourceId = sourceId;
+      row.classList.add("dragging");
+
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = "move";
+      }
+    });
+
+    row.addEventListener("dragend", () => {
+      row.classList.remove("dragging");
+      resetDragState();
+      clearHighlights();
+    });
+
     row.addEventListener("dragover", (e) => {
       const fuvarId = getDraggedFuvarId(e);
       const hasTransfer = hasFuvarTransferType(e);
