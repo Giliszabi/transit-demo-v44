@@ -126,6 +126,7 @@ function syncPinnedAssemblyResourceNames(container) {
 function cloneAssignment(assignment = {}) {
   return {
     soforId: assignment.soforId || null,
+    secondarySoforId: assignment.secondarySoforId || null,
     vontatoId: assignment.vontatoId || null,
     potkocsiId: assignment.potkocsiId || null
   };
@@ -136,6 +137,10 @@ function mergeAssignmentValues(baseAssignment = {}, patchAssignment = {}) {
 
   if (patchAssignment.soforId) {
     merged.soforId = patchAssignment.soforId;
+  }
+
+  if (patchAssignment.secondarySoforId) {
+    merged.secondarySoforId = patchAssignment.secondarySoforId;
   }
 
   if (patchAssignment.vontatoId) {
@@ -150,7 +155,7 @@ function mergeAssignmentValues(baseAssignment = {}, patchAssignment = {}) {
 }
 
 function hasAnyAssignmentValue(assignment = {}) {
-  return Boolean(assignment.soforId || assignment.vontatoId || assignment.potkocsiId);
+  return Boolean(assignment.soforId || assignment.secondarySoforId || assignment.vontatoId || assignment.potkocsiId);
 }
 
 function hasCompleteAssignmentValue(assignment = {}) {
@@ -164,6 +169,7 @@ function hasCompleteFuvarAssignment(fuvar) {
 function getSavedAssignmentForFuvar(fuvar) {
   return {
     soforId: fuvar?.assignedSoforId || null,
+    secondarySoforId: fuvar?.assignedSecondarySoforId || null,
     vontatoId: fuvar?.assignedVontatoId || null,
     potkocsiId: fuvar?.assignedPotkocsiId || null
   };
@@ -1645,6 +1651,13 @@ function applyFuvarAssignment(fuvar, assignment, soforok, vontatok, potkocsik) {
     const sofor = soforok.find((item) => item.id === assignment.soforId);
     if (sofor) {
       addFuvarBlockToTimeline(sofor, fuvar);
+    }
+  }
+
+  if (assignment.secondarySoforId) {
+    const secondarySofor = soforok.find((item) => item.id === assignment.secondarySoforId);
+    if (secondarySofor) {
+      addFuvarBlockToTimeline(secondarySofor, fuvar);
     }
   }
 

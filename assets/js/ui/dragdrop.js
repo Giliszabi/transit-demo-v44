@@ -794,6 +794,21 @@ function normalizeFuvarAssignment(fuvar, preferredType = null, preferredId = nul
     }
   }
 
+  // Négykezes, linkelt sofőrpár esetén a fuvar mindig mindkét timeline-ra kerüljön.
+  const primarySofor = assignment.soforId ? getResourceByType("sofor", assignment.soforId) : null;
+  const linkedPairSoforId = primarySofor?.linkedSoforId || null;
+  const isLinkedTwoKezesPair = Boolean(primarySofor && linkedPairSoforId && String(primarySofor.kezes || "") === "2");
+
+  if (isLinkedTwoKezesPair) {
+    const linkedPairSofor = getResourceByType("sofor", linkedPairSoforId);
+    if (!linkedPairSofor || !canAssignFuvarToResource("sofor", linkedPairSofor, fuvar)) {
+      assignment.soforId = null;
+      assignment.secondarySoforId = null;
+    } else {
+      assignment.secondarySoforId = linkedPairSofor.id;
+    }
+  }
+
   if (fuvar?.onlyTwoKezesRequired) {
     const primary = assignment.soforId ? getResourceByType("sofor", assignment.soforId) : null;
     const secondaryId = primary?.linkedSoforId || assignment.secondarySoforId;
@@ -806,7 +821,9 @@ function normalizeFuvarAssignment(fuvar, preferredType = null, preferredId = nul
       assignment.secondarySoforId = secondary.id;
     }
   } else {
-    assignment.secondarySoforId = null;
+    if (!isLinkedTwoKezesPair) {
+      assignment.secondarySoforId = null;
+    }
   }
 
   if (assignment.vontatoId) {

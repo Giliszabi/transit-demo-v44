@@ -25,10 +25,12 @@ const DEFAULT_FUVAR_FILTER_STATE = Object.freeze({
   spediccio: false,
   elapsed: false,
   dayOffset: null,
+  dayGroupOrder: "asc",
   query: "",
   idScope: null
 });
 const BASE_CARD_COLUMN_OPTIONS = [
+  { id: "ffId", label: "FF azonosító" },
   { id: "pickupLocation", label: "Felrakó" },
   { id: "dropoffLocation", label: "Lerakó" },
   { id: "region", label: "Régió" },
@@ -119,6 +121,7 @@ export const FUVAR_CARD_COLUMN_OPTIONS = [...BASE_CARD_COLUMN_OPTIONS, ...EXCEL_
 const FUVAR_CARD_COLUMN_OPTION_MAP = new Map(FUVAR_CARD_COLUMN_OPTIONS.map((item) => [item.id, item]));
 
 export const DEFAULT_FUVAR_CARD_COLUMNS = [
+  "ffId",
   "pickupLocation",
   "dropoffLocation",
   "region",
@@ -402,6 +405,7 @@ function isNumberLikeLabel(label) {
 
 function getColumnMeta(columnId) {
   const baseMap = {
+    ffId: { width: 146, sortType: "text" },
     pickupLocation: { width: 132, sortType: "text" },
     dropoffLocation: { width: 132, sortType: "text" },
     region: { width: 84, sortType: "text" },
@@ -489,6 +493,7 @@ function normalizeFuvarFilterState(filter) {
     dayOffset: Number.isInteger(filter.dayOffset)
       ? filter.dayOffset
       : null,
+    dayGroupOrder: filter.dayGroupOrder === "desc" ? "desc" : "asc",
     query: String(filter.query || ""),
     idScope: Array.isArray(filter.idScope) && filter.idScope.length > 0
       ? [...new Set(filter.idScope.map((item) => String(item || "")).filter(Boolean))]
@@ -628,6 +633,35 @@ function getTransitMinutes(fuvar) {
     return null;
   }
   return Math.round((end - start) / 60000);
+}
+
+function buildFuvarDisplayIdMap(fuvarList) {
+  const indexed = [...fuvarList]
+    .map((fuvar, index) => {
+      const pickupMs = new Date(fuvar?.felrakas?.ido || "").getTime();
+      const year = Number.isFinite(pickupMs)
+        ? new Date(pickupMs).getFullYear()
+        : new Date().getFullYear();
+
+      return { fuvar, index, pickupMs, year };
+    })
+    .sort((left, right) => {
+      const leftPickup = Number.isFinite(left.pickupMs) ? left.pickupMs : Number.POSITIVE_INFINITY;
+      const rightPickup = Number.isFinite(right.pickupMs) ? right.pickupMs : Number.POSITIVE_INFINITY;
+      if (leftPickup !== rightPickup) {
+        return leftPickup - rightPickup;
+      }
+
+      return String(left.fuvar?.id || "").localeCompare(String(right.fuvar?.id || ""), "hu-HU");
+    });
+
+  const map = new Map();
+  indexed.forEach((entry, orderIndex) => {
+    const rolling = String(orderIndex + 1).padStart(4, "0");
+    map.set(entry.fuvar.id, `FF-${entry.year}-${rolling}`);
+  });
+
+  return map;
 }
 
 function formatMinutesToHours(minutes) {
@@ -857,6 +891,10 @@ function getExcelFieldValue(fuvar, excelLabel, context) {
 }
 
 function getBaseColumnDisplayValue(fuvar, columnId, context) {
+  if (columnId === "ffId") {
+    return context.ffDisplayId || "-";
+  }
+
   if (columnId === "pickupLocation") {
     return getDisplayLocation(fuvar.felrakas.cim);
   }
@@ -912,6 +950,10 @@ function getBaseColumnDisplayValue(fuvar, columnId, context) {
 }
 
 function getBaseColumnSortValue(fuvar, columnId, context) {
+  if (columnId === "ffId") {
+    return normalizeText(context.ffDisplayId || "");
+  }
+
   if (columnId === "pickupLocation") {
     return normalizeText(getDisplayLocation(fuvar.felrakas.cim));
   }
@@ -2096,12 +2138,14 @@ function getQuickFilterColorMeta(key) {
 function syncUnifiedFilterControls(container, filterState, options = {}) {
   const categorySelect = container.querySelector('[data-filter-role="category"]');
   const assignmentSelect = container.querySelector('[data-filter-role="assignment"]');
+  const dayGroupOrderSelect = container.querySelector('[data-filter-role="day-group-order"]');
   const queryInput = container.querySelector('[data-filter-role="query"]');
   const timelineReferenceDate = options.timelineReferenceDate;
   const weekOffset = Number.isInteger(options.weekOffset) ? options.weekOffset : 0;
 
   if (categorySelect) categorySelect.value = filterState.category;
   if (assignmentSelect) assignmentSelect.value = filterState.assignment;
+  if (dayGroupOrderSelect) dayGroupOrderSelect.value = filterState.dayGroupOrder;
   if (queryInput) queryInput.value = filterState.query;
 
   const weekLabelNode = container.querySelector("[data-filter-week-label]");
@@ -3169,6 +3213,13 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
             <option value="unassigned">Szabad</option>
           </select>
         </label>
+        <label class="fuvar-filter-field">
+          <span>Napi csoport sorrend</span>
+          <select class="btn fuvar-filter-select" data-filter-role="day-group-order">
+            <option value="asc">Időrend szerint (növekvő)</option>
+            <option value="desc">Időrend szerint (csökkenő)</option>
+          </select>
+        </label>
         <button class="btn fuvar-filter-toggle" type="button" data-toggle="adr"><span class="fuvar-filter-toggle-label">ADR</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
         <button class="btn fuvar-filter-toggle" type="button" data-toggle="surgos"><span class="fuvar-filter-toggle-label">Sürgős</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
         <button class="btn fuvar-filter-toggle" type="button" data-toggle="kezes2"><span class="fuvar-filter-toggle-label">Négy kezes</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>
@@ -3221,6 +3272,11 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
 
   cont.querySelector('[data-filter-role="assignment"]')?.addEventListener("change", (event) => {
     filterState.assignment = event.target.value;
+    emit();
+  });
+
+  cont.querySelector('[data-filter-role="day-group-order"]')?.addEventListener("change", (event) => {
+    filterState.dayGroupOrder = event.target.value === "desc" ? "desc" : "asc";
     emit();
   });
 
@@ -3535,6 +3591,11 @@ function buildStageDisplaySegments(stageModels) {
 export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, options = {}) {
   const container = document.getElementById(containerId);
   const filterState = normalizeFuvarFilterState(filter);
+  const listBlockKey = options?.listBlockKey === "import"
+    ? "import"
+    : options?.listBlockKey === "export-domestic"
+      ? "export-domestic"
+      : null;
   if (currentFuvarSort.columnId === "route") {
     currentFuvarSort.columnId = "pickupLocation";
   }
@@ -3565,8 +3626,20 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
   }
   const importRecommendation = filterState.category === "import" ? findRecommendedImportForFocusedExport() : null;
   const renderList = [...FUVAROK];
+  const fuvarDisplayIdMap = buildFuvarDisplayIdMap(renderList);
   const assemblyDropoffAddress = getFocusedAssemblyDropoffAddress();
   const hasAssemblyDistanceContext = Boolean(focusedAssemblyId && assemblyDropoffAddress);
+
+  // Azonosító oszlopot mindig elsőként jelenítjük meg.
+  if (!effectiveColumns.includes("ffId")) {
+    effectiveColumns.unshift("ffId");
+  } else {
+    const ffIdIndex = effectiveColumns.indexOf("ffId");
+    if (ffIdIndex > 0) {
+      effectiveColumns.splice(ffIdIndex, 1);
+      effectiveColumns.unshift("ffId");
+    }
+  }
 
   if (filterState.category === "import" && importRecommendation?.fuvarId) {
     renderList.sort((a, b) => {
@@ -3630,6 +3703,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     const actionButtonsHtml = [transitLinkBtnHtml, clearBtnHtml].filter(Boolean).join("");
 
     const context = {
+      ffDisplayId: fuvarDisplayIdMap.get(fuvar.id) || "-",
       soforName,
       vontatoName,
       potkocsiName,
@@ -3776,9 +3850,196 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     }).join("");
   };
 
-  chainModels.forEach(({ chainId, rootModel, stageModels }) => {
+  const chainRenderEntries = chainModels.map((chainModel, index) => {
+    const { displayFuvar, displayContext } = buildChainRootDisplayData(chainModel.rootModel, chainModel.stageModels);
+    const pickupMs = new Date(displayFuvar?.felrakas?.ido || "").getTime();
+    const dayDate = Number.isFinite(pickupMs)
+      ? new Date(new Date(pickupMs).getFullYear(), new Date(pickupMs).getMonth(), new Date(pickupMs).getDate())
+      : null;
+    const dayKey = dayDate
+      ? dayDate.toISOString().slice(0, 10)
+      : "ismeretlen";
+    const dayLabel = dayDate
+      ? dayDate.toLocaleDateString("hu-HU", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        weekday: "short"
+      })
+      : "Ismeretlen nap";
+
+    return {
+      ...chainModel,
+      displayFuvar,
+      displayContext,
+      pickupMs,
+      dayKey,
+      dayLabel,
+      dayStartMs: dayDate ? dayDate.getTime() : Number.POSITIVE_INFINITY,
+      sortIndex: index
+    };
+  });
+
+  const visibleChainEntries = filterState.dayOffset === null
+    ? chainRenderEntries
+    : chainRenderEntries.filter((entry) => {
+      return isFuvarPickupOnDayOffset(
+        entry.displayFuvar,
+        filterState.dayOffset,
+        options.timelineReferenceDate
+      );
+    });
+
+  const dayDirection = filterState.dayGroupOrder === "desc" ? -1 : 1;
+  visibleChainEntries.sort((left, right) => {
+    if (left.dayStartMs !== right.dayStartMs) {
+      return (left.dayStartMs - right.dayStartMs) * dayDirection;
+    }
+
+    return left.sortIndex - right.sortIndex;
+  });
+
+  const getFuvarBlockKey = (entry) => {
+    const rootFuvar = entry?.rootModel?.fuvar;
+    const category = getFuvarCategory(rootFuvar);
+
+    if (category === "export") {
+      return "export-domestic";
+    }
+
+    if (category === "import") {
+      return "import";
+    }
+
+    if (category === "belfold") {
+      const transitRole = getDomesticTransitRoleInfo(rootFuvar)?.role || null;
+      if (transitRole === "elofutas" || transitRole === "utofutas") {
+        return null;
+      }
+      return "export-domestic";
+    }
+
+    return null;
+  };
+
+  const blockOrder = {
+    "export-domestic": 0,
+    import: 1
+  };
+
+  const blockTitleMap = {
+    "export-domestic": "Export-Belföld fuvarok",
+    import: "Import fuvarok"
+  };
+
+  const blockScopedEntries = visibleChainEntries
+    .map((entry) => ({ ...entry, blockKey: getFuvarBlockKey(entry) }))
+    .filter((entry) => entry.blockKey && blockOrder[entry.blockKey] !== undefined)
+    .filter((entry) => (listBlockKey ? entry.blockKey === listBlockKey : true))
+    .sort((left, right) => {
+      const blockDiff = blockOrder[left.blockKey] - blockOrder[right.blockKey];
+      if (blockDiff !== 0) {
+        return blockDiff;
+      }
+
+      if (left.dayStartMs !== right.dayStartMs) {
+        return (left.dayStartMs - right.dayStartMs) * dayDirection;
+      }
+
+      return left.sortIndex - right.sortIndex;
+    });
+
+  const dayStatsByBlockAndDay = new Map();
+  blockScopedEntries.forEach((entry) => {
+    const statsKey = `${entry.blockKey}::${entry.dayKey}`;
+    const existing = dayStatsByBlockAndDay.get(statsKey) || {
+      dayKey: entry.dayKey,
+      dayLabel: entry.dayLabel,
+      total: 0,
+      unassigned: 0,
+      planning: 0,
+      ready: 0
+    };
+
+    existing.total += 1;
+    if (entry.displayContext.assignmentStatusKey === "ready") {
+      existing.ready += 1;
+    } else if (entry.displayContext.assignmentStatusKey === "planning") {
+      existing.planning += 1;
+    } else {
+      existing.unassigned += 1;
+    }
+
+    dayStatsByBlockAndDay.set(statsKey, existing);
+  });
+
+  const blockBodyByKey = new Map();
+  const renderAsSingleBlock = Boolean(listBlockKey);
+  const ensureBlockBody = (blockKey) => {
+    if (renderAsSingleBlock) {
+      return body;
+    }
+
+    if (blockBodyByKey.has(blockKey)) {
+      return blockBodyByKey.get(blockKey);
+    }
+
+    const blockBox = document.createElement("section");
+    blockBox.className = "fuvar-list-block-box";
+
+    const blockTitle = document.createElement("div");
+    blockTitle.className = "fuvar-list-block-box-title";
+    blockTitle.textContent = blockTitleMap[blockKey] || "Fuvarok";
+
+    const blockBody = document.createElement("div");
+    blockBody.className = "fuvar-list-block-box-body";
+
+    blockBox.appendChild(blockTitle);
+    blockBox.appendChild(blockBody);
+    body.appendChild(blockBox);
+    blockBodyByKey.set(blockKey, blockBody);
+    return blockBody;
+  };
+
+  const renderDaySummaryRow = (stats, host) => {
+    const summaryNode = document.createElement("div");
+    summaryNode.className = "fuvar-day-group-summary";
+    summaryNode.innerHTML = `
+      <div class="fuvar-day-group-summary-line">
+        <span class="fuvar-day-group-summary-date">${stats.dayLabel}</span>
+        <span class="fuvar-day-group-summary-sep">•</span>
+        <span>Szabad: <strong>${stats.unassigned}</strong></span>
+        <span class="fuvar-day-group-summary-sep">•</span>
+        <span>Tervezés alatt: <strong>${stats.planning}</strong></span>
+        <span class="fuvar-day-group-summary-sep">•</span>
+        <span>Kész: <strong>${stats.ready}</strong></span>
+        <span class="fuvar-day-group-summary-sep">•</span>
+        <span>Összes: <strong>${stats.total}</strong></span>
+      </div>
+    `;
+    host.appendChild(summaryNode);
+  };
+
+  let currentBlockKey = null;
+  let currentDayKey = null;
+  let currentBlockBody = null;
+
+  blockScopedEntries.forEach(({ chainId, rootModel, stageModels, displayFuvar, displayContext, dayKey, blockKey }) => {
+    if (blockKey !== currentBlockKey) {
+      currentBlockBody = ensureBlockBody(blockKey);
+      currentBlockKey = blockKey;
+      currentDayKey = null;
+    }
+
+    if (dayKey !== currentDayKey) {
+      const stats = dayStatsByBlockAndDay.get(`${blockKey}::${dayKey}`);
+      if (stats) {
+        renderDaySummaryRow(stats, currentBlockBody);
+      }
+      currentDayKey = dayKey;
+    }
+
     const { fuvar, tagsHtml, actionButtonsHtml } = rootModel;
-    const { displayFuvar, displayContext } = buildChainRootDisplayData(rootModel, stageModels);
     const expanded = expandedFuvarChainIds.has(chainId);
 
     const card = document.createElement("div");
@@ -3944,7 +4205,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
       });
     }
 
-    body.appendChild(card);
+    currentBlockBody.appendChild(card);
 
     if (expanded) {
       const stageContainer = document.createElement("div");
@@ -4033,7 +4294,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
         stageContainer.appendChild(stageNode);
       });
 
-      body.appendChild(stageContainer);
+      currentBlockBody.appendChild(stageContainer);
     }
   });
 }

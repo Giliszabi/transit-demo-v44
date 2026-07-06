@@ -188,7 +188,9 @@ summary.btn {
   display: none;
 }
 
-#fuvar-list .menu-card {
+#fuvar-list .menu-card,
+#fuvar-list-import .menu-card,
+#fuvar-list-export .menu-card {
   background: linear-gradient(180deg, var(--fuvar-card-bg, #1c1d22), rgba(28, 29, 34, 0.96));
   border-radius: 10px;
   border: 1px solid var(--fuvar-card-border, #2e2f33);
@@ -203,7 +205,9 @@ summary.btn {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-#fuvar-list .menu-card:hover {
+#fuvar-list .menu-card:hover,
+#fuvar-list-import .menu-card:hover,
+#fuvar-list-export .menu-card:hover {
   transform: translateY(-4px);
   background: linear-gradient(180deg, var(--fuvar-card-bg-strong, var(--fuvar-card-bg, #1c1d22)), rgba(28, 29, 34, 0.98));
   border-color: var(--fuvar-card-border, #4fc3f7);
@@ -280,6 +284,67 @@ summary.btn {
 .fuvar-card-table-body {
   display: grid;
   gap: 6px;
+}
+
+.fuvar-list-block-box {
+  width: max-content;
+  min-width: 100%;
+  margin-top: 10px;
+  border-radius: 11px;
+  border: 1px solid rgba(139, 195, 74, 0.35);
+  background: linear-gradient(180deg, rgba(16, 30, 24, 0.7), rgba(15, 22, 31, 0.74));
+  overflow: hidden;
+}
+
+.fuvar-list-block-box-title {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(139, 195, 74, 0.28);
+  background: linear-gradient(90deg, rgba(139, 195, 74, 0.2), rgba(139, 195, 74, 0.08));
+  color: #e6f6d8;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.fuvar-list-block-box-body {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+}
+
+.fuvar-day-group-summary {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(79, 195, 247, 0.35);
+  border-radius: 9px;
+  background: linear-gradient(90deg, rgba(79, 195, 247, 0.16), rgba(79, 195, 247, 0.08));
+}
+
+.fuvar-day-group-summary-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #d4e4f2;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.fuvar-day-group-summary-date {
+  font-size: 13px;
+  font-weight: 800;
+  color: #d8f1ff;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.fuvar-day-group-summary-sep {
+  color: rgba(216, 241, 255, 0.7);
+}
+
+.fuvar-day-group-summary-line strong {
+  color: #ffffff;
 }
 
 .fuvar-card-table-scroll {
@@ -657,7 +722,9 @@ summary.btn {
   line-height: 1.35;
 }
 
-#fuvar-list {
+#fuvar-list,
+#fuvar-list-import,
+#fuvar-list-export {
   max-height: min(46vh, 520px);
   overflow: auto;
   padding-right: 0;
@@ -963,7 +1030,9 @@ summary.btn {
   border: 1px solid #ff3b30 !important;
 }
 
-#fuvar-list .menu-card.dragging {
+#fuvar-list .menu-card.dragging,
+#fuvar-list-import .menu-card.dragging,
+#fuvar-list-export .menu-card.dragging {
   opacity: 0.5;
   transform: scale(0.95);
 }
@@ -1283,6 +1352,165 @@ summary.btn {
   font-size: 13px;
   padding: 8px 10px;
   cursor: pointer;
+}
+
+.jarat-planner-layout {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(220px, 280px) minmax(300px, 1fr);
+}
+
+.jarat-planner-column {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.jarat-planner-drop-column {
+  align-content: start;
+}
+
+.jarat-planner-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.jarat-planner-heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #d8e7ff;
+}
+
+.jarat-planner-active-id {
+  font-size: 12px;
+  color: #b7c7de;
+}
+
+.jarat-plan-list {
+  border: 1px solid rgba(126, 154, 196, 0.24);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(20, 24, 32, 0.95), rgba(17, 20, 28, 0.96));
+  max-height: 320px;
+  overflow: auto;
+  padding: 6px;
+  display: grid;
+  gap: 6px;
+}
+
+.jarat-plan-list-empty {
+  padding: 10px 8px;
+  font-size: 12px;
+  color: #9eb2cc;
+}
+
+.jarat-plan-row {
+  width: 100%;
+  border: 1px solid rgba(126, 154, 196, 0.24);
+  border-radius: 8px;
+  background: rgba(22, 26, 35, 0.9);
+  color: #e6eefc;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  text-align: left;
+}
+
+.jarat-plan-row:hover {
+  border-color: rgba(79, 195, 247, 0.58);
+}
+
+.jarat-plan-row.active {
+  border-color: rgba(79, 195, 247, 0.78);
+  box-shadow: 0 0 0 1px rgba(79, 195, 247, 0.28);
+}
+
+.jarat-plan-row-id {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.jarat-plan-row-count {
+  font-size: 11px;
+  color: #a5b9d3;
+}
+
+.jarat-planner-dropzone {
+  border: 1px dashed rgba(126, 154, 196, 0.5);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(18, 24, 34, 0.86), rgba(15, 20, 28, 0.92));
+  min-height: 210px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.jarat-planner-drop-hint {
+  font-size: 12px;
+  color: #9eb2cc;
+}
+
+.jarat-plan-chain {
+  display: grid;
+  gap: 7px;
+}
+
+.jarat-plan-chain-empty {
+  font-size: 12px;
+  color: #9eb2cc;
+  padding: 8px 2px;
+}
+
+.jarat-plan-chain-item {
+  border: 1px solid rgba(126, 154, 196, 0.24);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(21, 26, 36, 0.85);
+  display: grid;
+  gap: 4px;
+}
+
+.jarat-plan-chain-id {
+  font-size: 12px;
+  font-weight: 800;
+  color: #e8f0ff;
+}
+
+.jarat-plan-chain-route {
+  font-size: 12px;
+  color: #d2e0f4;
+}
+
+.jarat-plan-chain-meta {
+  font-size: 11px;
+  color: #a5b9d3;
+}
+
+.jarat-plan-remove-btn {
+  justify-self: end;
+  padding: 2px 8px;
+}
+
+.panel-dock-btn.jarat-plan-finish-btn {
+  background: #2f9e44;
+  border-color: #237a34;
+  color: #f2fff5;
+}
+
+.panel-dock-btn.jarat-plan-finish-btn:hover {
+  background: #37b24d;
+  border-color: #2b8a3e;
+}
+
+@media (max-width: 1040px) {
+  .jarat-planner-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .resource-context-menu-item:hover {

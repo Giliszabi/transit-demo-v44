@@ -5,6 +5,7 @@ const FUVAR_DATE_SHIFT_DAYS = 15;
 const FINAL_FUVAR_DATE_SHIFT_DAYS = 20;
 const GLOBAL_EARLIER_SHIFT_DAYS = -10;
 const GLOBAL_FINAL_PLUS_DAYS = 15;
+const WORKBOOK_IMPORT_DATE_SHIFT_DAYS = 30;
 const MEBIZO_COMPANIES = [
   "PANADDITÍV KFT",
   "Grundfos Operation A/S",
@@ -95,6 +96,22 @@ function shiftIsoDateByDays(isoString, days) {
 function shiftFuvarDatesInPlace(fuvarokList, days) {
   fuvarokList.forEach((fuvar) => {
     if (isWorkbookDerivedFuvar(fuvar)) {
+      return;
+    }
+
+    if (fuvar?.felrakas?.ido) {
+      fuvar.felrakas.ido = shiftIsoDateByDays(fuvar.felrakas.ido, days);
+    }
+
+    if (fuvar?.lerakas?.ido) {
+      fuvar.lerakas.ido = shiftIsoDateByDays(fuvar.lerakas.ido, days);
+    }
+  });
+}
+
+function shiftWorkbookFuvarDatesInPlace(fuvarokList, days) {
+  fuvarokList.forEach((fuvar) => {
+    if (!isWorkbookDerivedFuvar(fuvar)) {
       return;
     }
 
@@ -550,6 +567,7 @@ applyOptimalDemoScenario(FUVAROK);
 shiftFuvarDatesInPlace(FUVAROK, FINAL_FUVAR_DATE_SHIFT_DAYS);
 shiftFuvarDatesInPlace(FUVAROK, GLOBAL_EARLIER_SHIFT_DAYS);
 shiftFuvarDatesInPlace(FUVAROK, GLOBAL_FINAL_PLUS_DAYS);
+shiftWorkbookFuvarDatesInPlace(FUVAROK, WORKBOOK_IMPORT_DATE_SHIFT_DAYS);
 assignMegbizoCompanies(FUVAROK);
 
 function resetInitialSpedicioState() {
