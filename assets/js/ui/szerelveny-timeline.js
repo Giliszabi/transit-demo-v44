@@ -17,6 +17,8 @@ const TIMELINE_HOURS = 72;
 const TIMELINE_WIDTH = HOUR_WIDTH * TIMELINE_HOURS;
 const ADDRESS_AUTOCOMPLETE_DEBOUNCE_MS = 260;
 const ADDRESS_AUTOCOMPLETE_MIN_CHARS = 3;
+// Ideiglenesen tiltjuk az automatikus járatképzést; az új logika később kerül be.
+const ENABLE_AUTOMATED_JARAT_FORMATION = false;
 
 let assemblyTimelineOffsetHours = 0;
 const assemblyRenderStates = new Map();
@@ -1004,6 +1006,14 @@ function buildAssemblyJaratSegments(fuvarBlocks, assembly = null) {
 }
 
 function buildAssemblyCompletedJaratInfo(fuvarBlocks, assembly = null) {
+  if (!ENABLE_AUTOMATED_JARAT_FORMATION) {
+    return {
+      byBlock: new Map(),
+      summaries: [],
+      segments: []
+    };
+  }
+
   const byBlock = new Map();
   const summaries = [];
   const segments = buildAssemblyJaratSegments(fuvarBlocks, assembly);

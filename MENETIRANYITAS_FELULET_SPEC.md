@@ -1,4 +1,4 @@
-# Menetirányítás felület specifikáció
+Menetirányítás felület specifikáció
 
 ## 1. Dokumentum célja
 Ez a dokumentum a Menetirányítás nézet elsődleges működését írja le fejlesztői megvalósításhoz.

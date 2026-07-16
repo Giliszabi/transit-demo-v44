@@ -94,6 +94,10 @@ summary.btn {
   flex: 0 0 auto;
 }
 
+.fuvar-filter-date-field {
+  min-width: 160px;
+}
+
 .fuvar-filter-field span {
   font-size: 11px;
   opacity: 0.72;
@@ -112,14 +116,33 @@ summary.btn {
   padding: 0 10px;
 }
 
+.fuvar-filter-date {
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid #3a4452;
+  background: #151921;
+  color: #dfe8ef;
+  font-size: 12px;
+  padding: 0 10px;
+}
+
 .fuvar-filter-search {
   min-width: 240px;
 }
 
 .fuvar-filter-select:focus,
-.fuvar-filter-search:focus {
+.fuvar-filter-search:focus,
+.fuvar-filter-date:focus {
   outline: 2px solid rgba(79, 195, 247, 0.45);
   border-color: #4fc3f7;
+}
+
+.fuvar-filter-date::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.8);
+}
+
+.fuvar-filter-date-reset {
+  white-space: nowrap;
 }
 
 .fuvar-filter-search::placeholder {
@@ -883,6 +906,42 @@ summary.btn {
   box-shadow: inset 3px 0 0 #ffb74d;
 }
 
+.domestic-relay-day-summary-row {
+  cursor: default;
+  background: rgba(79, 195, 247, 0.08);
+}
+
+.domestic-relay-day-summary-row:hover {
+  background: rgba(79, 195, 247, 0.08);
+}
+
+.domestic-relay-day-summary-row td {
+  padding: 7px 8px 5px;
+}
+
+.domestic-relay-day-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(79, 195, 247, 0.22);
+  background: rgba(11, 18, 28, 0.74);
+  color: #cfe8fb;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.domestic-relay-day-summary-date {
+  font-weight: 800;
+  color: #eff8ff;
+}
+
+.domestic-relay-day-summary-sep {
+  opacity: 0.45;
+}
+
 .domestic-relay-table tbody td {
   padding: 3px 7px;
   color: #cddaeb;
@@ -1438,6 +1497,42 @@ summary.btn {
 .jarat-plan-row-count {
   font-size: 11px;
   color: #a5b9d3;
+}
+
+.jarat-plan-row-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(143, 168, 201, 0.45);
+  background: rgba(31, 40, 56, 0.85);
+  color: #c9dbf5;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.jarat-plan-row-badge.cycle-closed {
+  border-color: rgba(90, 194, 130, 0.62);
+  background: rgba(30, 70, 45, 0.85);
+  color: #cdf1d8;
+}
+
+.jarat-plan-row-badge.cycle-next {
+  border-color: rgba(111, 189, 242, 0.62);
+  background: rgba(29, 57, 82, 0.85);
+  color: #d6ebff;
+}
+
+.jarat-plan-row.status-open {
+  background: rgba(242, 214, 135, 0.18);
+  border-color: rgba(242, 214, 135, 0.5);
+}
+
+.jarat-plan-row.status-complete {
+  background: rgba(128, 201, 149, 0.2);
+  border-color: rgba(128, 201, 149, 0.52);
 }
 
 .jarat-planner-dropzone {

@@ -59,6 +59,8 @@ const ADDRESS_COORDS = {
 };
 const AUTO_DEADHEAD_MAX_DISTANCE_KM = 120;
 const AUTO_DEADHEAD_LABEL = "Rezsifutás";
+// Ideiglenesen tiltjuk az automatikus járatképzést; az új logika később kerül be.
+const ENABLE_AUTOMATED_JARAT_FORMATION = false;
 
 // =======================================================
 // AKTÍV FUVARSZERVEZÉSI PROFIL (opcionális, modul-szintű)
@@ -309,6 +311,13 @@ function buildJaratMetrics(blocks) {
 }
 
 function buildCompletedJaratInfo(timeline) {
+  if (!ENABLE_AUTOMATED_JARAT_FORMATION) {
+    return {
+      byBlock: new Map(),
+      summaries: []
+    };
+  }
+
   const byBlock = new Map();
   const summaries = [];
   const ordered = (timeline || [])

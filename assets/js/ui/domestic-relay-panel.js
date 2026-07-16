@@ -85,6 +85,55 @@ function toTimestamp(value) {
   return Number.isFinite(date.getTime()) ? date.getTime() : Number.POSITIVE_INFINITY;
 }
 
+function buildFuvarDisplayIdMap(fuvarList) {
+  const indexed = [...fuvarList]
+    .map((fuvar) => {
+      const pickupMs = new Date(fuvar?.felrakas?.ido || "").getTime();
+      const year = Number.isFinite(pickupMs)
+        ? new Date(pickupMs).getFullYear()
+        : new Date().getFullYear();
+
+      return { fuvar, pickupMs, year };
+    })
+    .sort((left, right) => {
+      const leftPickup = Number.isFinite(left.pickupMs) ? left.pickupMs : Number.POSITIVE_INFINITY;
+      const rightPickup = Number.isFinite(right.pickupMs) ? right.pickupMs : Number.POSITIVE_INFINITY;
+      if (leftPickup !== rightPickup) {
+        return leftPickup - rightPickup;
+      }
+
+      return String(left.fuvar?.id || "").localeCompare(String(right.fuvar?.id || ""), "hu-HU");
+    });
+
+  const map = new Map();
+  indexed.forEach((entry, orderIndex) => {
+    const rolling = String(orderIndex + 1).padStart(4, "0");
+    map.set(entry.fuvar.id, `${rolling}-${entry.year}`);
+  });
+
+  return map;
+}
+
+function parseDateInput(value, endOfDay = false) {
+  const normalized = String(value || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return null;
+  }
+
+  const [year, month, day] = normalized.split("-").map((part) => Number.parseInt(part, 10));
+  const date = new Date(
+    year,
+    month - 1,
+    day,
+    endOfDay ? 23 : 0,
+    endOfDay ? 59 : 0,
+    endOfDay ? 59 : 0,
+    endOfDay ? 999 : 0
+  );
+
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
 function compareTextAsc(a, b) {
   return String(a || "").localeCompare(String(b || ""), "hu", { sensitivity: "base" });
 }
@@ -162,7 +211,7 @@ function renderSortIcon(currentSort, ascKey, descKey) {
   return '<span class="relay-sort-icon">⇅</span>';
 }
 
-function renderTableRows(role, entries, selectedFuvarId) {
+function renderTableRows(role, entries, selectedFuvarId, displayIdMap = null) {
   if (entries.length === 0) {
     return `
       <tr>
@@ -177,6 +226,12 @@ function renderTableRows(role, entries, selectedFuvarId) {
     const assignmentStatus = getAssignmentStatus(domesticFuvar);
     const activeClass = selectedFuvarId === domesticFuvar.id ? " active" : "";
     const linkedActiveClass = selectedFuvarId === linkedFuvar?.id ? " linked-active" : "";
+    const linkedDisplayId = linkedFuvar?.id && displayIdMap?.has(linkedFuvar.id)
+      ? displayIdMap.get(linkedFuvar.id)
+      : (linkedFuvar?.id || "-");
+    const linkedTooltip = linkedFuvar?.megnevezes
+      ? `${linkedDisplayId} • ${linkedFuvar.megnevezes}`
+      : linkedDisplayId;
 
     return `
       <tr class="domestic-relay-row domestic-relay-card${activeClass}${linkedActiveClass}" data-fuvar-id="${escapeHtml(domesticFuvar.id)}" draggable="true">
@@ -191,8 +246,8 @@ function renderTableRows(role, entries, selectedFuvarId) {
         </td>
         <td class="col-relay-time-from">${escapeHtml(formatDateTime(domesticFuvar?.felrakas?.ido))}</td>
         <td class="col-relay-time-to">${escapeHtml(formatDateTime(domesticFuvar?.lerakas?.ido))}</td>
-        <td class="col-relay-linked" title="${escapeHtml(linkedFuvar?.megnevezes || "")}">
-          <span class="relay-linked-id">${escapeHtml(linkedFuvar?.id || "-")}</span>
+        <td class="col-relay-linked" title="${escapeHtml(linkedTooltip)}">
+          <span class="relay-linked-id">${escapeHtml(linkedDisplayId)}</span>
           <span class="relay-linked-route">${escapeHtml(getShortAddress(linkedFuvar?.felrakas?.cim))}→${escapeHtml(getShortAddress(linkedFuvar?.lerakas?.cim))}</span>
         </td>
         <td class="col-relay-linked-time">${escapeHtml(formatDateTime(linkedFuvar?.lerakas?.ido))}</td>
@@ -264,6 +319,121 @@ function filterEntriesByQuery(entries, query) {
   return entries.filter((entry) => matchesRelayQuery(entry, query));
 }
 
+function filterEntriesByPickupDateRange(entries, pickupDateFrom, pickupDateTo) {
+  const fromDate = parseDateInput(pickupDateFrom, false);
+  const toDate = parseDateInput(pickupDateTo, true);
+
+  if (!fromDate && !toDate) {
+    return entries;
+  }
+
+  const fromMs = fromDate ? fromDate.getTime() : Number.NEGATIVE_INFINITY;
+  const toMs = toDate ? toDate.getTime() : Number.POSITIVE_INFINITY;
+
+  return entries.filter((entry) => {
+    const pickupMs = new Date(entry?.domesticFuvar?.felrakas?.ido || "").getTime();
+    if (!Number.isFinite(pickupMs)) {
+      return false;
+    }
+
+    return pickupMs >= fromMs && pickupMs <= toMs;
+  });
+}
+
+function getRelayEntryDayInfo(entry) {
+  const pickupMs = new Date(entry?.domesticFuvar?.felrakas?.ido || "").getTime();
+  if (!Number.isFinite(pickupMs)) {
+    return {
+      dayKey: "unknown",
+      dayLabel: "Ismeretlen nap",
+      dayStartMs: Number.POSITIVE_INFINITY
+    };
+  }
+
+  const pickupDate = new Date(pickupMs);
+  const dayStart = new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate());
+  const dayKey = `${dayStart.getFullYear()}-${String(dayStart.getMonth() + 1).padStart(2, "0")}-${String(dayStart.getDate()).padStart(2, "0")}`;
+  const dayLabel = pickupDate.toLocaleDateString("hu-HU", {
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short"
+  });
+
+  return {
+    dayKey,
+    dayLabel,
+    dayStartMs: dayStart.getTime()
+  };
+}
+
+function buildRelayDayGroups(entries, dayGroupOrder = "asc") {
+  const groups = new Map();
+
+  entries.forEach((entry) => {
+    const dayInfo = getRelayEntryDayInfo(entry);
+    const existing = groups.get(dayInfo.dayKey) || {
+      ...dayInfo,
+      entries: [],
+      total: 0,
+      unassigned: 0,
+      planning: 0,
+      ready: 0
+    };
+
+    existing.entries.push(entry);
+    existing.total += 1;
+
+    const status = getAssignmentStatus(entry?.domesticFuvar);
+    if (status.className === "ready") {
+      existing.ready += 1;
+    } else if (status.className === "partial") {
+      existing.planning += 1;
+    } else {
+      existing.unassigned += 1;
+    }
+
+    groups.set(dayInfo.dayKey, existing);
+  });
+
+  const direction = dayGroupOrder === "desc" ? -1 : 1;
+  return Array.from(groups.values()).sort((left, right) => {
+    if (left.dayStartMs !== right.dayStartMs) {
+      return (left.dayStartMs - right.dayStartMs) * direction;
+    }
+
+    return 0;
+  });
+}
+
+function renderRelayGroupedRows(role, entries, selectedFuvarId, displayIdMap = null, dayGroupOrder = "asc") {
+  if (entries.length === 0) {
+    return renderTableRows(role, entries, selectedFuvarId, displayIdMap);
+  }
+
+  const dayGroups = buildRelayDayGroups(entries, dayGroupOrder);
+  return dayGroups.map((group) => {
+    const summaryHtml = `
+      <tr class="domestic-relay-day-summary-row">
+        <td colspan="7">
+          <div class="domestic-relay-day-summary">
+            <span class="domestic-relay-day-summary-date">${escapeHtml(group.dayLabel)}</span>
+            <span class="domestic-relay-day-summary-sep">•</span>
+            <span>Szabad: <strong>${group.unassigned}</strong></span>
+            <span class="domestic-relay-day-summary-sep">•</span>
+            <span>Tervezés alatt: <strong>${group.planning}</strong></span>
+            <span class="domestic-relay-day-summary-sep">•</span>
+            <span>Kész: <strong>${group.ready}</strong></span>
+            <span class="domestic-relay-day-summary-sep">•</span>
+            <span>Összes: <strong>${group.total}</strong></span>
+          </div>
+        </td>
+      </tr>
+    `;
+
+    return `${summaryHtml}${renderTableRows(role, group.entries, selectedFuvarId, displayIdMap)}`;
+  }).join("");
+}
+
 export function renderTransitTaskBoard(containerId, options = {}) {
   const container = document.getElementById(containerId);
   if (!container) {
@@ -283,13 +453,16 @@ export function renderTransitTaskBoard(containerId, options = {}) {
     state.scrollLeft = previousWrapper.scrollLeft;
   }
   const queue = buildDomesticTransitQueue(FUVAROK);
+  const displayIdMap = buildFuvarDisplayIdMap(FUVAROK);
   const sourceAll = role === "elofutas" ? queue.elofutas : queue.utofutas;
   const scopedById = filterEntriesByIdScope(sourceAll, options.idScope);
-  const scopedSource = filterEntriesByQuery(scopedById, options.query || "");
+  const scopedByDate = filterEntriesByPickupDateRange(scopedById, options.pickupDateFrom || "", options.pickupDateTo || "");
+  const scopedSource = filterEntriesByQuery(scopedByDate, options.query || "");
   const scopedQueue = role === "elofutas"
     ? { ...queue, elofutas: scopedSource }
     : { ...queue, utofutas: scopedSource };
   const visibleEntries = getVisibleEntriesByRole(scopedQueue, role);
+  const dayGroupOrder = options.dayGroupOrder === "desc" ? "desc" : "asc";
   const title = getRoleTitle(role);
 
   container.innerHTML = `
@@ -334,7 +507,7 @@ export function renderTransitTaskBoard(containerId, options = {}) {
             </tr>
           </thead>
           <tbody>
-            ${renderTableRows(role, visibleEntries, options.selectedFuvarId)}
+            ${renderRelayGroupedRows(role, visibleEntries, options.selectedFuvarId, displayIdMap, dayGroupOrder)}
           </tbody>
         </table>
       </div>

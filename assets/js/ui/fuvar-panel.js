@@ -25,12 +25,14 @@ const DEFAULT_FUVAR_FILTER_STATE = Object.freeze({
   spediccio: false,
   elapsed: false,
   dayOffset: null,
+  pickupDateFrom: "",
+  pickupDateTo: "",
   dayGroupOrder: "asc",
   query: "",
   idScope: null
 });
 const BASE_CARD_COLUMN_OPTIONS = [
-  { id: "ffId", label: "FF azonosító" },
+  { id: "ffId", label: "Azonosító" },
   { id: "pickupLocation", label: "Felrakó" },
   { id: "dropoffLocation", label: "Lerakó" },
   { id: "region", label: "Régió" },
@@ -482,7 +484,7 @@ function normalizeFuvarFilterState(filter) {
     return base;
   }
 
-  return {
+  const normalized = {
     category: ["all", "belfold", "export", "import", "elofutas", "utofutas"].includes(filter.category) ? filter.category : "all",
     assignment: ["all", "ready", "planning", "unassigned"].includes(filter.assignment) ? filter.assignment : "all",
     adr: Boolean(filter.adr),
@@ -493,12 +495,64 @@ function normalizeFuvarFilterState(filter) {
     dayOffset: Number.isInteger(filter.dayOffset)
       ? filter.dayOffset
       : null,
+    pickupDateFrom: normalizeDateInputValue(filter.pickupDateFrom),
+    pickupDateTo: normalizeDateInputValue(filter.pickupDateTo),
     dayGroupOrder: filter.dayGroupOrder === "desc" ? "desc" : "asc",
     query: String(filter.query || ""),
     idScope: Array.isArray(filter.idScope) && filter.idScope.length > 0
       ? [...new Set(filter.idScope.map((item) => String(item || "")).filter(Boolean))]
       : null
   };
+
+  if (normalized.pickupDateFrom || normalized.pickupDateTo) {
+    normalized.dayOffset = null;
+  }
+
+  return normalized;
+}
+
+function normalizeDateInputValue(value) {
+  const normalized = String(value || "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : "";
+}
+
+function buildLocalDateFromInput(value, endOfDay = false) {
+  const normalized = normalizeDateInputValue(value);
+  if (!normalized) {
+    return null;
+  }
+
+  const [year, month, day] = normalized.split("-").map((part) => Number.parseInt(part, 10));
+  const date = new Date(
+    year,
+    month - 1,
+    day,
+    endOfDay ? 23 : 0,
+    endOfDay ? 59 : 0,
+    endOfDay ? 59 : 0,
+    endOfDay ? 999 : 0
+  );
+
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
+function isFuvarPickupWithinDateRange(fuvar, pickupDateFrom, pickupDateTo) {
+  const pickupMs = new Date(fuvar?.felrakas?.ido || "").getTime();
+  if (!Number.isFinite(pickupMs)) {
+    return false;
+  }
+
+  const fromDate = buildLocalDateFromInput(pickupDateFrom, false);
+  if (fromDate && pickupMs < fromDate.getTime()) {
+    return false;
+  }
+
+  const toDate = buildLocalDateFromInput(pickupDateTo, true);
+  if (toDate && pickupMs > toDate.getTime()) {
+    return false;
+  }
+
+  return true;
 }
 
 function isElapsedFuvar(fuvar, timelineReferenceDate) {
@@ -595,6 +649,10 @@ function matchesUnifiedFuvarFilter(fuvar, filterState, options = {}) {
     return false;
   }
 
+  if ((filterState.pickupDateFrom || filterState.pickupDateTo) && !isFuvarPickupWithinDateRange(fuvar, filterState.pickupDateFrom, filterState.pickupDateTo)) {
+    return false;
+  }
+
   if (filterState.dayOffset !== null && !isFuvarPickupOnDayOffset(fuvar, filterState.dayOffset, options.timelineReferenceDate)) {
     return false;
   }
@@ -658,7 +716,7 @@ function buildFuvarDisplayIdMap(fuvarList) {
   const map = new Map();
   indexed.forEach((entry, orderIndex) => {
     const rolling = String(orderIndex + 1).padStart(4, "0");
-    map.set(entry.fuvar.id, `FF-${entry.year}-${rolling}`);
+    map.set(entry.fuvar.id, `${rolling}-${entry.year}`);
   });
 
   return map;
@@ -2004,6 +2062,8 @@ function getQuickFilterPreviewState(filterState, key) {
   if (key.startsWith("day-offset-")) {
     const rawOffset = Number.parseInt(key.slice("day-offset-".length), 10);
     preview.dayOffset = Number.isInteger(rawOffset) ? rawOffset : null;
+    preview.pickupDateFrom = "";
+    preview.pickupDateTo = "";
     return preview;
   }
 
@@ -2140,6 +2200,8 @@ function syncUnifiedFilterControls(container, filterState, options = {}) {
   const assignmentSelect = container.querySelector('[data-filter-role="assignment"]');
   const dayGroupOrderSelect = container.querySelector('[data-filter-role="day-group-order"]');
   const queryInput = container.querySelector('[data-filter-role="query"]');
+  const pickupDateFromInput = container.querySelector('[data-filter-role="pickup-date-from"]');
+  const pickupDateToInput = container.querySelector('[data-filter-role="pickup-date-to"]');
   const timelineReferenceDate = options.timelineReferenceDate;
   const weekOffset = Number.isInteger(options.weekOffset) ? options.weekOffset : 0;
 
@@ -2147,6 +2209,8 @@ function syncUnifiedFilterControls(container, filterState, options = {}) {
   if (assignmentSelect) assignmentSelect.value = filterState.assignment;
   if (dayGroupOrderSelect) dayGroupOrderSelect.value = filterState.dayGroupOrder;
   if (queryInput) queryInput.value = filterState.query;
+  if (pickupDateFromInput) pickupDateFromInput.value = filterState.pickupDateFrom;
+  if (pickupDateToInput) pickupDateToInput.value = filterState.pickupDateTo;
 
   const weekLabelNode = container.querySelector("[data-filter-week-label]");
   if (weekLabelNode) {
@@ -3233,6 +3297,15 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
       <div class="fuvar-filter-row fuvar-filter-row-dates">
         <button class="btn fuvar-filter-week-nav" type="button" data-action="week-prev" aria-label="Előző hét">◀</button>
         <div class="fuvar-filter-week-label" data-filter-week-label></div>
+        <label class="fuvar-filter-field fuvar-filter-date-field">
+          <span>Felrakás tól</span>
+          <input class="fuvar-filter-date" type="date" data-filter-role="pickup-date-from" value="" />
+        </label>
+        <label class="fuvar-filter-field fuvar-filter-date-field">
+          <span>Felrakás ig</span>
+          <input class="fuvar-filter-date" type="date" data-filter-role="pickup-date-to" value="" />
+        </label>
+        <button class="btn fuvar-filter-reset fuvar-filter-date-reset" type="button" data-action="clear-date-range">Dátumtartomány törlése</button>
         ${initialWeekDays.map((day) => {
           return `<button class="btn fuvar-filter-toggle" type="button" data-toggle="day-offset-${day.offset}"><span class="fuvar-filter-toggle-label">${day.label}</span><span class="fuvar-filter-count-badge" data-filter-count>0</span></button>`;
         }).join("")}
@@ -3242,6 +3315,7 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
   `;
 
   const emit = () => {
+    filterState = normalizeFuvarFilterState(filterState);
     const timelineReferenceDate = typeof options.getTimelineReferenceDate === "function"
       ? options.getTimelineReferenceDate()
       : options.timelineReferenceDate;
@@ -3280,6 +3354,18 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
     emit();
   });
 
+  cont.querySelector('[data-filter-role="pickup-date-from"]')?.addEventListener("change", (event) => {
+    filterState.pickupDateFrom = normalizeDateInputValue(event.target.value);
+    filterState.dayOffset = null;
+    emit();
+  });
+
+  cont.querySelector('[data-filter-role="pickup-date-to"]')?.addEventListener("change", (event) => {
+    filterState.pickupDateTo = normalizeDateInputValue(event.target.value);
+    filterState.dayOffset = null;
+    emit();
+  });
+
   cont.querySelectorAll(".fuvar-filter-toggle").forEach((btn) => {
     btn.addEventListener("click", () => {
       const key = btn.dataset.toggle;
@@ -3288,6 +3374,8 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
         filterState.assignment = filterState.assignment === key ? "all" : key;
       } else if (key.startsWith("day-offset-")) {
         const targetOffset = Number.parseInt(key.slice("day-offset-".length), 10);
+        filterState.pickupDateFrom = "";
+        filterState.pickupDateTo = "";
         filterState.dayOffset = filterState.dayOffset === targetOffset ? null : targetOffset;
       } else {
         filterState[key] = !filterState[key];
@@ -3295,6 +3383,12 @@ export function renderFuvarFilters(containerId, onFilterChange, options = {}) {
 
       emit();
     });
+  });
+
+  cont.querySelector('[data-action="clear-date-range"]')?.addEventListener("click", () => {
+    filterState.pickupDateFrom = "";
+    filterState.pickupDateTo = "";
+    emit();
   });
 
   cont.querySelector('[data-action="reset"]')?.addEventListener("click", () => {
@@ -3673,10 +3767,7 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
 
     const tagsHtml = [
       renderAssemblyDistanceTag(fuvar, assemblyDropoffAddress),
-      ...getFuvarTags(fuvar).map((tag) => renderTag(tag, "fuvar-card-tag")),
-      fuvar.spediccio
-        ? `<button type="button" class="fuvar-spediccio-form-btn fuvar-spediccio-form-btn-inline" data-action="open-spediccio-form">Adatlap</button>`
-        : ""
+      ...getFuvarTags(fuvar).map((tag) => renderTag(tag, "fuvar-card-tag"))
     ].filter(Boolean).join("");
 
     void importRecommendation;
@@ -3697,10 +3788,13 @@ export function renderFuvarCards(containerId, filter = "all", onSelectFuvar, opt
     const clearBtnHtml = isFullyAssigned
       ? `<button type="button" class="fuvar-resource-clear-btn fuvar-header-clear-btn" data-action="clear-fuvar-assignment">Erőforrás törlés</button>`
       : "";
+    const spediccioFormBtnHtml = fuvar.spediccio
+      ? `<button type="button" class="fuvar-spediccio-form-btn fuvar-spediccio-form-btn-inline" data-action="open-spediccio-form">Adatlap</button>`
+      : "";
     const transitLinkBtnHtml = shouldShowTransitLinkEditor(fuvar)
       ? '<button type="button" class="fuvar-transit-edit-btn" data-action="edit-transit-link">Kapcsolás</button>'
       : "";
-    const actionButtonsHtml = [transitLinkBtnHtml, clearBtnHtml].filter(Boolean).join("");
+    const actionButtonsHtml = [spediccioFormBtnHtml, transitLinkBtnHtml, clearBtnHtml].filter(Boolean).join("");
 
     const context = {
       ffDisplayId: fuvarDisplayIdMap.get(fuvar.id) || "-",
