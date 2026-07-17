@@ -347,6 +347,11 @@
   opacity: 1;
 }
 
+.timeline-resource.elakasztas-involved {
+  border-color: rgba(38, 198, 218, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(38, 198, 218, 0.3);
+}
+
 /* Fejlécek */
 .timeline-resource-name {
   padding: 8px 12px;
@@ -459,6 +464,28 @@
 
 .timeline-resource-name.sofor-finalized:hover {
   background: linear-gradient(122deg, rgba(42, 116, 73, 0.95), rgba(30, 80, 52, 0.95));
+}
+
+.timeline-resource-name.elakasztas-involved {
+  border-right-color: rgba(38, 198, 218, 0.48);
+}
+
+.timeline-elakasztas-row-badge {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(38, 198, 218, 0.6);
+  background: rgba(38, 198, 218, 0.16);
+  color: #dbf8ff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .driver-dispatch-note-indicator {
@@ -602,6 +629,29 @@
 
 .timeline-block.assignment-missing-resources {
   border: 2px dashed rgba(255, 255, 255, 0.96) !important;
+}
+
+.timeline-block.timeline-block-elakasztott {
+  box-shadow:
+    inset 3px 0 0 var(--timeline-block-accent, rgba(255, 255, 255, 0.18)),
+    inset 0 0 0 1px rgba(38, 198, 218, 0.55),
+    0 0 0 1px rgba(38, 198, 218, 0.36);
+}
+
+.timeline-inline-elakasztas {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(38, 198, 218, 0.58);
+  background: rgba(38, 198, 218, 0.18);
+  color: #d8f7ff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.35;
+  vertical-align: middle;
 }
 
 .timeline-fuvar-focus-range {

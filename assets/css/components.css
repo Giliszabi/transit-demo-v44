@@ -94,10 +94,6 @@ summary.btn {
   flex: 0 0 auto;
 }
 
-.fuvar-filter-date-field {
-  min-width: 160px;
-}
-
 .fuvar-filter-field span {
   font-size: 11px;
   opacity: 0.72;
@@ -106,16 +102,7 @@ summary.btn {
 }
 
 .fuvar-filter-select,
-.fuvar-filter-search {
-  height: 38px;
-  border-radius: 8px;
-  border: 1px solid #3a4452;
-  background: #151921;
-  color: #dfe8ef;
-  font-size: 12px;
-  padding: 0 10px;
-}
-
+.fuvar-filter-search,
 .fuvar-filter-date {
   height: 38px;
   border-radius: 8px;
@@ -124,10 +111,17 @@ summary.btn {
   color: #dfe8ef;
   font-size: 12px;
   padding: 0 10px;
+  box-sizing: border-box;
 }
 
 .fuvar-filter-search {
   min-width: 240px;
+}
+
+.fuvar-filter-date {
+  min-width: 160px;
+  color-scheme: dark;
+  color: #dfe8ef;
 }
 
 .fuvar-filter-select:focus,
@@ -137,16 +131,32 @@ summary.btn {
   border-color: #4fc3f7;
 }
 
+.fuvar-filter-search::placeholder {
+  color: #8ea0b3;
+}
+
 .fuvar-filter-date::-webkit-calendar-picker-indicator {
-  filter: invert(1) opacity(0.8);
+  /* Match the picker icon tone to the input text color on dark UI */
+  filter: brightness(0) saturate(100%) invert(93%) sepia(8%) saturate(370%) hue-rotate(171deg) brightness(96%) contrast(92%);
+  opacity: 0.95;
+  cursor: pointer;
+}
+
+.fuvar-filter-date::-webkit-datetime-edit,
+.fuvar-filter-date::-webkit-datetime-edit-fields-wrapper,
+.fuvar-filter-date::-webkit-datetime-edit-text,
+.fuvar-filter-date::-webkit-datetime-edit-month-field,
+.fuvar-filter-date::-webkit-datetime-edit-day-field,
+.fuvar-filter-date::-webkit-datetime-edit-year-field {
+  color: #dfe8ef;
+}
+
+.fuvar-filter-date-field {
+  min-width: 160px;
 }
 
 .fuvar-filter-date-reset {
   white-space: nowrap;
-}
-
-.fuvar-filter-search::placeholder {
-  color: #8ea0b3;
 }
 
 .fuvar-filter-toggle {
@@ -719,6 +729,25 @@ summary.btn {
   box-sizing: border-box;
 }
 
+.fuvar-card-item-with-label {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+}
+
+.fuvar-card-item-label {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8fa5ba;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 .fuvar-card-item:last-child {
   border-right: none;
 }
@@ -904,42 +933,6 @@ summary.btn {
 .domestic-relay-table tbody tr.linked-active {
   background: rgba(255, 183, 77, 0.14);
   box-shadow: inset 3px 0 0 #ffb74d;
-}
-
-.domestic-relay-day-summary-row {
-  cursor: default;
-  background: rgba(79, 195, 247, 0.08);
-}
-
-.domestic-relay-day-summary-row:hover {
-  background: rgba(79, 195, 247, 0.08);
-}
-
-.domestic-relay-day-summary-row td {
-  padding: 7px 8px 5px;
-}
-
-.domestic-relay-day-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  padding: 7px 9px;
-  border-radius: 8px;
-  border: 1px solid rgba(79, 195, 247, 0.22);
-  background: rgba(11, 18, 28, 0.74);
-  color: #cfe8fb;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.domestic-relay-day-summary-date {
-  font-weight: 800;
-  color: #eff8ff;
-}
-
-.domestic-relay-day-summary-sep {
-  opacity: 0.45;
 }
 
 .domestic-relay-table tbody td {
@@ -1511,18 +1504,6 @@ summary.btn {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.05em;
-}
-
-.jarat-plan-row-badge.cycle-closed {
-  border-color: rgba(90, 194, 130, 0.62);
-  background: rgba(30, 70, 45, 0.85);
-  color: #cdf1d8;
-}
-
-.jarat-plan-row-badge.cycle-next {
-  border-color: rgba(111, 189, 242, 0.62);
-  background: rgba(29, 57, 82, 0.85);
-  color: #d6ebff;
 }
 
 .jarat-plan-row.status-open {

@@ -8,6 +8,9 @@
 
 import { distanceKm, formatDate } from "../utils.js";
 import { FUVAROK } from "../data/fuvarok.js";
+import { SOFOROK } from "../data/soforok.js";
+import { VONTATOK } from "../data/vontatok.js";
+import { POTKOCSIK } from "../data/potkocsik.js";
 import { evaluateFuvarTags, getResourceMatchSortValue, sortResourcesByMatchQuality } from "./matching.js";
 import { getCategoryPalette } from "./colors.js";
 import { buildSoforMetaTooltip, renderSoforMetaBadges } from "./sofor-display-meta.js";
@@ -218,6 +221,85 @@ function hasCompleteFuvarAssignment(fuvar) {
   return Boolean(fuvar?.assignedSoforId && fuvar?.assignedVontatoId && fuvar?.assignedPotkocsiId);
 }
 
+function getFuvarElakasztasOperations(fuvar) {
+  if (!Array.isArray(fuvar?.resourceOperations)) {
+    return [];
+  }
+
+  return fuvar.resourceOperations
+    .filter((operation) => operation?.type === "elakasztas")
+    .sort((left, right) => {
+      return new Date(right.at || 0).getTime() - new Date(left.at || 0).getTime();
+    });
+}
+
+function getLatestFuvarElakasztas(fuvar) {
+  const operations = getFuvarElakasztasOperations(fuvar);
+  return operations[0] || null;
+}
+
+function resolveVontatoLabelById(vontatoId) {
+  if (!vontatoId) {
+    return "-";
+  }
+
+  const vontato = VONTATOK.find((item) => item.id === vontatoId) || null;
+  return vontato?.rendszam || vontato?.nev || vontatoId;
+}
+
+function buildElakasztasOperationLabel(operation) {
+  const sourceLabel = resolveVontatoLabelById(operation?.sourceAssemblyId);
+  const targetLabel = resolveVontatoLabelById(operation?.targetAssemblyId);
+  return `${sourceLabel} → ${targetLabel}`;
+}
+
+function getVontatoElakasztasSummary(resource) {
+  if (!resource?.id || !Array.isArray(resource?.timeline)) {
+    return null;
+  }
+
+  const byFuvar = new Map();
+  resource.timeline.forEach((block) => {
+    if (block?.type !== "fuvar") {
+      return;
+    }
+
+    const fuvar = findFuvarByTimelineBlock(block);
+    if (!fuvar?.id) {
+      return;
+    }
+
+    const operation = getLatestFuvarElakasztas(fuvar);
+    if (!operation) {
+      return;
+    }
+
+    const isInvolved = operation.sourceAssemblyId === resource.id || operation.targetAssemblyId === resource.id;
+    if (!isInvolved) {
+      return;
+    }
+
+    byFuvar.set(fuvar.id, {
+      fuvar,
+      operation
+    });
+  });
+
+  const entries = Array.from(byFuvar.values()).sort((left, right) => {
+    return new Date(right.operation?.at || 0).getTime() - new Date(left.operation?.at || 0).getTime();
+  });
+
+  if (entries.length === 0) {
+    return null;
+  }
+
+  return {
+    count: entries.length,
+    lastOperation: entries[0].operation,
+    lastFuvar: entries[0].fuvar
+  };
+}
+
 const JARAT_FUVAR_REVENUE_PER_KM = 420;
 const JARAT_FUVAR_COST_PER_KM = 255;
 const JARAT_EMPTY_COST_PER_KM = 185;
@@ -408,6 +490,7 @@ function buildTimelineBlockTooltip(block, jaratMeta = null) {
 
   if (block?.type === "fuvar") {
     const linkedFuvar = findFuvarByTimelineBlock(block);
+    const latestElakasztas = getLatestFuvarElakasztas(linkedFuvar);
     const pickupAddress = block?.felrakasCim || linkedFuvar?.felrakas?.cim || "";
     const dropoffAddress = block?.lerakasCim || linkedFuvar?.lerakas?.cim || "";
     const transitRoleInfo = getDomesticTransitRoleInfo(linkedFuvar);
@@ -421,6 +504,13 @@ function buildTimelineBlockTooltip(block, jaratMeta = null) {
     lines.push(`Költség: ${formatMoneyHuf(financials.cost)}`);
     lines.push(`Bevétel: ${formatMoneyHuf(financials.revenue)}`);
     lines.push(`Eredményesség: ${formatMoneyHuf(financials.profit)}`);
+    if (latestElakasztas) {
+      lines.push(`Akasztás: ${formatDate(latestElakasztas.at)}`);
+      lines.push(`Szerelvény csere: ${buildElakasztasOperationLabel(latestElakasztas)}`);
+      if (latestElakasztas.location) {
+        lines.push(`Hely: ${latestElakasztas.location}`);
+      }
+    }
   } else {
     lines.push(`${block?.label || "Szakasz"}`);
     lines.push(`${formatDate(block.start)} → ${formatDate(block.end)}`);
@@ -1381,6 +1471,418 @@ function closeTimelineEventForm() {
   openTimelineEventForm = null;
 }
 
+function getDefaultOperationAddress(block) {
+  return block?.lerakasCim || block?.felrakasCim || block?.toAddress || block?.fromAddress || "";
+}
+
+function getLinkedSoforByVontato(vontato) {
+  if (!vontato) {
+    return null;
+  }
+
+  if (vontato.linkedSoforId) {
+    return SOFOROK.find((item) => item.id === vontato.linkedSoforId) || null;
+  }
+
+  return SOFOROK.find((item) => item.linkedVontatoId === vontato.id) || null;
+}
+
+function getLinkedPotkocsiByVontato(vontato) {
+  if (!vontato) {
+    return null;
+  }
+
+  if (vontato.linkedPotkocsiId) {
+    return POTKOCSIK.find((item) => item.id === vontato.linkedPotkocsiId) || null;
+  }
+
+  return POTKOCSIK.find((item) => item.linkedVontatoId === vontato.id) || null;
+}
+
+function linkPotkocsiToVontatoInTimeline(potkocsi, vontato) {
+  if (!potkocsi || !vontato) {
+    return;
+  }
+
+  VONTATOK.forEach((item) => {
+    if (item.linkedPotkocsiId === potkocsi.id && item.id !== vontato.id) {
+      item.linkedPotkocsiId = null;
+    }
+  });
+
+  POTKOCSIK.forEach((item) => {
+    if (item.linkedVontatoId === vontato.id && item.id !== potkocsi.id) {
+      item.linkedVontatoId = null;
+    }
+  });
+
+  potkocsi.linkedVontatoId = vontato.id;
+  vontato.linkedPotkocsiId = potkocsi.id;
+}
+
+function buildAssemblyLabel(vontato, sofor) {
+  const driverName = sofor?.nev || "nincs gepjarmuvezeto";
+  return `${vontato.rendszam} • ${driverName}`;
+}
+
+function resolveCurrentAssemblyForBlock(resource, resourceType, fuvar) {
+  const preferredVontatoId = fuvar?.assignedVontatoId
+    || (resourceType === "vontato" ? resource?.id : null)
+    || (resourceType === "sofor" ? resource?.linkedVontatoId : null)
+    || (resourceType === "potkocsi" ? resource?.linkedVontatoId : null)
+    || null;
+
+  const vontato = preferredVontatoId
+    ? VONTATOK.find((item) => item.id === preferredVontatoId) || null
+    : null;
+
+  if (!vontato) {
+    return null;
+  }
+
+  const sofor = (fuvar?.assignedSoforId
+    ? SOFOROK.find((item) => item.id === fuvar.assignedSoforId)
+    : null) || getLinkedSoforByVontato(vontato);
+
+  const potkocsi = (fuvar?.assignedPotkocsiId
+    ? POTKOCSIK.find((item) => item.id === fuvar.assignedPotkocsiId)
+    : null) || getLinkedPotkocsiByVontato(vontato);
+
+  return {
+    id: vontato.id,
+    vontato,
+    sofor,
+    potkocsi
+  };
+}
+
+function getEligibleTargetAssemblies(currentAssemblyId) {
+  return VONTATOK
+    .filter((vontato) => vontato.id !== currentAssemblyId)
+    .map((vontato) => {
+      return {
+        id: vontato.id,
+        vontato,
+        sofor: getLinkedSoforByVontato(vontato),
+        potkocsi: getLinkedPotkocsiByVontato(vontato)
+      };
+    })
+    .filter((assembly) => Boolean(assembly.sofor && assembly.potkocsi));
+}
+
+function toSafeTimestamp(value) {
+  const time = new Date(value || "").getTime();
+  return Number.isFinite(time) ? time : Number.NaN;
+}
+
+function getAssemblyRouteWaypoints(assembly, anchorMs) {
+  const timeline = Array.isArray(assembly?.vontato?.timeline)
+    ? [...assembly.vontato.timeline]
+    : [];
+  const windowStart = Number.isFinite(anchorMs) ? anchorMs - (6 * 3600 * 1000) : Number.NEGATIVE_INFINITY;
+  const windowEnd = Number.isFinite(anchorMs) ? anchorMs + (36 * 3600 * 1000) : Number.POSITIVE_INFINITY;
+
+  const waypoints = [];
+  timeline
+    .filter((block) => {
+      if (!block || block.synthetic) {
+        return false;
+      }
+
+      const startMs = toSafeTimestamp(block.start);
+      const endMs = toSafeTimestamp(block.end);
+      if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
+        return false;
+      }
+
+      return endMs >= windowStart && startMs <= windowEnd;
+    })
+    .sort((left, right) => toSafeTimestamp(left.start) - toSafeTimestamp(right.start))
+    .forEach((block) => {
+      const pickupAddress = block?.felrakasCim || block?.fromAddress || "";
+      const dropoffAddress = block?.lerakasCim || block?.toAddress || "";
+      const startMs = toSafeTimestamp(block.start);
+      const endMs = toSafeTimestamp(block.end);
+
+      if (pickupAddress) {
+        waypoints.push({
+          address: pickupAddress,
+          normalizedAddress: normalizeSearchText(pickupAddress),
+          timeMs: startMs,
+          coords: getAddressCoords(pickupAddress)
+        });
+      }
+
+      if (dropoffAddress) {
+        waypoints.push({
+          address: dropoffAddress,
+          normalizedAddress: normalizeSearchText(dropoffAddress),
+          timeMs: endMs,
+          coords: getAddressCoords(dropoffAddress)
+        });
+      }
+    });
+
+  return waypoints;
+}
+
+function getNearestKnownAddressFromCoords(coords) {
+  if (!coords) {
+    return "";
+  }
+
+  let bestKey = "";
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  Object.entries(ADDRESS_COORDS).forEach(([key, cityCoords]) => {
+    const distance = distanceKm(coords, cityCoords);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestKey = key;
+    }
+  });
+
+  if (!bestKey || !Number.isFinite(bestDistance) || bestDistance > 120) {
+    return "";
+  }
+
+  return bestKey.charAt(0).toUpperCase() + bestKey.slice(1);
+}
+
+function getPredictedElakasztasLocation(currentAssembly, targetAssembly, anchorBlock) {
+  const anchorMs = toSafeTimestamp(anchorBlock?.start);
+  const sourcePoints = getAssemblyRouteWaypoints(currentAssembly, anchorMs);
+  const targetPoints = getAssemblyRouteWaypoints(targetAssembly, anchorMs);
+
+  if (sourcePoints.length === 0 || targetPoints.length === 0) {
+    return "";
+  }
+
+  let bestExact = null;
+  sourcePoints.forEach((sourcePoint) => {
+    targetPoints.forEach((targetPoint) => {
+      if (!sourcePoint.normalizedAddress || !targetPoint.normalizedAddress) {
+        return;
+      }
+
+      if (sourcePoint.normalizedAddress !== targetPoint.normalizedAddress) {
+        return;
+      }
+
+      const deltaMs = Math.abs((sourcePoint.timeMs || 0) - (targetPoint.timeMs || 0));
+      if (deltaMs > 12 * 3600 * 1000) {
+        return;
+      }
+
+      if (!bestExact || deltaMs < bestExact.deltaMs) {
+        bestExact = {
+          address: sourcePoint.address,
+          deltaMs
+        };
+      }
+    });
+  });
+
+  if (bestExact?.address) {
+    return bestExact.address;
+  }
+
+  let bestApprox = null;
+  sourcePoints.forEach((sourcePoint) => {
+    targetPoints.forEach((targetPoint) => {
+      if (!sourcePoint.coords || !targetPoint.coords) {
+        return;
+      }
+
+      const distance = distanceKm(sourcePoint.coords, targetPoint.coords);
+      const deltaHours = Math.abs((sourcePoint.timeMs - targetPoint.timeMs) / (1000 * 60 * 60));
+      const score = distance + (deltaHours * 12);
+
+      if (!bestApprox || score < bestApprox.score) {
+        bestApprox = {
+          sourcePoint,
+          targetPoint,
+          distance,
+          score
+        };
+      }
+    });
+  });
+
+  if (!bestApprox || !Number.isFinite(bestApprox.distance)) {
+    return "";
+  }
+
+  const midpoint = {
+    lat: (bestApprox.sourcePoint.coords.lat + bestApprox.targetPoint.coords.lat) / 2,
+    lng: (bestApprox.sourcePoint.coords.lng + bestApprox.targetPoint.coords.lng) / 2
+  };
+  const nearestKnown = getNearestKnownAddressFromCoords(midpoint);
+
+  if (nearestKnown) {
+    return `${nearestKnown} (prediktiv metszespont)`;
+  }
+
+  return `${bestApprox.sourcePoint.address} / ${bestApprox.targetPoint.address} (prediktiv metszespont)`;
+}
+
+function addTimelineOperationHistory(fuvar, type, payload) {
+  if (!fuvar) {
+    return;
+  }
+
+  if (!Array.isArray(fuvar.resourceOperations)) {
+    fuvar.resourceOperations = [];
+  }
+
+  fuvar.resourceOperations.push({
+    id: `OP-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    at: new Date().toISOString(),
+    type,
+    ...payload
+  });
+}
+
+function openTimelineElakasztasModal(resource, resourceType, block) {
+  closeTimelineEventForm();
+
+  const fuvar = findFuvarByTimelineBlock(block);
+  if (!fuvar) {
+    alert("A kivalasztott fuvar nem talalhato.");
+    return;
+  }
+
+  const currentAssembly = resolveCurrentAssemblyForBlock(resource, resourceType, fuvar);
+  if (!currentAssembly?.vontato || !currentAssembly?.potkocsi) {
+    alert("A fuvarhoz nem rendelheto teljes aktualis szerelveny az elakasztashoz.");
+    return;
+  }
+
+  const candidates = getEligibleTargetAssemblies(currentAssembly.id);
+  if (candidates.length === 0) {
+    alert("Nincs masik teljes (gepjarmuvezeto + vontato + potkocsi) szerelveny az elakasztashoz.");
+    return;
+  }
+
+  const formHost = document.createElement("div");
+  formHost.className = "timeline-event-form-overlay";
+  formHost.innerHTML = `
+    <div class="timeline-event-form" role="dialog" aria-modal="true" aria-label="Elakasztas muvelet">
+      <div class="timeline-event-form-title">Elakasztas • ${fuvar.megnevezes || fuvar.id}</div>
+      <div class="timeline-event-form-helper">Aktualis szerelveny: ${buildAssemblyLabel(currentAssembly.vontato, currentAssembly.sofor)} • 🚚 ${currentAssembly.potkocsi.rendszam}</div>
+      <label class="timeline-event-form-label">
+        Celszerelveny
+        <select class="timeline-event-form-input" name="targetAssembly">
+          <option value="">Valassz szerelvenyt...</option>
+          ${candidates.map((assembly) => `<option value="${assembly.id}">${buildAssemblyLabel(assembly.vontato, assembly.sofor)} • 🚚 ${assembly.potkocsi.rendszam}</option>`).join("")}
+        </select>
+      </label>
+      <label class="timeline-event-form-label">
+        Elakasztas helye (cim)
+        <input class="timeline-event-form-input" name="location" type="text" value="${getDefaultOperationAddress(block)}" placeholder="Pl. 1117 Budapest, Fehervari ut 84/A" />
+      </label>
+      <div class="timeline-event-form-actions">
+        <button type="button" class="timeline-event-form-cancel">Megse</button>
+        <button type="button" class="timeline-event-form-save">Elakasztas mentese</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(formHost);
+  openTimelineEventForm = formHost;
+
+  const form = formHost.querySelector(".timeline-event-form");
+  const targetSelect = formHost.querySelector('select[name="targetAssembly"]');
+  const locationInput = formHost.querySelector('input[name="location"]');
+  const cancelBtn = formHost.querySelector(".timeline-event-form-cancel");
+  const saveBtn = formHost.querySelector(".timeline-event-form-save");
+  let locationWasEditedManually = false;
+
+  const applyPredictedLocation = (targetAssemblyId, { force = false } = {}) => {
+    const targetAssembly = candidates.find((item) => item.id === targetAssemblyId) || null;
+    if (!targetAssembly) {
+      return;
+    }
+
+    if (locationWasEditedManually && !force) {
+      return;
+    }
+
+    const predictedLocation = getPredictedElakasztasLocation(currentAssembly, targetAssembly, block);
+    const fallbackLocation = getDefaultOperationAddress(block);
+    locationInput.value = predictedLocation || fallbackLocation;
+  };
+
+  targetSelect.addEventListener("change", () => {
+    applyPredictedLocation(targetSelect.value);
+  });
+
+  locationInput.addEventListener("input", () => {
+    locationWasEditedManually = true;
+  });
+
+  formHost.addEventListener("click", (event) => {
+    if (event.target === formHost) {
+      closeTimelineEventForm();
+    }
+  });
+
+  form.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    closeTimelineEventForm();
+  });
+
+  saveBtn.addEventListener("click", () => {
+    const targetAssemblyId = targetSelect.value || "";
+    if (!targetAssemblyId) {
+      alert("Valassz celszerelvenyt az elakasztashoz.");
+      return;
+    }
+
+    const targetAssembly = candidates.find((item) => item.id === targetAssemblyId) || null;
+    if (!targetAssembly?.potkocsi) {
+      alert("A kivalasztott celszerelveny nem teljes.");
+      return;
+    }
+
+    const sourcePotkocsi = currentAssembly.potkocsi;
+    const targetPotkocsi = targetAssembly.potkocsi;
+
+    linkPotkocsiToVontatoInTimeline(targetPotkocsi, currentAssembly.vontato);
+    linkPotkocsiToVontatoInTimeline(sourcePotkocsi, targetAssembly.vontato);
+
+    addTimelineOperationHistory(fuvar, "elakasztas", {
+      location: String(locationInput.value || "").trim() || null,
+      sourceAssemblyId: currentAssembly.id,
+      targetAssemblyId: targetAssembly.id,
+      sourcePotkocsiId: sourcePotkocsi.id,
+      targetPotkocsiId: targetPotkocsi.id
+    });
+
+    closeTimelineEventForm();
+    rerenderCurrentTimeline();
+
+    window.dispatchEvent(new CustomEvent("assembly:resources:changed", {
+      detail: {
+        operation: "elakasztas",
+        fuvarId: fuvar.id,
+        sourceAssemblyId: currentAssembly.id,
+        targetAssemblyId: targetAssembly.id
+      }
+    }));
+  });
+
+  if (candidates.length > 0) {
+    targetSelect.value = candidates[0].id;
+    applyPredictedLocation(targetSelect.value, { force: true });
+  }
+
+  targetSelect.focus();
+}
+
 function setEndFromStart(startInput, endInput, durationHours) {
   const startDate = parseDateTimeInput(startInput.value);
   if (!startDate) {
@@ -1727,8 +2229,31 @@ function enableTimelineRowContextMenu(bar, resource, resourceType) {
   });
 }
 
-function enableManualBlockContextMenu(blockEl, resource, block) {
-  if (!block?.manual || block.type === "fuvar") {
+function enableTimelineResourceNameContextMenu(nameEl, resource, resourceType) {
+  nameEl.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    const clickedDate = snapToMinuteStep(new Date(), REST_DRAG_SNAP_MINUTES);
+    showTimelineContextMenu(event, resource, resourceType, clickedDate);
+  });
+}
+
+function enableManualBlockContextMenu(blockEl, resource, resourceType, block) {
+  if (block?.type === "fuvar") {
+    blockEl.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      showTimelineCustomContextMenu(event, [
+        {
+          label: "Elakasztas",
+          action: () => openTimelineElakasztasModal(resource, resourceType, block)
+        }
+      ]);
+    });
+    return;
+  }
+
+  if (!block?.manual) {
     return;
   }
 
@@ -2743,6 +3268,7 @@ function renderResourceRow(parent, r, type) {
   const displayName = r.rendszam || r.nev || "-";
   const location = r.jelenlegi_pozicio?.hely || "-";
   const dispatchNote = type === "sofor" ? getDriverDispatchNote(r.id) : "";
+  const elakasztasSummary = type === "vontato" ? getVontatoElakasztasSummary(r) : null;
   row.dataset.searchText = normalizeSearchText(`${displayName} ${location}`);
 
   // MATCHING HIGHLIGHT (ok/bad/warn)
@@ -2770,6 +3296,11 @@ function renderResourceRow(parent, r, type) {
 
   if (isFinalizedSofor) {
     name.classList.add("sofor-finalized");
+  }
+
+  if (elakasztasSummary) {
+    row.classList.add("elakasztas-involved");
+    name.classList.add("elakasztas-involved");
   }
 
   name.dataset.resourceType = type;
@@ -2821,6 +3352,9 @@ function renderResourceRow(parent, r, type) {
     ? `<div class="timeline-resource-driver-badges">${renderSoforMetaBadges(r, { compact: true, shortLabels: true })}</div>
       ${r?.kezes === "2" ? `<div style="font-size:11px;opacity:0.72;">👥 Fix pár: ${resolveLinkedSoforName()}</div>` : ""}`
     : "";
+  const elakasztasMetaHtml = elakasztasSummary
+    ? `<div class="timeline-elakasztas-row-badge">🔗 Akasztva • ${elakasztasSummary.count} fuvar</div>`
+    : "";
   const matchReasonsHtml = buildTimelineMatchReasonsHtml(r.matchReasons || []);
 
   name.innerHTML = `
@@ -2828,6 +3362,7 @@ function renderResourceRow(parent, r, type) {
       ${rowIcon}
       <strong>${displayName}</strong>
     </div>
+    ${elakasztasMetaHtml}
     ${soforMetaHtml}
     ${partnerMeta}
     ${matchReasonsHtml}
@@ -2858,6 +3393,11 @@ function renderResourceRow(parent, r, type) {
     name.title = r.matchReasons.join("\n");
   }
 
+  if (elakasztasSummary?.lastOperation) {
+    const latestInfo = `🔗 Legutóbbi akasztás: ${formatDate(elakasztasSummary.lastOperation.at)} | ${buildElakasztasOperationLabel(elakasztasSummary.lastOperation)}`;
+    name.title = [name.title, latestInfo].filter(Boolean).join("\n");
+  }
+
   // Timeline sáv
   const bar = document.createElement("div");
   bar.className = "timeline-bar";
@@ -2879,6 +3419,7 @@ function renderResourceRow(parent, r, type) {
 
   appendFocusedFuvarMarker(bar, focusedRange);
   enableTimelineRowContextMenu(bar, r, type);
+  enableTimelineResourceNameContextMenu(name, r, type);
 
   // Timeline blokkok kirajzolása
   if (r.timeline) {
@@ -2934,16 +3475,24 @@ function renderResourceRow(parent, r, type) {
         const transitRoleHtml = transitRoleInfo
           ? `<span class="timeline-inline-transit-role ${transitRoleInfo.role}">${transitRoleInfo.label}</span>`
           : "";
+        const linkedFuvar = findFuvarByTimelineBlock(visibleBlock) || findFuvarByTimelineBlock(block);
+        const latestElakasztas = getLatestFuvarElakasztas(linkedFuvar);
+        const elakasztasInlineHtml = latestElakasztas
+          ? '<span class="timeline-inline-elakasztas">🔗 Akasztva</span>'
+          : "";
         const partnerSummaryHtml = type === "partner" && visibleBlock.partnerSummary
           ? `<div class="timeline-block-compact-line" style="opacity:0.84;">${visibleBlock.partnerSummary}</div>`
           : "";
 
         div.innerHTML = `
-          <div class="timeline-block-compact-line">${urgentHtml}${transitRoleHtml}<strong>${route.pickup} → ${route.dropoff}</strong><span class="timeline-compact-separator">•</span><span>${startText} → ${endText}</span>${proximityHintHtml}</div>
+          <div class="timeline-block-compact-line">${urgentHtml}${transitRoleHtml}${elakasztasInlineHtml}<strong>${route.pickup} → ${route.dropoff}</strong><span class="timeline-compact-separator">•</span><span>${startText} → ${endText}</span>${proximityHintHtml}</div>
           ${partnerSummaryHtml}
         `;
 
-        const linkedFuvar = findFuvarByTimelineBlock(visibleBlock) || findFuvarByTimelineBlock(block);
+        if (latestElakasztas) {
+          div.classList.add("timeline-block-elakasztott");
+        }
+
         if (linkedFuvar && !hasCompleteFuvarAssignment(linkedFuvar)) {
           div.classList.add("assignment-missing-resources");
         }
@@ -3009,7 +3558,7 @@ function renderResourceRow(parent, r, type) {
       }
 
       makeRestBlockDraggable(div, bar, r, block, type);
-      enableManualBlockContextMenu(div, r, block);
+      enableManualBlockContextMenu(div, r, type, block);
 
       bar.appendChild(div);
     });

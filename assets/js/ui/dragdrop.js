@@ -1017,12 +1017,8 @@ async function handleFuvarDropOnResource(targetType, targetId, explicitFuvarId =
       return false;
     }
 
-    const operation = await askSpedicioDropOperation({ fuvar, partnerName: targetId });
-    if (!operation) {
-      return false;
-    }
-
-    return assignFuvarToSpedicioPartner(fuvar.id, targetId, operation);
+    // Spedíció módban közvetlen társítást végzünk, nincs ajánlatkérés-választó.
+    return assignFuvarToSpedicioPartner(fuvar.id, targetId, "task-assignment");
   }
 
   const resource = getResourceByType(targetType, targetId);

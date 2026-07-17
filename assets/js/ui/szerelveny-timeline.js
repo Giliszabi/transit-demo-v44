@@ -3124,6 +3124,14 @@ function segmentMatchesJaratStatusFilter(segment) {
   return normalizedStatus === jaratTimelineStatusFilter;
 }
 
+function segmentContainsFuvar(segment, fuvarId) {
+  if (!segment || !fuvarId || !Array.isArray(segment.blocks)) {
+    return false;
+  }
+
+  return segment.blocks.some((block) => block?.fuvarId === fuvarId);
+}
+
 function renderAssemblyJaratTimelineRow(parent, assembly, segment, lifecycleFuvarIds = new Set()) {
   const row = document.createElement("div");
   row.className = "timeline-resource assembly-row jarat-row";
@@ -3274,6 +3282,12 @@ function renderAssemblyJaratTimelineView(parent, assemblies, lifecycleFuvarIds) 
   });
 
   allRows.sort((left, right) => {
+    const leftContainsFocused = segmentContainsFuvar(left.segment, focusedFuvarId);
+    const rightContainsFocused = segmentContainsFuvar(right.segment, focusedFuvarId);
+    if (leftContainsFocused !== rightContainsFocused) {
+      return leftContainsFocused ? -1 : 1;
+    }
+
     return new Date(left.segment.start) - new Date(right.segment.start);
   });
 

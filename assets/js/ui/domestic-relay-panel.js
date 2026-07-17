@@ -72,6 +72,110 @@ function getShortAddress(address) {
   return parts[0];
 }
 
+const RELAY_COUNTRY_CODE_BY_COUNTRY_ALIAS = {
+  magyarorszag: "HU",
+  hungary: "HU",
+  nemetorszag: "DE",
+  germany: "DE",
+  ausztria: "AT",
+  austria: "AT",
+  hollandia: "NL",
+  netherlands: "NL",
+  olaszorszag: "IT",
+  italy: "IT",
+  spanyolorszag: "ES",
+  spain: "ES",
+  csehorszag: "CZ",
+  czech: "CZ",
+  szlovakia: "SK",
+  slovakia: "SK",
+  dania: "DK",
+  denmark: "DK",
+  belgia: "BE",
+  belgium: "BE",
+  lengyelorszag: "PL",
+  poland: "PL",
+  luxemburg: "LU",
+  luxembourg: "LU",
+  portugal: "PT",
+  franciaorszag: "FR",
+  france: "FR",
+  svajc: "CH",
+  switzerland: "CH"
+};
+
+const RELAY_POSTAL_CODE_BY_CITY_ALIAS = {
+  kornye: "2851"
+};
+
+function getRelayCityKeyFromAddress(address) {
+  const normalized = normalizeSearchText(address);
+  if (!normalized) {
+    return "";
+  }
+
+  const aliases = {
+    korenye: "kornye",
+    kornye: "kornye"
+  };
+
+  const matched = Object.entries(aliases).find(([needle]) => normalized.includes(needle));
+  return matched ? matched[1] : "";
+}
+
+function inferRelayCountryCode(address) {
+  const normalized = normalizeSearchText(address);
+  if (!normalized) {
+    return "ZZ";
+  }
+
+  const aliasMatch = Object.entries(RELAY_COUNTRY_CODE_BY_COUNTRY_ALIAS).find(([alias]) => normalized.includes(alias));
+  if (aliasMatch?.[1]) {
+    return aliasMatch[1];
+  }
+
+  const cityAlias = getRelayCityKeyFromAddress(address);
+  if (cityAlias && RELAY_POSTAL_CODE_BY_CITY_ALIAS[cityAlias]) {
+    return "HU";
+  }
+
+  if (normalized.includes("magyarorszag") || normalized.includes("hungary")) {
+    return "HU";
+  }
+
+  return "ZZ";
+}
+
+function extractRelayPostalCode(address) {
+  const normalized = String(address || "");
+  const directMatch = normalized.match(/\b(\d{4,5}(?:\s?[A-Z]{1,2})?)\b/i);
+  if (directMatch?.[1]) {
+    return directMatch[1].replace(/\s+/g, " ").trim().toUpperCase();
+  }
+
+  const cityAlias = getRelayCityKeyFromAddress(address);
+  if (cityAlias && RELAY_POSTAL_CODE_BY_CITY_ALIAS[cityAlias]) {
+    return RELAY_POSTAL_CODE_BY_CITY_ALIAS[cityAlias];
+  }
+
+  return "00";
+}
+
+function getRelayLocationCode(fuvar, endpoint) {
+  const isPickup = endpoint === "pickup";
+  const excelBag = fuvar?.excelData || fuvar?.excel || {};
+  const excelField = isPickup ? "Felrakó ország-irsz" : "Lerakó ország-irsz";
+  const explicit = excelBag[excelField] ?? fuvar?.[excelField] ?? "";
+  if (String(explicit || "").trim()) {
+    return String(explicit).replace(/\s+/g, " ").trim();
+  }
+
+  const address = isPickup ? fuvar?.felrakas?.cim : fuvar?.lerakas?.cim;
+  const countryCode = inferRelayCountryCode(address);
+  const postalCode = extractRelayPostalCode(address);
+  return `${countryCode}-${postalCode}`;
+}
+
 function normalizeSearchText(value) {
   return String(value || "")
     .toLowerCase()
@@ -156,10 +260,10 @@ function sortEntries(entries, sortKey) {
   const list = [...entries];
 
   list.sort((a, b) => {
-    const aPickup = getShortAddress(a?.domesticFuvar?.felrakas?.cim);
-    const bPickup = getShortAddress(b?.domesticFuvar?.felrakas?.cim);
-    const aDropoff = getShortAddress(a?.domesticFuvar?.lerakas?.cim);
-    const bDropoff = getShortAddress(b?.domesticFuvar?.lerakas?.cim);
+    const aPickup = getRelayLocationCode(a?.domesticFuvar, "pickup");
+    const bPickup = getRelayLocationCode(b?.domesticFuvar, "pickup");
+    const aDropoff = getRelayLocationCode(a?.domesticFuvar, "dropoff");
+    const bDropoff = getRelayLocationCode(b?.domesticFuvar, "dropoff");
     const aTime = toTimestamp(a?.domesticFuvar?.felrakas?.ido);
     const bTime = toTimestamp(b?.domesticFuvar?.felrakas?.ido);
 
@@ -239,16 +343,16 @@ function renderTableRows(role, entries, selectedFuvarId, displayIdMap = null) {
           <span class="domestic-relay-status-badge ${assignmentStatus.className}">${assignmentStatus.label}</span>
         </td>
         <td class="col-relay-pickup" title="${escapeHtml(domesticFuvar.felrakas?.cim || "")}">
-          ${escapeHtml(getShortAddress(domesticFuvar?.felrakas?.cim))}
+          ${escapeHtml(getRelayLocationCode(domesticFuvar, "pickup"))}
         </td>
         <td class="col-relay-dropoff" title="${escapeHtml(domesticFuvar.lerakas?.cim || "")}">
-          ${escapeHtml(getShortAddress(domesticFuvar?.lerakas?.cim))}
+          ${escapeHtml(getRelayLocationCode(domesticFuvar, "dropoff"))}
         </td>
         <td class="col-relay-time-from">${escapeHtml(formatDateTime(domesticFuvar?.felrakas?.ido))}</td>
         <td class="col-relay-time-to">${escapeHtml(formatDateTime(domesticFuvar?.lerakas?.ido))}</td>
         <td class="col-relay-linked" title="${escapeHtml(linkedTooltip)}">
           <span class="relay-linked-id">${escapeHtml(linkedDisplayId)}</span>
-          <span class="relay-linked-route">${escapeHtml(getShortAddress(linkedFuvar?.felrakas?.cim))}→${escapeHtml(getShortAddress(linkedFuvar?.lerakas?.cim))}</span>
+          <span class="relay-linked-route">${escapeHtml(getRelayLocationCode(linkedFuvar, "pickup"))}→${escapeHtml(getRelayLocationCode(linkedFuvar, "dropoff"))}</span>
         </td>
         <td class="col-relay-linked-time">${escapeHtml(formatDateTime(linkedFuvar?.lerakas?.ido))}</td>
       </tr>
@@ -265,11 +369,11 @@ function getRoleTitle(role) {
   return role === "elofutas" ? "Export előfutások" : "Import utófutások";
 }
 
-function getVisibleEntriesByRole(queue, role) {
+function getVisibleEntriesByRole(queue, role, externalFilters = {}) {
   const state = relayUiState[role];
   const source = role === "elofutas" ? queue.elofutas : queue.utofutas;
-  const pickupTerm = normalizeSearchText(state.pickup);
-  const dropoffTerm = normalizeSearchText(state.dropoff);
+  const pickupTerm = normalizeSearchText([state.pickup, externalFilters.pickupQuery || ""].filter(Boolean).join(" "));
+  const dropoffTerm = normalizeSearchText([state.dropoff, externalFilters.dropoffQuery || ""].filter(Boolean).join(" "));
   const filtered = source.filter((entry) => matchesLocationSearch(entry, pickupTerm, dropoffTerm));
   return sortEntries(filtered, state.sort);
 }
@@ -461,7 +565,10 @@ export function renderTransitTaskBoard(containerId, options = {}) {
   const scopedQueue = role === "elofutas"
     ? { ...queue, elofutas: scopedSource }
     : { ...queue, utofutas: scopedSource };
-  const visibleEntries = getVisibleEntriesByRole(scopedQueue, role);
+  const visibleEntries = getVisibleEntriesByRole(scopedQueue, role, {
+    pickupQuery: options.pickupQuery,
+    dropoffQuery: options.dropoffQuery
+  });
   const dayGroupOrder = options.dayGroupOrder === "desc" ? "desc" : "asc";
   const title = getRoleTitle(role);
 

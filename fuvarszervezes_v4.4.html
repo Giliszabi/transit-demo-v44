@@ -106,6 +106,86 @@
       border-bottom: none;
     }
 
+    #panel-fuvar .panel-header-row,
+    #panel-fuvar-export .panel-header-row {
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 8px 12px;
+    }
+
+    #panel-fuvar .panel-header-row .panel-title,
+    #panel-fuvar-export .panel-header-row .panel-title {
+      flex: 1 1 auto;
+      min-width: 180px;
+      white-space: nowrap;
+    }
+
+    #panel-fuvar .panel-dock-toolbar,
+    #panel-fuvar-export .panel-dock-toolbar {
+      margin-left: auto;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      row-gap: 6px;
+    }
+
+    .fuvar-panel-header-filters {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(170px, 240px));
+      gap: 8px 12px;
+      order: 3;
+      flex: 1 1 100%;
+      margin-left: 0;
+      min-width: 0;
+    }
+
+    .fuvar-panel-header-search {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .fuvar-panel-header-search span {
+      font-size: 12px;
+      font-weight: 700;
+      color: #a9bfd6;
+      white-space: nowrap;
+      line-height: 1.1;
+    }
+
+    .fuvar-panel-header-search input {
+      width: 100%;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid rgba(79, 195, 247, 0.32);
+      background: #0b1220;
+      color: #dbe9f6;
+      font-size: 13px;
+      padding: 0 10px;
+    }
+
+    .fuvar-panel-header-search input:focus {
+      outline: 2px solid rgba(79, 195, 247, 0.35);
+      border-color: rgba(79, 195, 247, 0.62);
+    }
+
+    .fuvar-panel-header-search input::placeholder {
+      color: #7e93a8;
+    }
+
+    @media (max-width: 1380px) {
+      .fuvar-panel-header-filters {
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+      }
+    }
+
+    @media (max-width: 980px) {
+      .fuvar-panel-header-filters {
+        grid-template-columns: 1fr;
+      }
+    }
+
     header.panel {
       padding: 16px 18px;
       display: grid;
@@ -804,6 +884,16 @@
   <section class="panel dock-panel" id="panel-fuvar" data-panel-id="fuvar" data-panel-title="Export-belföld fuvarok">
     <div class="panel-header-row">
       <div class="panel-title">📋 Export-belföld fuvarok</div>
+      <div class="fuvar-panel-header-filters" data-fuvar-panel-filter-scope="export-domestic">
+        <label class="fuvar-panel-header-search">
+          <span>Felrakó</span>
+          <input type="search" data-fuvar-panel-filter="export-domestic" data-filter-role="pickup" placeholder="Keresés..." />
+        </label>
+        <label class="fuvar-panel-header-search">
+          <span>Lerakó</span>
+          <input type="search" data-fuvar-panel-filter="export-domestic" data-filter-role="dropoff" placeholder="Keresés..." />
+        </label>
+      </div>
       <div class="panel-dock-toolbar">
         <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
         <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
@@ -821,6 +911,16 @@
   <section class="panel dock-panel" id="panel-fuvar-export" data-panel-id="fuvar-export" data-panel-title="Import fuvarok">
     <div class="panel-header-row">
       <div class="panel-title">📦 Import fuvarok</div>
+      <div class="fuvar-panel-header-filters" data-fuvar-panel-filter-scope="import">
+        <label class="fuvar-panel-header-search">
+          <span>Felrakó</span>
+          <input type="search" data-fuvar-panel-filter="import" data-filter-role="pickup" placeholder="Keresés..." />
+        </label>
+        <label class="fuvar-panel-header-search">
+          <span>Lerakó</span>
+          <input type="search" data-fuvar-panel-filter="import" data-filter-role="dropoff" placeholder="Keresés..." />
+        </label>
+      </div>
       <div class="panel-dock-toolbar">
         <button type="button" class="panel-dock-btn" data-action="dock-left">Bal</button>
         <button type="button" class="panel-dock-btn" data-action="dock-right">Jobb</button>
@@ -968,7 +1068,7 @@
     </div>
   </section>
 
-  <section class="panel dock-panel" id="panel-map" data-panel-id="map" data-panel-title="Szerelvény térkép">
+  <section class="panel dock-panel" id="panel-map" data-panel-id="map" data-panel-title="Szerelvény térkép" hidden aria-hidden="true">
     <div class="panel-header-row">
       <div class="panel-title">🗺️ Szerelvény térkép</div>
       <div class="panel-dock-toolbar">
@@ -1046,6 +1146,10 @@ import {
 } from "./assets/js/core/session-state.js";
 
 let currentFuvarFilter = createDefaultFuvarFilterState();
+const fuvarPanelHeaderFilters = {
+  "export-domestic": { pickup: "", dropoff: "" },
+  import: { pickup: "", dropoff: "" }
+};
 let previousFuvarFilterBeforeDropoffMode = null;
 let selectedFuvarId = null;
 let selectedAssemblyId = null;
@@ -1055,7 +1159,6 @@ let resourceFocusSource = "none";
 let sessionProfileMismatchText = "";
 let manualJaratPlans = [];
 let activeManualJaratPlanId = null;
-const autoJaratIdByKey = new Map();
 
 function escapeRuntimeErrorText(value) {
   return String(value || "")
@@ -2880,253 +2983,30 @@ function buildFuvarDisplayIdMapForPlanner() {
   const map = new Map();
   indexed.forEach((entry, orderIndex) => {
     const rolling = String(orderIndex + 1).padStart(4, "0");
-    map.set(entry.fuvar.id, `${rolling}-${entry.year}`);
+    map.set(entry.fuvar.id, `FF-${entry.year}-${rolling}`);
   });
 
   return map;
 }
 
-function normalizePlannerText(value) {
-  return String(value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-}
-
-function isHungaryAddressForPlanner(address) {
-  const normalized = normalizePlannerText(address);
-  if (!normalized) {
-    return false;
-  }
-
-  return normalized.includes("magyarorszag")
-    || normalized.includes("hungary")
-    || normalized.includes("kornye")
-    || normalized.includes("budapest")
-    || normalized.includes("tatabanya")
-    || normalized.includes("gyor")
-    || normalized.includes("esztergom")
-    || normalized.includes("debrecen")
-    || normalized.includes("zalacseb");
-}
-
-function parseCountryCodeFromToken(value) {
-  const match = String(value || "").trim().toUpperCase().match(/\b([A-Z]{2})\s*-/);
-  return match ? match[1] : null;
-}
-
-const PLANNER_COUNTRY_CODE_ALIASES = {
-  magyarorszag: "HU",
-  hungary: "HU",
-  hollandia: "NL",
-  netherlands: "NL",
-  nemetorszag: "DE",
-  germany: "DE",
-  ausztria: "AT",
-  austria: "AT",
-  olaszorszag: "IT",
-  italy: "IT",
-  csehorszag: "CZ",
-  czech: "CZ",
-  dania: "DK",
-  denmark: "DK",
-  luxemburg: "LU",
-  belgium: "BE",
-  franciaorszag: "FR",
-  france: "FR",
-  spanyolorszag: "ES",
-  spain: "ES",
-  portugal: "PT",
-  lengyelorszag: "PL",
-  poland: "PL",
-  romania: "RO",
-  szerbia: "RS",
-  bulgaria: "BG",
-  horvatorszag: "HR",
-  szlovenia: "SI",
-  szlovakia: "SK",
-  ukrajna: "UA",
-  munchen: "DE",
-  hamburg: "DE",
-  lubeck: "DE",
-  stuttgart: "DE",
-  dusseldorf: "DE",
-  wien: "AT",
-  milano: "IT",
-  rotterdam: "NL",
-  praha: "CZ",
-  jelling: "DK"
-};
-
-function inferCountryCodeFromAddressForPlanner(address) {
-  const normalized = normalizePlannerText(address);
-  if (!normalized) {
-    return null;
-  }
-
-  const aliasEntry = Object.entries(PLANNER_COUNTRY_CODE_ALIASES)
-    .find(([needle]) => normalized.includes(needle));
-  return aliasEntry ? aliasEntry[1] : null;
-}
-
-function inferFuvarCountryCodeForPlanner(fuvar, endpoint = "dropoff") {
-  const excel = fuvar?.excelData || {};
-  const isDropoff = endpoint === "dropoff";
-  const orszagIrsz = isDropoff
-    ? (excel["Lerakó ország-irsz"] || fuvar?.lerakas_orszag_irsz)
-    : (excel["Felrakó ország-irsz"] || fuvar?.felrakas_orszag_irsz);
-  const parsedFromToken = parseCountryCodeFromToken(orszagIrsz);
-  if (parsedFromToken) {
-    return parsedFromToken;
-  }
-
-  const address = isDropoff ? fuvar?.lerakas?.cim : fuvar?.felrakas?.cim;
-  return inferCountryCodeFromAddressForPlanner(address);
-}
-
-function getFuvarViszonylatCodeForPlanner(fuvar) {
-  const category = getFuvarCategoryForPlanner(fuvar);
-  if (category === "export") {
-    return "1";
-  }
-  if (category === "import") {
-    return "2";
-  }
-  if (category === "belfold") {
-    return "4";
-  }
-
-  const pickupHu = isHungaryAddressForPlanner(fuvar?.felrakas?.cim);
-  const dropoffHu = isHungaryAddressForPlanner(fuvar?.lerakas?.cim);
-  if (!pickupHu && !dropoffHu) {
-    return "3";
-  }
-  if (pickupHu && dropoffHu) {
-    return "4";
-  }
-  if (pickupHu) {
-    return "1";
-  }
-  if (dropoffHu) {
-    return "2";
-  }
-  return "3";
-}
-
-function parseJaratSequence(jaratId) {
-  const raw = String(jaratId || "").trim();
-  const currentFormatMatch = raw.match(/^(\d+)-[1-4]-[A-Z]{2}-\d{4}$/);
-  const legacyFormatMatch = raw.match(/^JR-\d{4}-(\d+)$/);
-  const candidate = currentFormatMatch?.[1] || legacyFormatMatch?.[1] || null;
-  if (!candidate) {
-    return null;
-  }
-
-  const parsed = Number.parseInt(candidate, 10);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function collectUsedJaratSequences(excludedIds = []) {
-  const excluded = new Set((excludedIds || []).filter(Boolean));
-  const used = new Set();
+function getNextManualJaratSequenceForYear(year) {
+  const pattern = new RegExp(`^JR-${year}-(\\d+)$`);
+  let maxSequence = 0;
 
   FUVAROK.forEach((fuvar) => {
-    const candidate = String(fuvar?.plannedJaratId || "");
-    if (!candidate || excluded.has(candidate)) {
+    const manualJaratId = String(fuvar?.plannedJaratId || "");
+    const match = manualJaratId.match(pattern);
+    if (!match) {
       return;
     }
-    const parsed = parseJaratSequence(candidate);
-    if (parsed !== null) {
-      used.add(parsed);
+
+    const seq = Number(match[1]);
+    if (Number.isFinite(seq) && seq > maxSequence) {
+      maxSequence = seq;
     }
   });
 
-  manualJaratPlans.forEach((plan) => {
-    const candidate = String(plan?.jaratId || "");
-    if (!candidate || excluded.has(candidate)) {
-      return;
-    }
-    const parsed = parseJaratSequence(candidate);
-    if (parsed !== null) {
-      used.add(parsed);
-    }
-  });
-
-  autoJaratIdByKey.forEach((candidate) => {
-    const jaratId = String(candidate || "");
-    if (!jaratId || excluded.has(jaratId)) {
-      return;
-    }
-    const parsed = parseJaratSequence(jaratId);
-    if (parsed !== null) {
-      used.add(parsed);
-    }
-  });
-
-  return used;
-}
-
-function allocateNextJaratSequence(usedSequences) {
-  let max = 0;
-  usedSequences.forEach((value) => {
-    if (Number.isFinite(value) && value > max) {
-      max = value;
-    }
-  });
-  return max + 1;
-}
-
-function buildJaratIdFromFuvarList(fuvarList, sequence) {
-  const ordered = (Array.isArray(fuvarList) ? fuvarList : [])
-    .filter(Boolean)
-    .sort(sortFuvarListByPickupForPlanner);
-
-  const firstFuvar = ordered[0] || null;
-  const firstPickupMs = new Date(firstFuvar?.felrakas?.ido || "").getTime();
-  const year = Number.isFinite(firstPickupMs)
-    ? new Date(firstPickupMs).getFullYear()
-    : new Date().getFullYear();
-
-  const viszonylatCode = firstFuvar ? getFuvarViszonylatCodeForPlanner(firstFuvar) : "4";
-
-  const latestNonHuFuvar = [...ordered]
-    .reverse()
-    .find((fuvar) => {
-      const pickupHu = isHungaryAddressForPlanner(fuvar?.felrakas?.cim);
-      const dropoffHu = isHungaryAddressForPlanner(fuvar?.lerakas?.cim);
-      return !(pickupHu && dropoffHu);
-    }) || null;
-
-  let countryCode = "HU";
-  if (latestNonHuFuvar) {
-    const dropoffHu = isHungaryAddressForPlanner(latestNonHuFuvar?.lerakas?.cim);
-    const pickupHu = isHungaryAddressForPlanner(latestNonHuFuvar?.felrakas?.cim);
-
-    if (!dropoffHu) {
-      countryCode = inferFuvarCountryCodeForPlanner(latestNonHuFuvar, "dropoff") || countryCode;
-    } else if (!pickupHu) {
-      countryCode = inferFuvarCountryCodeForPlanner(latestNonHuFuvar, "pickup") || countryCode;
-    }
-  }
-
-  const safeSequence = Number.isFinite(sequence) ? Math.max(1, sequence) : 1;
-  const sequencePart = String(safeSequence).padStart(4, "0");
-  const countryPart = String(countryCode || "HU").toUpperCase();
-  return `${sequencePart}-${viszonylatCode}-${countryPart}-${year}`;
-}
-
-function recomputeManualPlanJaratId(plan) {
-  if (!plan) {
-    return;
-  }
-
-  const currentId = String(plan.jaratId || "");
-  const currentSeq = parseJaratSequence(currentId);
-  const used = collectUsedJaratSequences([currentId]);
-  const sequence = currentSeq !== null ? currentSeq : allocateNextJaratSequence(used);
-  const fuvarList = getManualJaratPlanFuvarList(plan);
-  plan.jaratId = buildJaratIdFromFuvarList(fuvarList, sequence);
+  return maxSequence + 1;
 }
 
 function getManualJaratPlanById(planId) {
@@ -3277,79 +3157,6 @@ function buildAutoJaratTransitState(fuvarList, anchorResource) {
   };
 }
 
-function isKornyeAddressForPlanner(address) {
-  return normalizePlannerText(address).includes("kornye");
-}
-
-function collectImportKornyeTouchIdsForPlanner() {
-  const touchedImportIds = new Set();
-
-  FUVAROK.forEach((fuvar) => {
-    const category = getFuvarCategoryForPlanner(fuvar);
-    if (category !== "belfold") {
-      return;
-    }
-
-    const linkedImportId = fuvar?.utofutasImportFuvarId || fuvar?.kapcsoltImportFuvarId || null;
-    if (!linkedImportId) {
-      return;
-    }
-
-    const touchesKornye = isKornyeAddressForPlanner(fuvar?.felrakas?.cim)
-      || isKornyeAddressForPlanner(fuvar?.lerakas?.cim);
-    if (touchesKornye) {
-      touchedImportIds.add(linkedImportId);
-    }
-  });
-
-  return touchedImportIds;
-}
-
-function splitAutoJaratFuvarListByKornyeCycles(fuvarList) {
-  const ordered = (Array.isArray(fuvarList) ? fuvarList : []).slice().sort(sortFuvarListByPickupForPlanner);
-  const segments = [];
-  const importKornyeTouchIds = collectImportKornyeTouchIdsForPlanner();
-
-  let currentFuvarList = [];
-  let hasExportFromKornye = false;
-  let hasImportToKornye = false;
-
-  ordered.forEach((fuvar) => {
-    currentFuvarList.push(fuvar);
-
-    const category = getFuvarCategoryForPlanner(fuvar);
-    if (category === "export" && isKornyeAddressForPlanner(fuvar?.felrakas?.cim)) {
-      hasExportFromKornye = true;
-    }
-    if (category === "import" && isKornyeAddressForPlanner(fuvar?.lerakas?.cim)) {
-      hasImportToKornye = true;
-    }
-    if (category === "import" && importKornyeTouchIds.has(fuvar?.id)) {
-      hasImportToKornye = true;
-    }
-
-    if (hasExportFromKornye && hasImportToKornye) {
-      segments.push({
-        fuvarList: currentFuvarList,
-        isComplete: true
-      });
-
-      currentFuvarList = [];
-      hasExportFromKornye = false;
-      hasImportToKornye = false;
-    }
-  });
-
-  if (currentFuvarList.length > 0) {
-    segments.push({
-      fuvarList: currentFuvarList,
-      isComplete: false
-    });
-  }
-
-  return segments;
-}
-
 function buildAutoJaratPlans() {
   const grouped = new Map();
 
@@ -3365,7 +3172,7 @@ function buildAutoJaratPlans() {
       if (!grouped.has(key)) {
         grouped.set(key, {
           id: `auto-jarat-${anchor.type}-${anchor.id}`,
-          jaratId: "",
+          jaratId: `AUTO-${getAutoPlanAnchorLabel(anchor)}`,
           anchor,
           fuvarIds: []
         });
@@ -3374,48 +3181,26 @@ function buildAutoJaratPlans() {
       grouped.get(key).fuvarIds.push(fuvar.id);
     });
 
-  const plans = Array.from(grouped.values())
-    .flatMap((groupPlan) => {
-      const fuvarList = getManualJaratPlanFuvarList(groupPlan);
-      const segments = splitAutoJaratFuvarListByKornyeCycles(fuvarList);
+  return Array.from(grouped.values())
+    .map((plan) => {
+      const fuvarList = getManualJaratPlanFuvarList(plan);
+      const anchorResource = getAutoPlanAnchorResource(plan.anchor);
+      const transitState = buildAutoJaratTransitState(fuvarList, anchorResource);
+      const exportCount = fuvarList.filter((fuvar) => getFuvarCategoryForPlanner(fuvar) === "export").length;
+      const importCount = fuvarList.filter((fuvar) => getFuvarCategoryForPlanner(fuvar) === "import").length;
+      const isComplete = transitState.hasElofutas && transitState.hasUtofutas && exportCount > 0 && importCount > 0;
 
-      return segments.map((segment, segmentIndex) => {
-        const planId = `${groupPlan.id}-${segmentIndex + 1}`;
-        const currentJaratId = autoJaratIdByKey.get(planId) || "";
-        const parsedSeq = parseJaratSequence(currentJaratId);
-        const used = collectUsedJaratSequences([currentJaratId]);
-        const sequence = parsedSeq !== null ? parsedSeq : allocateNextJaratSequence(used);
-        const jaratId = buildJaratIdFromFuvarList(segment.fuvarList, sequence);
-        autoJaratIdByKey.set(planId, jaratId);
-
-        const exportCount = segment.fuvarList.filter((fuvar) => getFuvarCategoryForPlanner(fuvar) === "export").length;
-        const importCount = segment.fuvarList.filter((fuvar) => getFuvarCategoryForPlanner(fuvar) === "import").length;
-
-        return {
-          id: planId,
-          jaratId,
-          anchor: groupPlan.anchor,
-          fuvarIds: segment.fuvarList.map((fuvar) => fuvar.id),
-          isAuto: true,
-          status: segment.isComplete ? "complete" : "open",
-          cycleState: segment.isComplete ? "kornye-closed" : (segmentIndex > 0 ? "post-kornye" : "pending"),
-          exportCount,
-          importCount,
-          hasElofutas: false,
-          hasUtofutas: false,
-          sortTimeMs: new Date(segment.fuvarList[0]?.felrakas?.ido || "").getTime()
-        };
-      });
-    });
-
-  const activeAutoPlanIds = new Set(plans.map((plan) => plan.id));
-  Array.from(autoJaratIdByKey.keys()).forEach((key) => {
-    if (!activeAutoPlanIds.has(key)) {
-      autoJaratIdByKey.delete(key);
-    }
-  });
-
-  return plans
+      return {
+        ...plan,
+        isAuto: true,
+        status: isComplete ? "complete" : "open",
+        exportCount,
+        importCount,
+        hasElofutas: transitState.hasElofutas,
+        hasUtofutas: transitState.hasUtofutas,
+        sortTimeMs: new Date(fuvarList[0]?.felrakas?.ido || "").getTime()
+      };
+    })
     .sort((left, right) => {
       const leftMs = Number.isFinite(left.sortTimeMs) ? left.sortTimeMs : Number.POSITIVE_INFINITY;
       const rightMs = Number.isFinite(right.sortTimeMs) ? right.sortTimeMs : Number.POSITIVE_INFINITY;
@@ -3464,8 +3249,12 @@ function createManualJaratPlan(seedFuvarId = null) {
       return String(left.id).localeCompare(String(right.id), "hu-HU");
     });
 
-  const nextSeq = allocateNextJaratSequence(collectUsedJaratSequences());
-  const jaratId = buildJaratIdFromFuvarList(fuvarList, nextSeq);
+  const firstPickupMs = new Date(fuvarList[0]?.felrakas?.ido || "").getTime();
+  const year = Number.isFinite(firstPickupMs)
+    ? new Date(firstPickupMs).getFullYear()
+    : new Date().getFullYear();
+  const nextSeq = getNextManualJaratSequenceForYear(year);
+  const jaratId = `JR-${year}-${String(nextSeq).padStart(4, "0")}`;
 
   const plan = {
     id: `manual-jarat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -3500,7 +3289,6 @@ function addFuvarToManualJaratPlan(planId, fuvarId) {
 
   plan.fuvarIds.push(fuvarId);
   plan.updatedAt = Date.now();
-  recomputeManualPlanJaratId(plan);
   applyPlannedJaratAssignmentsFromPlans();
   return true;
 }
@@ -3518,7 +3306,6 @@ function removeFuvarFromManualJaratPlan(planId, fuvarId) {
   }
 
   plan.updatedAt = Date.now();
-  recomputeManualPlanJaratId(plan);
   applyPlannedJaratAssignmentsFromPlans();
   return true;
 }
@@ -3577,14 +3364,9 @@ function renderManualJaratPlannerPanel() {
       const autoBadgeHtml = plan.isAuto
         ? '<span class="jarat-plan-row-badge">AUTO</span>'
         : "";
-      const cycleBadgeHtml = plan.isAuto && plan.cycleState === "kornye-closed"
-        ? '<span class="jarat-plan-row-badge cycle-closed">KÖRNYE CIKLUS LEZÁRVA</span>'
-        : plan.isAuto && plan.cycleState === "post-kornye"
-          ? '<span class="jarat-plan-row-badge cycle-next">ÚJ JÁRAT INDULT</span>'
-          : "";
       return `
         <button type="button" class="jarat-plan-row ${statusClass} ${isActive ? "active" : ""}" data-action="select-jarat-plan" data-plan-id="${plan.id}">
-          <span class="jarat-plan-row-id">${plan.jaratId}${autoBadgeHtml}${cycleBadgeHtml}</span>
+          <span class="jarat-plan-row-id">${plan.jaratId}${autoBadgeHtml}</span>
           <span class="jarat-plan-row-count">${categoryCountText} • ${statusLabel}</span>
         </button>
       `;
@@ -4679,22 +4461,73 @@ function applyFuvarSelectionById(fuvarId, options = { broadcast: true }) {
   onSelectFuvar(results, { broadcast: options.broadcast });
 }
 
+function getFuvarPanelHeaderFilterState(scope) {
+  if (scope === "import") {
+    return fuvarPanelHeaderFilters.import;
+  }
+
+  return fuvarPanelHeaderFilters["export-domestic"];
+}
+
+function getFuvarListFilterForScope(scope) {
+  const scopeState = getFuvarPanelHeaderFilterState(scope);
+  return {
+    ...currentFuvarFilter,
+    pickupQuery: scopeState.pickup,
+    dropoffQuery: scopeState.dropoff
+  };
+}
+
+function bindFuvarPanelHeaderFilters() {
+  document.querySelectorAll("[data-fuvar-panel-filter][data-filter-role]").forEach((input) => {
+    const scope = input.dataset.fuvarPanelFilter === "import" ? "import" : "export-domestic";
+    const role = input.dataset.filterRole;
+    if (role !== "pickup" && role !== "dropoff") {
+      return;
+    }
+
+    const scopeState = getFuvarPanelHeaderFilterState(scope);
+    input.value = scopeState[role] || "";
+    input.addEventListener("input", () => {
+      scopeState[role] = String(input.value || "");
+      updateFuvarCardsByCurrentFilter();
+    });
+  });
+}
+
+function syncFuvarPanelHeaderFilters() {
+  document.querySelectorAll("[data-fuvar-panel-filter][data-filter-role]").forEach((input) => {
+    const scope = input.dataset.fuvarPanelFilter === "import" ? "import" : "export-domestic";
+    const role = input.dataset.filterRole;
+    if (role !== "pickup" && role !== "dropoff") {
+      return;
+    }
+
+    const scopeState = getFuvarPanelHeaderFilterState(scope);
+    const nextValue = scopeState[role] || "";
+    if (input.value !== nextValue) {
+      input.value = nextValue;
+    }
+  });
+}
+
 function updateFuvarCardsByCurrentFilter() {
   const importListHost = document.getElementById("fuvar-list-import");
   const exportListHost = document.getElementById("fuvar-list-export");
+  syncFuvarPanelHeaderFilters();
   if (!importListHost && !exportListHost) {
     return;
   }
 
   if (importListHost) {
-    renderFuvarCards("fuvar-list-import", currentFuvarFilter, onSelectFuvar, {
+    renderFuvarCards("fuvar-list-import", getFuvarListFilterForScope("export-domestic"), onSelectFuvar, {
       ...getFuvarCardRenderOptions(),
       listBlockKey: "export-domestic"
     });
   }
 
   if (exportListHost) {
-    renderFuvarCards("fuvar-list-export", currentFuvarFilter, onSelectFuvar, {
+    renderFuvarCards("fuvar-list-export", getFuvarListFilterForScope("import"), onSelectFuvar, {
       ...getFuvarCardRenderOptions(),
       listBlockKey: "import"
     });
@@ -4737,49 +4570,28 @@ function isSpedicioModeActive() {
   return Boolean(currentFuvarFilter?.spediccio);
 }
 
-function formatDateInputValue(date) {
-  if (!(date instanceof Date) || !Number.isFinite(date.getTime())) {
-    return "";
-  }
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function getPickupDateWindowForRelayBoards(filter = currentFuvarFilter) {
-  if (!filter) {
-    return { pickupDateFrom: "", pickupDateTo: "" };
-  }
-
-  if (filter.pickupDateFrom || filter.pickupDateTo) {
-    return {
-      pickupDateFrom: filter.pickupDateFrom || "",
-      pickupDateTo: filter.pickupDateTo || ""
-    };
-  }
-
-  if (Number.isInteger(filter.dayOffset)) {
-    const referenceDate = getTimelineFilterReferenceDate();
-    const base = referenceDate ? new Date(referenceDate) : null;
-    if (base && Number.isFinite(base.getTime())) {
-      const targetDate = new Date(base.getFullYear(), base.getMonth(), base.getDate() + filter.dayOffset);
-      const inputValue = formatDateInputValue(targetDate);
-      return {
-        pickupDateFrom: inputValue,
-        pickupDateTo: inputValue
-      };
+function syncSpedicioPanelVisibility(spedicioMode) {
+  ["elofutas", "utofutas", "jarat-planner"].forEach((panelId) => {
+    const panel = document.getElementById(`panel-${panelId}`);
+    if (!panel) {
+      return;
     }
-  }
 
-  return { pickupDateFrom: "", pickupDateTo: "" };
+    panel.hidden = Boolean(spedicioMode);
+    if (spedicioMode) {
+      panel.setAttribute("aria-hidden", "true");
+    } else {
+      panel.removeAttribute("aria-hidden");
+    }
+  });
 }
 
 function renderFuvarFiltersWithCurrentState() {
   if (!document.getElementById("filter-container")) {
     return;
   }
+
+  syncSpedicioPanelVisibility(isSpedicioModeActive());
 
   renderFuvarFilters("filter-container", (filter) => {
     const previousDayOffset = currentFuvarFilter?.dayOffset ?? null;
@@ -4926,6 +4738,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   refreshLayoutProfileControls();
   bindDockToolbarActions();
   bindPanelCollapsibles();
+  bindFuvarPanelHeaderFilters();
   setupDockLayoutSync();
   applyDockLayout();
   updateTimelineFocusIndicator();
@@ -4950,14 +4763,14 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // ALAPÉRTELMEZETT FUVARLISTA
   if (document.getElementById("fuvar-list-import")) {
-    renderFuvarCards("fuvar-list-import", currentFuvarFilter, onSelectFuvar, {
+    renderFuvarCards("fuvar-list-import", getFuvarListFilterForScope("export-domestic"), onSelectFuvar, {
       ...getFuvarCardRenderOptions(),
       listBlockKey: "export-domestic"
     });
   }
 
   if (document.getElementById("fuvar-list-export")) {
-    renderFuvarCards("fuvar-list-export", currentFuvarFilter, onSelectFuvar, {
+    renderFuvarCards("fuvar-list-export", getFuvarListFilterForScope("import"), onSelectFuvar, {
       ...getFuvarCardRenderOptions(),
       listBlockKey: "import"
     });
@@ -5214,16 +5027,16 @@ function restoreElementScrollPosition(element, position) {
     const spedicioMode = isSpedicioModeActive();
     const spedicioPartners = spedicioMode ? buildSpedicioPartnerResources(selectedFuvarId) : [];
 
+    syncSpedicioPanelVisibility(spedicioMode);
+
     if (document.getElementById("transit-task-board-elofutas")) {
-      const pickupDateWindow = getPickupDateWindowForRelayBoards();
       renderTransitTaskBoard("transit-task-board-elofutas", {
         role: "elofutas",
         hidden: spedicioMode,
         idScope: currentFuvarFilter?.idScope || [],
         query: currentFuvarFilter?.query || "",
-        pickupDateFrom: pickupDateWindow.pickupDateFrom,
-        pickupDateTo: pickupDateWindow.pickupDateTo,
-        dayGroupOrder: currentFuvarFilter?.dayGroupOrder || "asc",
+        pickupQuery: currentFuvarFilter?.pickupQuery || "",
+        dropoffQuery: currentFuvarFilter?.dropoffQuery || "",
         selectedFuvarId,
         onSelectFuvar: (fuvarId) => applyFuvarSelectionById(fuvarId),
         onSelectLinkedFuvar: (fuvarId) => applyLinkedFuvarFocusFilter(fuvarId)
@@ -5231,15 +5044,13 @@ function restoreElementScrollPosition(element, position) {
     }
 
     if (document.getElementById("transit-task-board-utofutas")) {
-      const pickupDateWindow = getPickupDateWindowForRelayBoards();
       renderTransitTaskBoard("transit-task-board-utofutas", {
         role: "utofutas",
         hidden: spedicioMode,
         idScope: currentFuvarFilter?.idScope || [],
         query: currentFuvarFilter?.query || "",
-        pickupDateFrom: pickupDateWindow.pickupDateFrom,
-        pickupDateTo: pickupDateWindow.pickupDateTo,
-        dayGroupOrder: currentFuvarFilter?.dayGroupOrder || "asc",
+        pickupQuery: currentFuvarFilter?.pickupQuery || "",
+        dropoffQuery: currentFuvarFilter?.dropoffQuery || "",
         selectedFuvarId,
         onSelectFuvar: (fuvarId) => applyFuvarSelectionById(fuvarId),
         onSelectLinkedFuvar: (fuvarId) => applyLinkedFuvarFocusFilter(fuvarId)
@@ -5247,7 +5058,7 @@ function restoreElementScrollPosition(element, position) {
     }
 
     if (document.getElementById("fuvar-list-import")) {
-      renderFuvarCards("fuvar-list-import", currentFuvarFilter, onSelectFuvar, {
+      renderFuvarCards("fuvar-list-import", getFuvarListFilterForScope("export-domestic"), onSelectFuvar, {
         ...getFuvarCardRenderOptions(),
         listBlockKey: "export-domestic"
       });
@@ -5257,7 +5068,7 @@ function restoreElementScrollPosition(element, position) {
     }
 
     if (document.getElementById("fuvar-list-export")) {
-      renderFuvarCards("fuvar-list-export", currentFuvarFilter, onSelectFuvar, {
+      renderFuvarCards("fuvar-list-export", getFuvarListFilterForScope("import"), onSelectFuvar, {
         ...getFuvarCardRenderOptions(),
         listBlockKey: "import"
       });
